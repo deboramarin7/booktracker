@@ -151,13 +151,6 @@ export function useBooks() {
   const addBooksInBatch = async (booksData: Omit<Book, "id" | "addedAt">[]) => {
     if (!user) throw new Error("Usuario no autenticado");
 
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !session) {
-      const errorMsg = "Tu sesión ha expirado. Por favor, recarga la página e intenta de nuevo.";
-      toast({ title: "Sesión expirada", description: errorMsg, variant: "destructive" });
-      throw new Error(errorMsg);
-    }
-
     const now = new Date().toISOString();
     const BATCH_SIZE = 50;
     const allInserted: DbBook[] = [];
