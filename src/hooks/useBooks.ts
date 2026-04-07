@@ -150,49 +150,67 @@ export function useBooks() {
 
   const addBooksInBatch = async (booksData: Omit<Book, "id" | "addedAt">[]) => {
     if (!user) throw new Error("Usuario no autenticado");
-    const now = new Date().toISOString();
 
-    const booksToInsert = booksData.map(data => {
-      const startDate = data.status === "reading" ? data.startDate || now.split("T")[0] : data.startDate;
-      const endDate = data.status === "finished" ? data.endDate || now.split("T")[0] : data.endDate;
-
-      return {
-        user_id: user.id,
-        title: data.title,
-        author: data.author,
-        cover_url: data.coverUrl || null,
-        has_saga: data.hasSaga,
-        saga: data.saga || null,
-        saga_order: data.sagaOrder || null,
-        genre: data.genre,
-        format: data.format,
-        source: data.source,
-        price: data.price || null,
-        start_date: startDate || null,
-        end_date: endDate || null,
-        pages_read: data.pagesRead,
-        total_pages: data.totalPages,
-        rating: data.rating,
-        notes: data.notes,
-        status: data.status,
-        tags: data.tags || [],
-      };
-    });
-
-    const { data: inserted, error } = await supabase
-      .from("books")
-      .insert(booksToInsert)
-      .select();
-
-    if (error) {
-      toast({ title: "Error importando libros", description: error.message, variant: "destructive" });
-      throw error;
-    } else if (inserted) {
-      const newBooks = (inserted as DbBook[]).map(dbToBook);
-      setBooks((prev) => [...newBooks, ...prev]);
-      return newBooks;
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      const errorMsg = "Tu sesión ha expirado. Por favor, recarga la página e intenta de nuevo.";
+      toast({ title: "Sesión expirada", description: errorMsg, variant: "destructive" });
+      throw new Error(errorMsg);
     }
-    return [];
+
+    const now = new Date().toISOString();
+    const BATCH_SIZE = 50;
+    const allInserted: DbBook[] = [];
+
+    for (let i = 0; i < booksData.length; i += BATCH_SIZE) {
+      const batch = booksData.slice(i, i + BATCH_SIZE);
+
+      const booksToInsert = batch.map(data => {
+        const startDate = data.status === "reading" ? data.startDate || now.split("T")[0] : data.startDate;
+        const endDate = data.status === "finished" ? data.endDate || now.split("T")[0] : data.endDate;
+
+        return {
+          user_id: user.id,
+          title: data.title,
+          author: data.author,
+          cover_url: data.coverUrl || null,
+          has_saga: data.hasSaga,
+          saga: data.saga || null,
+          saga_order: data.sagaOrder || null,
+          genre: data.genre,
+          format: data.format,
+          source: data.source,
+          price: data.price || null,
+          start_date: startDate || null,
+          end_date: endDate || null,
+          pages_read: data.pagesRead,
+          total_pages: data.totalPages,
+          rating: data.rating,
+          notes: data.notes,
+          status: data.status,
+          tags: data.tags || [],
+        };
+      });
+
+      const { data: inserted, error } = await supabase
+        .from("books")
+        .insert(booksToInsert)
+        .select();
+
+      if (error) {
+        const detailedError = `Error en lote ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}`;
+        toast({ title: "Error importando libros", description: detailedError, variant: "destructive" });
+        throw new Error(detailedError);
+      }
+
+      if (inserted) {
+        allInserted.push(...(inserted as DbBook[]));
+      }
+    }
+
+    const newBooks = allInserted.map(dbToBook);
+    setBooks((prev) => [...newBooks, ...prev]);
+    return newBooks;
   };
 
   const updateBook = async (id: string, data: Partial<Omit<Book, "id" | "addedAt">>) => {
