@@ -87,13 +87,19 @@ export function useBooks() {
   const [loading, setLoading] = useState(true);
 
   const fetchBooks = useCallback(async () => {
-    if (!user) { setBooks([]); setLoading(false); return; }
     setLoading(true);
-    const { data, error } = await supabase
+    const query = supabase
       .from("books")
       .select("*")
-      .eq("user_id", user.id)
       .order("added_at", { ascending: false });
+
+    if (user) {
+      query.eq("user_id", user.id);
+    } else {
+      query.is("user_id", null);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       toast({ title: "Error cargando libros", description: error.message, variant: "destructive" });
@@ -107,13 +113,12 @@ export function useBooks() {
   useEffect(() => { fetchBooks(); }, [fetchBooks]);
 
   const addBook = async (data: Omit<Book, "id" | "addedAt">) => {
-    if (!user) throw new Error("Usuario no autenticado");
     const now = new Date().toISOString();
     const startDate = data.status === "reading" ? data.startDate || now.split("T")[0] : data.startDate;
     const endDate = data.status === "finished" ? data.endDate || now.split("T")[0] : data.endDate;
 
     const { data: inserted, error } = await supabase.from("books").insert({
-      user_id: user.id,
+      user_id: user?.id || null,
       title: data.title,
       author: data.author,
       cover_url: data.coverUrl || null,
@@ -140,17 +145,22 @@ export function useBooks() {
     } else if (inserted) {
       setBooks((prev) => [dbToBook(inserted as DbBook), ...prev]);
       // Auto-remove from wishlist when adding to library
-      await supabase.from("wishlist")
+      const deleteQuery = supabase.from("wishlist")
         .delete()
-        .eq("user_id", user.id)
         .ilike("title", data.title.trim())
         .ilike("author", data.author.trim());
+
+      if (user) {
+        deleteQuery.eq("user_id", user.id);
+      } else {
+        deleteQuery.is("user_id", null);
+      }
+
+      await deleteQuery;
     }
   };
 
   const addBooksInBatch = async (booksData: Omit<Book, "id" | "addedAt">[]) => {
-    if (!user) throw new Error("Usuario no autenticado");
-
     const now = new Date().toISOString();
     const BATCH_SIZE = 50;
     const allInserted: DbBook[] = [];
@@ -163,7 +173,7 @@ export function useBooks() {
         const endDate = data.status === "finished" ? data.endDate || now.split("T")[0] : data.endDate;
 
         return {
-          user_id: user.id,
+          user_id: user?.id || null,
           title: data.title,
           author: data.author,
           cover_url: data.coverUrl || null,
@@ -207,7 +217,6 @@ export function useBooks() {
   };
 
   const updateBook = async (id: string, data: Partial<Omit<Book, "id" | "addedAt">>) => {
-    if (!user) return;
     const currentBook = books.find((b) => b.id === id);
     const today = new Date().toISOString().split("T")[0];
 
@@ -242,13 +251,20 @@ export function useBooks() {
       updateData.pages_read = data.totalPages ?? currentBook.totalPages;
     }
 
-    const { data: updated, error } = await supabase
+    const query = supabase
       .from("books")
       .update(updateData)
       .eq("id", id)
-      .eq("user_id", user.id)
       .select()
       .single();
+
+    if (user) {
+      query.eq("user_id", user.id);
+    } else {
+      query.is("user_id", null);
+    }
+
+    const { data: updated, error } = await query;
 
     if (error) {
       toast({ title: "Error actualizando libro", description: error.message, variant: "destructive" });
@@ -258,8 +274,15 @@ export function useBooks() {
   };
 
   const deleteBook = async (id: string) => {
-    if (!user) return;
-    const { error } = await supabase.from("books").delete().eq("id", id).eq("user_id", user.id);
+    const query = supabase.from("books").delete().eq("id", id);
+
+    if (user) {
+      query.eq("user_id", user.id);
+    } else {
+      query.is("user_id", null);
+    }
+
+    const { error } = await query;
     if (error) {
       toast({ title: "Error eliminando libro", description: error.message, variant: "destructive" });
     } else {

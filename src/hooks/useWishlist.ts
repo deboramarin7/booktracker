@@ -78,13 +78,19 @@ export function useWishlist() {
   const [loading, setLoading] = useState(true);
 
   const fetchItems = useCallback(async () => {
-    if (!user) { setItems([]); setLoading(false); return; }
     setLoading(true);
-    const { data, error } = await supabase
+    const query = supabase
       .from("wishlist")
       .select("*")
-      .eq("user_id", user.id)
       .order("added_at", { ascending: false });
+
+    if (user) {
+      query.eq("user_id", user.id);
+    } else {
+      query.is("user_id", null);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       toast({ title: "Error cargando wishlist", description: error.message, variant: "destructive" });
@@ -97,9 +103,8 @@ export function useWishlist() {
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
   const addItem = async (data: Omit<WishItem, "id">) => {
-    if (!user) return;
     const { data: inserted, error } = await supabase.from("wishlist").insert({
-      user_id: user.id,
+      user_id: user?.id || null,
       title: data.title,
       author: data.author,
       cover_url: data.coverUrl || null,
@@ -116,15 +121,22 @@ export function useWishlist() {
   };
 
   const updateItem = async (id: string, data: Omit<WishItem, "id">) => {
-    if (!user) return;
-    const { data: updated, error } = await supabase.from("wishlist").update({
+    const query = supabase.from("wishlist").update({
       title: data.title,
       author: data.author,
       cover_url: data.coverUrl || null,
       priority: data.priority,
       total_pages: data.totalPages || 0,
       notes: wishToExtra(data),
-    }).eq("id", id).eq("user_id", user.id).select().single();
+    }).eq("id", id).select().single();
+
+    if (user) {
+      query.eq("user_id", user.id);
+    } else {
+      query.is("user_id", null);
+    }
+
+    const { data: updated, error } = await query;
 
     if (error) {
       toast({ title: "Error actualizando", description: error.message, variant: "destructive" });
@@ -134,8 +146,15 @@ export function useWishlist() {
   };
 
   const deleteItem = async (id: string) => {
-    if (!user) return;
-    const { error } = await supabase.from("wishlist").delete().eq("id", id).eq("user_id", user.id);
+    const query = supabase.from("wishlist").delete().eq("id", id);
+
+    if (user) {
+      query.eq("user_id", user.id);
+    } else {
+      query.is("user_id", null);
+    }
+
+    const { error } = await query;
     if (error) {
       toast({ title: "Error eliminando", description: error.message, variant: "destructive" });
     } else {
