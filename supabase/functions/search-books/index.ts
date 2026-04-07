@@ -1,0 +1,63 @@
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const { query } = await req.json()
+    if (!query || typeof query !== 'string' || query.trim().length < 1) {
+      return new Response(JSON.stringify({ error: 'Query is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const apiKey = Deno.env.get('GOOGLE_BOOKS_API_KEY')
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: 'API key not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&langRestrict=es&maxResults=10&key=${apiKey}`
+    const res = await fetch(url)
+    const data = await res.json()
+
+    if (!res.ok) {
+      console.error('Google Books API error:', data)
+      return new Response(JSON.stringify({ error: 'Google Books API error', details: data }), {
+        status: res.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const books = (data.items || []).map((item: any) => {
+      const info = item.volumeInfo || {}
+      return {
+        title: info.title || '',
+        author: (info.authors || []).join(', '),
+        coverUrl: info.imageLinks?.thumbnail?.replace('http://', 'https://') || null,
+        totalPages: info.pageCount || 0,
+        genre: (info.categories || [])[0] || null,
+        description: info.description || null,
+        language: info.language || null,
+      }
+    })
+
+    return new Response(JSON.stringify({ books }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  } catch (err) {
+    console.error('Error:', err)
+    return new Response(JSON.stringify({ error: 'Internal error' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+})

@@ -1,0 +1,1 @@
+ALTER TABLE public.wishlist ADD COLUMN total_pages integer NOT NULL DEFAULT 0;
