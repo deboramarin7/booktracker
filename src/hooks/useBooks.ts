@@ -107,7 +107,7 @@ export function useBooks() {
   useEffect(() => { fetchBooks(); }, [fetchBooks]);
 
   const addBook = async (data: Omit<Book, "id" | "addedAt">) => {
-    if (!user) return;
+    if (!user) throw new Error("Usuario no autenticado");
     const now = new Date().toISOString();
     const startDate = data.status === "reading" ? data.startDate || now.split("T")[0] : data.startDate;
     const endDate = data.status === "finished" ? data.endDate || now.split("T")[0] : data.endDate;
@@ -136,6 +136,7 @@ export function useBooks() {
 
     if (error) {
       toast({ title: "Error añadiendo libro", description: error.message, variant: "destructive" });
+      throw error;
     } else if (inserted) {
       setBooks((prev) => [dbToBook(inserted as DbBook), ...prev]);
       // Auto-remove from wishlist when adding to library
@@ -145,6 +146,53 @@ export function useBooks() {
         .ilike("title", data.title.trim())
         .ilike("author", data.author.trim());
     }
+  };
+
+  const addBooksInBatch = async (booksData: Omit<Book, "id" | "addedAt">[]) => {
+    if (!user) throw new Error("Usuario no autenticado");
+    const now = new Date().toISOString();
+
+    const booksToInsert = booksData.map(data => {
+      const startDate = data.status === "reading" ? data.startDate || now.split("T")[0] : data.startDate;
+      const endDate = data.status === "finished" ? data.endDate || now.split("T")[0] : data.endDate;
+
+      return {
+        user_id: user.id,
+        title: data.title,
+        author: data.author,
+        cover_url: data.coverUrl || null,
+        has_saga: data.hasSaga,
+        saga: data.saga || null,
+        saga_order: data.sagaOrder || null,
+        genre: data.genre,
+        format: data.format,
+        source: data.source,
+        price: data.price || null,
+        start_date: startDate || null,
+        end_date: endDate || null,
+        pages_read: data.pagesRead,
+        total_pages: data.totalPages,
+        rating: data.rating,
+        notes: data.notes,
+        status: data.status,
+        tags: data.tags || [],
+      };
+    });
+
+    const { data: inserted, error } = await supabase
+      .from("books")
+      .insert(booksToInsert)
+      .select();
+
+    if (error) {
+      toast({ title: "Error importando libros", description: error.message, variant: "destructive" });
+      throw error;
+    } else if (inserted) {
+      const newBooks = (inserted as DbBook[]).map(dbToBook);
+      setBooks((prev) => [...newBooks, ...prev]);
+      return newBooks;
+    }
+    return [];
   };
 
   const updateBook = async (id: string, data: Partial<Omit<Book, "id" | "addedAt">>) => {
@@ -208,5 +256,5 @@ export function useBooks() {
     }
   };
 
-  return { books, loading, addBook, updateBook, deleteBook, refetch: fetchBooks };
+  return { books, loading, addBook, addBooksInBatch, updateBook, deleteBook, refetch: fetchBooks };
 }

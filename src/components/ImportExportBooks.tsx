@@ -1,12 +1,12 @@
 import { useRef, useState } from "react";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader as Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { Book } from "@/hooks/useBooks";
 
 interface ImportExportBooksProps {
-  onImport: (books: Omit<Book, "id" | "addedAt">[]) => Promise<void>;
+  onImport: (books: Omit<Book, "id" | "addedAt">[]) => Promise<Book[] | void>;
 }
 
 function parseGoodreadsCSV(text: string): Omit<Book, "id" | "addedAt">[] {
@@ -94,12 +94,15 @@ export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
     if (!preview.length) return;
     setImporting(true);
     try {
-      await onImport(preview);
-      toast({ title: "✅ Importación completada", description: `${preview.length} libros importados` });
+      const result = await onImport(preview);
+      const importedCount = Array.isArray(result) ? result.length : preview.length;
+      toast({ title: "Importación completada", description: `${importedCount} libros importados correctamente` });
       setOpen(false);
       setPreview([]);
-    } catch {
-      toast({ title: "Error", description: "Error al importar", variant: "destructive" });
+      if (fileRef.current) fileRef.current.value = "";
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Error al importar los libros";
+      toast({ title: "Error", description: errorMessage, variant: "destructive" });
     } finally {
       setImporting(false);
     }

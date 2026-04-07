@@ -3,7 +3,7 @@ import { useBooksContext } from "@/components/Layout";
 import { AddBookDialog } from "@/components/AddBookDialog";
 import { ImportBooksDialog } from "@/components/ImportExportBooks";
 import { BookCard } from "@/components/BookCard";
-import { BookOpen, Search, Target, Pencil, Loader2, Download, LayoutGrid, BookMarked, Filter, X } from "lucide-react";
+import { BookOpen, Search, Target, Pencil, Loader as Loader2, Download, LayoutGrid, BookMarked, Filter, X } from "lucide-react";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -48,7 +48,7 @@ const SPINE_COLORS: Record<string, { bg: string; text: string }> = {
 type ViewMode = "cards" | "shelf";
 
 export default function Library() {
-  const { books, loading, addBook, updateBook, deleteBook } = useBooksContext();
+  const { books, loading, addBook, addBooksInBatch, updateBook, deleteBook } = useBooksContext();
   const { addItem: addToWishlist } = useWishlist();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
@@ -294,11 +294,7 @@ export default function Library() {
               <BookMarked className="h-4 w-4" />
             </Button>
           </div>
-          <ImportBooksDialog onImport={async (importedBooks) => {
-            for (const b of importedBooks) {
-              await addBook(b);
-            }
-          }} />
+          <ImportBooksDialog onImport={addBooksInBatch} />
           <Button variant="outline" size="sm" onClick={exportToCSV} title="Exportar a CSV">
             <Download className="h-4 w-4" />
             <span className="hidden sm:inline ml-1">Exportar</span>

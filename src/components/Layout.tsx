@@ -30,6 +30,7 @@ interface BooksContextType {
   books: Book[];
   loading: boolean;
   addBook: (data: Omit<Book, "id" | "addedAt">) => void;
+  addBooksInBatch: (data: Omit<Book, "id" | "addedAt">[]) => Promise<Book[]>;
   updateBook: (id: string, data: Partial<Omit<Book, "id" | "addedAt">>) => void;
   deleteBook: (id: string) => void;
 }
@@ -52,7 +53,7 @@ function getInitials(email?: string, name?: string): string {
 
 export default function Layout() {
   const { user, loading: authLoading, signOut } = useAuth();
-  const { books, loading, addBook, updateBook, deleteBook } = useBooks();
+  const { books, loading, addBook, addBooksInBatch, updateBook, deleteBook } = useBooks();
   const { dark, setDark } = useTheme();
   const [searchEditBook, setSearchEditBook] = useState<Book | null>(null);
 
@@ -85,7 +86,7 @@ export default function Layout() {
   ];
 
   return (
-    <BooksContext.Provider value={{ books, loading, addBook, updateBook, deleteBook }}>
+    <BooksContext.Provider value={{ books, loading, addBook, addBooksInBatch, updateBook, deleteBook }}>
       <div className="min-h-screen">
         <header className="border-b border-border/40 bg-card/90 backdrop-blur-xl sticky top-0 z-10">
           <div className="container flex items-center justify-between py-3">
