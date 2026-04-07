@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 
@@ -81,25 +80,17 @@ function dbToBook(db: DbBook): Book {
 }
 
 export function useBooks() {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchBooks = useCallback(async () => {
     setLoading(true);
-    const query = supabase
+    const { data, error } = await supabase
       .from("books")
       .select("*")
+      .is("user_id", null)
       .order("added_at", { ascending: false });
-
-    if (user) {
-      query.eq("user_id", user.id);
-    } else {
-      query.is("user_id", null);
-    }
-
-    const { data, error } = await query;
 
     if (error) {
       toast({ title: "Error cargando libros", description: error.message, variant: "destructive" });
@@ -107,8 +98,7 @@ export function useBooks() {
       setBooks((data as DbBook[]).map(dbToBook));
     }
     setLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [toast]);
 
   useEffect(() => { fetchBooks(); }, [fetchBooks]);
 
@@ -118,7 +108,7 @@ export function useBooks() {
     const endDate = data.status === "finished" ? data.endDate || now.split("T")[0] : data.endDate;
 
     const { data: inserted, error } = await supabase.from("books").insert({
-      user_id: user?.id || null,
+      user_id: null,
       title: data.title,
       author: data.author,
       cover_url: data.coverUrl || null,
@@ -145,18 +135,11 @@ export function useBooks() {
     } else if (inserted) {
       setBooks((prev) => [dbToBook(inserted as DbBook), ...prev]);
       // Auto-remove from wishlist when adding to library
-      const deleteQuery = supabase.from("wishlist")
+      await supabase.from("wishlist")
         .delete()
+        .is("user_id", null)
         .ilike("title", data.title.trim())
         .ilike("author", data.author.trim());
-
-      if (user) {
-        deleteQuery.eq("user_id", user.id);
-      } else {
-        deleteQuery.is("user_id", null);
-      }
-
-      await deleteQuery;
     }
   };
 
@@ -173,7 +156,7 @@ export function useBooks() {
         const endDate = data.status === "finished" ? data.endDate || now.split("T")[0] : data.endDate;
 
         return {
-          user_id: user?.id || null,
+          user_id: null,
           title: data.title,
           author: data.author,
           cover_url: data.coverUrl || null,
@@ -251,20 +234,13 @@ export function useBooks() {
       updateData.pages_read = data.totalPages ?? currentBook.totalPages;
     }
 
-    const query = supabase
+    const { data: updated, error } = await supabase
       .from("books")
       .update(updateData)
       .eq("id", id)
+      .is("user_id", null)
       .select()
       .single();
-
-    if (user) {
-      query.eq("user_id", user.id);
-    } else {
-      query.is("user_id", null);
-    }
-
-    const { data: updated, error } = await query;
 
     if (error) {
       toast({ title: "Error actualizando libro", description: error.message, variant: "destructive" });
@@ -274,15 +250,11 @@ export function useBooks() {
   };
 
   const deleteBook = async (id: string) => {
-    const query = supabase.from("books").delete().eq("id", id);
-
-    if (user) {
-      query.eq("user_id", user.id);
-    } else {
-      query.is("user_id", null);
-    }
-
-    const { error } = await query;
+    const { error } = await supabase
+      .from("books")
+      .delete()
+      .eq("id", id)
+      .is("user_id", null);
     if (error) {
       toast({ title: "Error eliminando libro", description: error.message, variant: "destructive" });
     } else {

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 export type WishStatus = "Comprado" | "Buscar" | "En biblioteca" | "En kindle";
@@ -72,25 +71,17 @@ function wishToExtra(item: Omit<WishItem, "id">): string {
 }
 
 export function useWishlist() {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [items, setItems] = useState<WishItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
-    const query = supabase
+    const { data, error } = await supabase
       .from("wishlist")
       .select("*")
+      .is("user_id", null)
       .order("added_at", { ascending: false });
-
-    if (user) {
-      query.eq("user_id", user.id);
-    } else {
-      query.is("user_id", null);
-    }
-
-    const { data, error } = await query;
 
     if (error) {
       toast({ title: "Error cargando wishlist", description: error.message, variant: "destructive" });
@@ -98,13 +89,13 @@ export function useWishlist() {
       setItems((data as DbWish[]).map(dbToWish));
     }
     setLoading(false);
-  }, [user, toast]);
+  }, [toast]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
   const addItem = async (data: Omit<WishItem, "id">) => {
     const { data: inserted, error } = await supabase.from("wishlist").insert({
-      user_id: user?.id || null,
+      user_id: null,
       title: data.title,
       author: data.author,
       cover_url: data.coverUrl || null,
@@ -121,22 +112,14 @@ export function useWishlist() {
   };
 
   const updateItem = async (id: string, data: Omit<WishItem, "id">) => {
-    const query = supabase.from("wishlist").update({
+    const { data: updated, error } = await supabase.from("wishlist").update({
       title: data.title,
       author: data.author,
       cover_url: data.coverUrl || null,
       priority: data.priority,
       total_pages: data.totalPages || 0,
       notes: wishToExtra(data),
-    }).eq("id", id).select().single();
-
-    if (user) {
-      query.eq("user_id", user.id);
-    } else {
-      query.is("user_id", null);
-    }
-
-    const { data: updated, error } = await query;
+    }).eq("id", id).is("user_id", null).select().single();
 
     if (error) {
       toast({ title: "Error actualizando", description: error.message, variant: "destructive" });
@@ -146,15 +129,11 @@ export function useWishlist() {
   };
 
   const deleteItem = async (id: string) => {
-    const query = supabase.from("wishlist").delete().eq("id", id);
-
-    if (user) {
-      query.eq("user_id", user.id);
-    } else {
-      query.is("user_id", null);
-    }
-
-    const { error } = await query;
+    const { error } = await supabase
+      .from("wishlist")
+      .delete()
+      .eq("id", id)
+      .is("user_id", null);
     if (error) {
       toast({ title: "Error eliminando", description: error.message, variant: "destructive" });
     } else {

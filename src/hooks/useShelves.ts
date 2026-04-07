@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 export interface Shelf {
@@ -29,7 +28,6 @@ interface DbShelfBook {
 }
 
 export function useShelves() {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [shelves, setShelves] = useState<Shelf[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,18 +35,11 @@ export function useShelves() {
   const fetchShelves = useCallback(async () => {
     setLoading(true);
 
-    const shelvesQuery = supabase
+    const { data: shelvesData, error: shelvesError } = await supabase
       .from("shelves")
       .select("*")
+      .is("user_id", null)
       .order("created_at", { ascending: true });
-
-    if (user) {
-      shelvesQuery.eq("user_id", user.id);
-    } else {
-      shelvesQuery.is("user_id", null);
-    }
-
-    const { data: shelvesData, error: shelvesError } = await shelvesQuery;
 
     if (shelvesError) {
       toast({ title: "Error cargando estanterías", description: shelvesError.message, variant: "destructive" });
@@ -79,13 +70,13 @@ export function useShelves() {
       bookIds: shelfBookMap.get(s.id) || [],
     })));
     setLoading(false);
-  }, [user, toast]);
+  }, [toast]);
 
   useEffect(() => { fetchShelves(); }, [fetchShelves]);
 
   const addShelf = async (name: string, description: string, color: string) => {
     const { data, error } = await supabase.from("shelves").insert({
-      user_id: user?.id || null, name, description, color,
+      user_id: null, name, description, color,
     }).select().single();
 
     if (error) {
@@ -96,15 +87,11 @@ export function useShelves() {
   };
 
   const updateShelf = async (id: string, updates: { name?: string; description?: string; color?: string }) => {
-    const query = supabase.from("shelves").update(updates).eq("id", id);
-
-    if (user) {
-      query.eq("user_id", user.id);
-    } else {
-      query.is("user_id", null);
-    }
-
-    const { error } = await query;
+    const { error } = await supabase
+      .from("shelves")
+      .update(updates)
+      .eq("id", id)
+      .is("user_id", null);
     if (error) {
       toast({ title: "Error actualizando estantería", description: error.message, variant: "destructive" });
     } else {
@@ -113,15 +100,11 @@ export function useShelves() {
   };
 
   const deleteShelf = async (id: string) => {
-    const query = supabase.from("shelves").delete().eq("id", id);
-
-    if (user) {
-      query.eq("user_id", user.id);
-    } else {
-      query.is("user_id", null);
-    }
-
-    const { error } = await query;
+    const { error } = await supabase
+      .from("shelves")
+      .delete()
+      .eq("id", id)
+      .is("user_id", null);
     if (error) {
       toast({ title: "Error eliminando estantería", description: error.message, variant: "destructive" });
     } else {
