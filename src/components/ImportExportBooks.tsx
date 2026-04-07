@@ -43,13 +43,33 @@ function parseGoodreadsCSV(text: string): Omit<Book, "id" | "addedAt">[] {
   const headerCols = parseCSVLine(lines[0]);
   const header = headerCols.map(h => h.trim().toLowerCase());
 
-  const titleIdx = header.findIndex(h => h === "title");
-  const authorIdx = header.findIndex(h => h === "author" || h.includes("author"));
-  const pagesIdx = header.findIndex(h => h === "number of pages" || h === "num pages" || h.includes("pages"));
-  const ratingIdx = header.findIndex(h => h === "my rating" || h.includes("rating"));
-  const shelfIdx = header.findIndex(h => h === "exclusive shelf" || h === "bookshelves" || h.includes("shelf"));
-  const dateReadIdx = header.findIndex(h => h === "date read" || h.includes("date read"));
-  const dateAddedIdx = header.findIndex(h => h === "date added" || h.includes("date added"));
+  const titleIdx = header.findIndex(h =>
+    h === "title" || h === "título" || h === "titulo" || h === "libro" || h === "book"
+  );
+  const authorIdx = header.findIndex(h =>
+    h === "author" || h === "autor" || h === "autora" || h.includes("author") || h.includes("autor")
+  );
+  const pagesIdx = header.findIndex(h =>
+    h === "number of pages" || h === "num pages" || h === "páginas" || h === "paginas" ||
+    h === "pages" || h.includes("pages") || h.includes("página")
+  );
+  const ratingIdx = header.findIndex(h =>
+    h === "my rating" || h === "rating" || h === "puntuación" || h === "puntuacion" ||
+    h === "valoración" || h === "valoracion" || h === "calificación" || h === "calificacion" ||
+    h.includes("rating") || h.includes("puntuación")
+  );
+  const shelfIdx = header.findIndex(h =>
+    h === "exclusive shelf" || h === "bookshelves" || h === "shelf" || h === "estado" ||
+    h === "estante" || h.includes("shelf") || h.includes("estado")
+  );
+  const dateReadIdx = header.findIndex(h =>
+    h === "date read" || h === "fecha de lectura" || h === "fecha leído" || h === "fecha leido" ||
+    h.includes("date read") || h.includes("fecha") && h.includes("lectura")
+  );
+  const dateAddedIdx = header.findIndex(h =>
+    h === "date added" || h === "fecha añadido" || h === "fecha agregado" || h === "fecha" ||
+    h.includes("date added") || h.includes("añadido") || h.includes("agregado")
+  );
 
   const results: Omit<Book, "id" | "addedAt">[] = [];
 
@@ -117,7 +137,7 @@ export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
         if (books.length === 0) {
           toast({
             title: "No se encontraron libros",
-            description: "Verifica que el archivo CSV tenga el formato correcto de Goodreads",
+            description: "Verifica que el CSV tenga columnas como: Título, Autor, Páginas, etc.",
             variant: "destructive"
           });
         }
@@ -180,7 +200,7 @@ export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
       <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display">Importar libros</DialogTitle>
-          <DialogDescription>Importa tu biblioteca desde un CSV de Goodreads u otro formato compatible</DialogDescription>
+          <DialogDescription>Importa tu biblioteca desde cualquier CSV con columnas: Título, Autor, Páginas, etc.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
