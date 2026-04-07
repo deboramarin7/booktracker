@@ -9,18 +9,47 @@ interface ImportExportBooksProps {
   onImport: (books: Omit<Book, "id" | "addedAt">[]) => Promise<Book[] | void>;
 }
 
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      result.push(current);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  result.push(current);
+  return result;
+}
+
 function parseGoodreadsCSV(text: string): Omit<Book, "id" | "addedAt">[] {
-  const lines = text.split("\n");
+  const lines = text.split(/\r?\n/);
   if (lines.length < 2) return [];
 
-  const header = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, "").toLowerCase());
+  const headerCols = parseCSVLine(lines[0]);
+  const header = headerCols.map(h => h.trim().toLowerCase());
+
   const titleIdx = header.findIndex(h => h === "title");
-  const authorIdx = header.findIndex(h => h.includes("author"));
-  const pagesIdx = header.findIndex(h => h.includes("number of pages") || h === "num pages");
-  const ratingIdx = header.findIndex(h => h === "my rating");
-  const shelfIdx = header.findIndex(h => h.includes("exclusive shelf") || h === "bookshelves");
-  const dateReadIdx = header.findIndex(h => h === "date read");
-  const dateAddedIdx = header.findIndex(h => h === "date added");
+  const authorIdx = header.findIndex(h => h === "author" || h.includes("author"));
+  const pagesIdx = header.findIndex(h => h === "number of pages" || h === "num pages" || h.includes("pages"));
+  const ratingIdx = header.findIndex(h => h === "my rating" || h.includes("rating"));
+  const shelfIdx = header.findIndex(h => h === "exclusive shelf" || h === "bookshelves" || h.includes("shelf"));
+  const dateReadIdx = header.findIndex(h => h === "date read" || h.includes("date read"));
+  const dateAddedIdx = header.findIndex(h => h === "date added" || h.includes("date added"));
 
   const results: Omit<Book, "id" | "addedAt">[] = [];
 
@@ -28,44 +57,41 @@ function parseGoodreadsCSV(text: string): Omit<Book, "id" | "addedAt">[] {
     const line = lines[i].trim();
     if (!line) continue;
 
-    // Simple CSV parse (handle quoted fields)
-    const cols: string[] = [];
-    let current = "";
-    let inQuotes = false;
-    for (const char of line) {
-      if (char === '"') { inQuotes = !inQuotes; continue; }
-      if (char === "," && !inQuotes) { cols.push(current.trim()); current = ""; continue; }
-      current += char;
+    try {
+      const cols = parseCSVLine(line);
+
+      const title = titleIdx >= 0 ? cols[titleIdx]?.trim() || "" : "";
+      const author = authorIdx >= 0 ? cols[authorIdx]?.trim() || "" : "";
+
+      if (!title || !author) continue;
+
+      const shelf = shelfIdx >= 0 ? (cols[shelfIdx]?.trim() || "").toLowerCase() : "";
+      const status = shelf === "currently-reading" ? "reading" as const : "finished" as const;
+      const rating = ratingIdx >= 0 ? Math.min(5, Math.max(0, parseInt(cols[ratingIdx]) || 0)) : 0;
+      const totalPages = pagesIdx >= 0 ? parseInt(cols[pagesIdx]?.replace(/\D/g, '') || "0") || 0 : 0;
+      const dateRead = dateReadIdx >= 0 ? cols[dateReadIdx]?.trim() || "" : "";
+      const dateAdded = dateAddedIdx >= 0 ? cols[dateAddedIdx]?.trim() || "" : "";
+
+      results.push({
+        title,
+        author,
+        hasSaga: false,
+        genre: "",
+        format: "",
+        source: "",
+        status,
+        totalPages,
+        pagesRead: status === "finished" ? totalPages : 0,
+        rating,
+        notes: "",
+        tags: [],
+        startDate: dateAdded || undefined,
+        endDate: dateRead || undefined,
+      });
+    } catch (error) {
+      console.error(`Error parsing line ${i}:`, error);
+      continue;
     }
-    cols.push(current.trim());
-
-    const title = titleIdx >= 0 ? cols[titleIdx] : "";
-    const author = authorIdx >= 0 ? cols[authorIdx] : "";
-    if (!title || !author) continue;
-
-    const shelf = shelfIdx >= 0 ? cols[shelfIdx]?.toLowerCase() : "";
-    const status = shelf === "currently-reading" ? "reading" as const : "finished" as const;
-    const rating = ratingIdx >= 0 ? Math.min(5, Math.max(0, parseInt(cols[ratingIdx]) || 0)) : 0;
-    const totalPages = pagesIdx >= 0 ? parseInt(cols[pagesIdx]) || 0 : 0;
-    const dateRead = dateReadIdx >= 0 ? cols[dateReadIdx] : "";
-    const dateAdded = dateAddedIdx >= 0 ? cols[dateAddedIdx] : "";
-
-    results.push({
-      title,
-      author,
-      hasSaga: false,
-      genre: "",
-      format: "",
-      source: "",
-      status,
-      totalPages,
-      pagesRead: status === "finished" ? totalPages : 0,
-      rating,
-      notes: "",
-      tags: [],
-      startDate: dateAdded || undefined,
-      endDate: dateRead || undefined,
-    });
   }
 
   return results;
@@ -83,9 +109,34 @@ export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      const text = reader.result as string;
-      const books = parseGoodreadsCSV(text);
-      setPreview(books);
+      try {
+        const text = reader.result as string;
+        console.log('CSV text loaded, length:', text.length);
+        const books = parseGoodreadsCSV(text);
+        console.log('Books parsed:', books.length);
+        if (books.length === 0) {
+          toast({
+            title: "No se encontraron libros",
+            description: "Verifica que el archivo CSV tenga el formato correcto de Goodreads",
+            variant: "destructive"
+          });
+        }
+        setPreview(books);
+      } catch (error) {
+        console.error('Error loading CSV:', error);
+        toast({
+          title: "Error al leer el archivo",
+          description: error instanceof Error ? error.message : "Error desconocido",
+          variant: "destructive"
+        });
+      }
+    };
+    reader.onerror = () => {
+      toast({
+        title: "Error al leer el archivo",
+        description: "No se pudo leer el archivo CSV",
+        variant: "destructive"
+      });
     };
     reader.readAsText(file);
   };
@@ -94,15 +145,25 @@ export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
     if (!preview.length) return;
     setImporting(true);
     try {
+      console.log('Starting import of', preview.length, 'books');
       const result = await onImport(preview);
+      console.log('Import result:', result);
       const importedCount = Array.isArray(result) ? result.length : preview.length;
-      toast({ title: "Importación completada", description: `${importedCount} libros importados correctamente` });
+      toast({
+        title: "Importación completada",
+        description: `${importedCount} libro${importedCount !== 1 ? 's' : ''} importado${importedCount !== 1 ? 's' : ''} correctamente`
+      });
       setOpen(false);
       setPreview([]);
       if (fileRef.current) fileRef.current.value = "";
     } catch (error) {
+      console.error('Import error:', error);
       const errorMessage = error instanceof Error ? error.message : "Error al importar los libros";
-      toast({ title: "Error", description: errorMessage, variant: "destructive" });
+      toast({
+        title: "Error al importar",
+        description: errorMessage,
+        variant: "destructive"
+      });
     } finally {
       setImporting(false);
     }
