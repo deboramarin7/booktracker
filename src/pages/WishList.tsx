@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { WishItem, WishStatus } from "@/hooks/useWishlist";
-import { Heart, Plus, Pencil, Trash2, BookHeart, BookOpen, Loader2, Search, Filter, BookMarked, Flame } from "lucide-react";
+import { Heart, Plus, Pencil, Trash2, BookHeart, BookOpen, Loader as Loader2, Search, Filter, BookMarked, Flame } from "lucide-react";
 import { useBooksContext } from "@/components/Layout";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -327,10 +327,6 @@ function WishListContent() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Buscar por título, autor o saga..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 font-body" />
           </div>
-          <WishForm
-            onSave={addItem}
-            trigger={<Button size="sm" className="gap-1.5 shrink-0"><Plus className="h-4 w-4" /> Añadir</Button>}
-          />
         </div>
         <div className="flex flex-wrap gap-2">
           <Select value={filterGenre} onValueChange={setFilterGenre}>

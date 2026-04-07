@@ -48,7 +48,7 @@ const SPINE_COLORS: Record<string, { bg: string; text: string }> = {
 type ViewMode = "cards" | "shelf";
 
 export default function Library() {
-  const { books, loading, addBook, addBooksInBatch, updateBook, deleteBook } = useBooksContext();
+  const { books, loading, addBook, addBooksInBatch, updateBook, deleteBook, addWishItem } = useBooksContext();
   const { addItem: addToWishlist } = useWishlist();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
@@ -299,7 +299,7 @@ export default function Library() {
             <Download className="h-4 w-4" />
             <span className="hidden sm:inline ml-1">Exportar</span>
           </Button>
-          <AddBookDialog onAdd={addBook} />
+          <AddBookDialog onAdd={addBook} onAddToWishlist={addWishItem} />
         </div>
       </div>
 

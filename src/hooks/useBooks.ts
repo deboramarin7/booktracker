@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 
-export type ReadingStatus = "reading" | "finished";
+export type ReadingStatus = "want-to-read" | "reading" | "finished";
 
 export interface Book {
   id: string;

@@ -14,11 +14,13 @@ export const FORMATS = ["Físico", "Digital"];
 export const SOURCES = ["Comprado", "Gratis"];
 
 export const STATUSES: { value: ReadingStatus; label: string }[] = [
+  { value: "want-to-read", label: "Quiero leer" },
   { value: "reading", label: "Leyendo" },
   { value: "finished", label: "Terminado" },
 ];
 
 export const STATUS_LABELS: Record<string, string> = {
+  "want-to-read": "Quiero leer",
   reading: "Leyendo",
   finished: "Terminado",
 };
@@ -36,6 +38,7 @@ export const GENRE_COLORS: Record<string, string> = {
 
 // Color classes for statuses
 export const STATUS_COLORS: Record<string, string> = {
+  "want-to-read": "bg-yellow-500/10 text-yellow-700 border-yellow-500/20",
   reading: "bg-primary text-primary-foreground",
   finished: "bg-finished text-finished-foreground",
 };

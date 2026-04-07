@@ -9,13 +9,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Plus } from "lucide-react";
 import type { ReadingStatus, Book } from "@/hooks/useBooks";
+import type { WishItem } from "@/hooks/useWishlist";
 import { GENRES, FORMATS, SOURCES, STATUSES } from "@/lib/constants";
+import { useToast } from "@/hooks/use-toast";
 
 interface AddBookDialogProps {
   onAdd: (data: Omit<Book, "id" | "addedAt">) => void;
+  onAddToWishlist?: (data: Omit<WishItem, "id">) => void;
 }
 
-export function AddBookDialog({ onAdd }: AddBookDialogProps) {
+export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
@@ -46,26 +50,43 @@ export function AddBookDialog({ onAdd }: AddBookDialogProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !author.trim()) return;
-    onAdd({
-      title: title.trim(),
-      author: author.trim(),
-      coverUrl: coverUrl.trim() || undefined,
-      hasSaga,
-      saga: hasSaga ? sagaName.trim() || undefined : undefined,
-      sagaOrder: hasSaga ? sagaOrder.trim() || undefined : undefined,
-      genre,
-      format,
-      source,
-      price: source === "Comprado" ? price.trim() || undefined : undefined,
-      status,
-      totalPages: Number(totalPages) || 0,
-      pagesRead: status === "finished" ? (Number(totalPages) || 0) : (Number(pagesRead) || 0),
-      startDate: startDate || undefined,
-      endDate: endDate || undefined,
-      rating: status === "finished" ? (Number(rating) || 0) : 0,
-      notes: "",
-      tags,
-    });
+
+    if (status === "want-to-read" && onAddToWishlist) {
+      onAddToWishlist({
+        title: title.trim(),
+        author: author.trim(),
+        coverUrl: coverUrl.trim() || undefined,
+        hasSaga,
+        saga: hasSaga ? sagaName.trim() || undefined : undefined,
+        sagaOrder: hasSaga ? sagaOrder.trim() || undefined : undefined,
+        genre,
+        priority: 3,
+        status: "Buscar",
+        totalPages: Number(totalPages) || 0,
+      });
+      toast({ title: "Añadido a Wish List", description: `"${title.trim()}" se ha añadido a tu lista de deseos` });
+    } else {
+      onAdd({
+        title: title.trim(),
+        author: author.trim(),
+        coverUrl: coverUrl.trim() || undefined,
+        hasSaga,
+        saga: hasSaga ? sagaName.trim() || undefined : undefined,
+        sagaOrder: hasSaga ? sagaOrder.trim() || undefined : undefined,
+        genre,
+        format,
+        source,
+        price: source === "Comprado" ? price.trim() || undefined : undefined,
+        status,
+        totalPages: Number(totalPages) || 0,
+        pagesRead: status === "finished" ? (Number(totalPages) || 0) : (Number(pagesRead) || 0),
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        rating: status === "finished" ? (Number(rating) || 0) : 0,
+        notes: "",
+        tags,
+      });
+    }
     reset();
     setOpen(false);
   };
@@ -136,31 +157,35 @@ export function AddBookDialog({ onAdd }: AddBookDialogProps) {
                 <SelectContent>{GENRES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label className="font-body text-sm">Formato</Label>
-              <Select value={format} onValueChange={setFormat}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{FORMATS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Procedencia + Precio */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="font-body text-sm">Procedencia</Label>
-              <Select value={source} onValueChange={setSource}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{SOURCES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            {source === "Comprado" && (
-              <div className="space-y-1.5 animate-fade-in">
-                <Label className="font-body text-sm">Precio</Label>
-                <Input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="22.90 €" />
+            {status !== "want-to-read" && (
+              <div className="space-y-1.5">
+                <Label className="font-body text-sm">Formato</Label>
+                <Select value={format} onValueChange={setFormat}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{FORMATS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent>
+                </Select>
               </div>
             )}
           </div>
+
+          {/* Procedencia + Precio - only if not want-to-read */}
+          {status !== "want-to-read" && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="font-body text-sm">Procedencia</Label>
+                <Select value={source} onValueChange={setSource}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{SOURCES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              {source === "Comprado" && (
+                <div className="space-y-1.5 animate-fade-in">
+                  <Label className="font-body text-sm">Precio</Label>
+                  <Input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="22.90 €" />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Estado */}
           <div className="grid grid-cols-2 gap-3">
@@ -188,20 +213,22 @@ export function AddBookDialog({ onAdd }: AddBookDialogProps) {
           )}
 
           {/* Dates */}
-          <div className="grid grid-cols-2 gap-3">
-            {(status === "reading" || status === "finished") && (
-              <div className="space-y-1.5 animate-fade-in">
-                <Label className="font-body text-sm">Fecha inicio</Label>
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-              </div>
-            )}
-            {status === "finished" && (
-              <div className="space-y-1.5 animate-fade-in">
-                <Label className="font-body text-sm">Fecha fin</Label>
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-              </div>
-            )}
-          </div>
+          {status !== "want-to-read" && (
+            <div className="grid grid-cols-2 gap-3">
+              {(status === "reading" || status === "finished") && (
+                <div className="space-y-1.5 animate-fade-in">
+                  <Label className="font-body text-sm">Fecha inicio</Label>
+                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                </div>
+              )}
+              {status === "finished" && (
+                <div className="space-y-1.5 animate-fade-in">
+                  <Label className="font-body text-sm">Fecha fin</Label>
+                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Rating - only finished */}
           {status === "finished" && (
@@ -211,10 +238,12 @@ export function AddBookDialog({ onAdd }: AddBookDialogProps) {
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <Label className="font-body text-sm">Etiquetas</Label>
-            <TagInput tags={tags} onChange={setTags} placeholder="vacaciones, recomendado..." />
-          </div>
+          {status !== "want-to-read" && (
+            <div className="space-y-1.5">
+              <Label className="font-body text-sm">Etiquetas</Label>
+              <TagInput tags={tags} onChange={setTags} placeholder="vacaciones, recomendado..." />
+            </div>
+          )}
 
           <Button type="submit" className="w-full font-body">Agregar libro</Button>
         </form>

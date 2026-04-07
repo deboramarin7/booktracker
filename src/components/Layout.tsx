@@ -3,6 +3,8 @@ import { Outlet, NavLink } from "react-router-dom";
 import { BookOpen, Menu, Moon, Sun, Sparkles } from "lucide-react";
 import { useBooks } from "@/hooks/useBooks";
 import type { Book } from "@/hooks/useBooks";
+import { useWishlist } from "@/hooks/useWishlist";
+import type { WishItem } from "@/hooks/useWishlist";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
 import { GlobalSearch } from "@/components/GlobalSearch";
@@ -21,6 +23,7 @@ interface BooksContextType {
   addBooksInBatch: (data: Omit<Book, "id" | "addedAt">[]) => Promise<Book[]>;
   updateBook: (id: string, data: Partial<Omit<Book, "id" | "addedAt">>) => void;
   deleteBook: (id: string) => void;
+  addWishItem: (data: Omit<WishItem, "id">) => void;
 }
 
 const BooksContext = createContext<BooksContextType | null>(null);
@@ -33,6 +36,7 @@ export function useBooksContext() {
 
 export default function Layout() {
   const { books, loading, addBook, addBooksInBatch, updateBook, deleteBook } = useBooks();
+  const { addItem: addWishItem } = useWishlist();
   const { dark, setDark } = useTheme();
   const [searchEditBook, setSearchEditBook] = useState<Book | null>(null);
 
@@ -48,7 +52,7 @@ export default function Layout() {
   ];
 
   return (
-    <BooksContext.Provider value={{ books, loading, addBook, addBooksInBatch, updateBook, deleteBook }}>
+    <BooksContext.Provider value={{ books, loading, addBook, addBooksInBatch, updateBook, deleteBook, addWishItem }}>
       <div className="min-h-screen">
         <header className="border-b border-border/40 bg-card/90 backdrop-blur-xl sticky top-0 z-10">
           <div className="container flex items-center justify-between py-3">
