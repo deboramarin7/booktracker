@@ -141,10 +141,18 @@ function normalizeRows(rows: string[][]): ParsedBookWithISBN[] {
   return results;
 }
 
-async function fetchCoverUrl(searchQuery: string): Promise<string | undefined> {
+async function fetchCoverUrl(book: ParsedBookWithISBN): Promise<string | undefined> {
   try {
+    if (book._isbn) {
+      const isbnUrl = `https://covers.openlibrary.org/b/isbn/${book._isbn}-L.jpg`
+      const check = await fetch(isbnUrl, { method: "HEAD" })
+      if (check.ok && check.headers.get("content-type")?.startsWith("image")) {
+        return isbnUrl
+      }
+    }
+
     const { data, error } = await supabase.functions.invoke("search-books", {
-      body: { query: searchQuery },
+      body: { title: book.title, author: book.author },
     });
     if (error || !data?.books?.length) return undefined;
     return data.books[0]?.coverUrl || undefined;
@@ -167,7 +175,7 @@ async function enrichBooksWithCovers(
       batch.map(async (book, batchIdx) => {
         const idx = i + batchIdx;
         const { _isbn: _i, _searchQuery, ...rest } = book;
-        const coverUrl = _searchQuery ? await fetchCoverUrl(_searchQuery) : undefined;
+        const coverUrl = await fetchCoverUrl(book);
         results[idx] = { ...rest, coverUrl: coverUrl || undefined };
         completed++;
         onProgress(completed, books.length);
