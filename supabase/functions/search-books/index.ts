@@ -53,7 +53,7 @@ function isGoodMatch(item: any, searchTitle: string, searchAuthor: string): bool
   const normLastName = normalize(lastNameOnly(searchAuthor))
   const normSearchAuthor = normalize(cleanAuthor(searchAuthor))
 
-  const meaningfulWords = (s: string) => s.split(' ').filter((w: string) => w.length > 3)
+  const meaningfulWords = (s: string) => s.split(' ').filter((w: string) => w.length >= 3)
 
   const titleMatch =
     resultTitle.includes(normSearchTitle) ||
