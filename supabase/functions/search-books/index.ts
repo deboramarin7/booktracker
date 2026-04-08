@@ -26,10 +26,40 @@ function lastNameOnly(author: string): string {
   return parts[parts.length - 1]
 }
 
+function normalize(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function titleMatches(searchTitle: string, resultTitle: string): boolean {
+  if (!resultTitle) return false
+  const st = normalize(cleanTitle(searchTitle))
+  const rt = normalize(cleanTitle(resultTitle))
+  if (st === rt) return true
+  if (rt.includes(st) || st.includes(rt)) return true
+  const stWords = st.split(' ').filter(w => w.length > 3)
+  if (stWords.length === 0) return st === rt
+  const matchCount = stWords.filter(w => rt.includes(w)).length
+  return matchCount / stWords.length >= 0.6
+}
+
+function authorMatches(searchAuthor: string, resultAuthor: string): boolean {
+  if (!resultAuthor || !searchAuthor) return true
+  const sa = normalize(cleanAuthor(searchAuthor))
+  const ra = normalize(resultAuthor)
+  const saLast = normalize(lastNameOnly(searchAuthor))
+  return ra.includes(saLast) || sa.split(' ').some(part => part.length > 3 && ra.includes(part))
+}
+
 async function searchGoogleBooks(query: string, apiKey?: string): Promise<any[]> {
   try {
     const keyParam = apiKey ? `&key=${apiKey}` : ''
-    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&langRestrict=&printType=books${keyParam}`
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&printType=books${keyParam}`
     const res = await fetch(url)
     if (!res.ok) return []
     const data = await res.json()
@@ -114,13 +144,15 @@ async function searchOpenLibraryByTitle(title: string, author: string): Promise<
     ].filter(Boolean) as string[]
 
     for (const q of queries) {
-      const url = `https://openlibrary.org/search.json?${q}&fields=key,cover_i,isbn,editions&limit=10`
+      const url = `https://openlibrary.org/search.json?${q}&fields=key,cover_i,isbn,title,author_name&limit=10`
       const res = await fetch(url)
       if (!res.ok) continue
       const data = await res.json()
       const docs = data.docs || []
 
       for (const doc of docs) {
+        if (!titleMatches(title, doc.title || '')) continue
+
         if (doc.cover_i) {
           return `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
         }
@@ -136,19 +168,6 @@ async function searchOpenLibraryByTitle(title: string, author: string): Promise<
         }
       }
     }
-    return null
-  } catch {
-    return null
-  }
-}
-
-async function searchInventioLibrisCovers(title: string, author: string): Promise<string | null> {
-  try {
-    const queries = [
-      `intitle:${cleanTitle(title)} inauthor:${lastNameOnly(author)}`,
-      `${cleanTitle(title)} ${lastNameOnly(author)}`,
-      cleanTitle(title),
-    ]
     return null
   } catch {
     return null
@@ -185,6 +204,11 @@ async function findBestCover(title: string, author: string, isbn?: string, apiKe
   for (const q of googleStrategies) {
     const items = await searchGoogleBooks(q, apiKey)
     for (const item of items) {
+      const info = item.volumeInfo || {}
+      const resultTitle = info.title || ''
+      const resultAuthor = (info.authors || []).join(', ')
+      if (!titleMatches(title, resultTitle)) continue
+      if (!authorMatches(author, resultAuthor)) continue
       const cover = extractCoverFromGoogleItem(item)
       if (cover) return cover
     }
@@ -215,15 +239,33 @@ Deno.serve(async (req: Request) => {
     const apiKey = Deno.env.get('GOOGLE_BOOKS_API_KEY')
     const ct = title ? cleanTitle(title) : ''
     const ca = author ? cleanAuthor(author) : ''
+    const ln = author ? lastNameOnly(author) : ''
 
     if (title) {
-      const googleQuery = ca ? `intitle:${ct} inauthor:${ca}` : `intitle:${ct}`
-      let items = await searchGoogleBooks(googleQuery, apiKey)
-      if (!items.length) {
-        items = await searchGoogleBooks(ct, apiKey)
+      const googleStrategies = ca
+        ? [
+            `intitle:${ct} inauthor:${ca}`,
+            `intitle:${ct} inauthor:${ln}`,
+            ct,
+          ]
+        : [`intitle:${ct}`, ct]
+
+      let items: any[] = []
+      for (const q of googleStrategies) {
+        items = await searchGoogleBooks(q, apiKey)
+        if (items.length > 0) break
       }
 
-      let books = extractBooks(items)
+      const matchingItems = items.filter((item: any) => {
+        const info = item.volumeInfo || {}
+        const resultTitle = info.title || ''
+        const resultAuthor = (info.authors || []).join(', ')
+        return titleMatches(title, resultTitle) && authorMatches(author || '', resultAuthor)
+      })
+
+      const itemsToUse = matchingItems.length > 0 ? matchingItems : items
+
+      let books = extractBooks(itemsToUse)
 
       const enriched = await Promise.all(
         books.map(async (book) => {
@@ -240,8 +282,8 @@ Deno.serve(async (req: Request) => {
             enriched[0].coverUrl = cover
           } else {
             enriched.push({
-              title: ct,
-              author: ca,
+              title: ct || title,
+              author: ca || author || '',
               coverUrl: cover,
               totalPages: 0,
               genre: null,
