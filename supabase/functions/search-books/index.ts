@@ -225,6 +225,23 @@ async function searchAmazonCover(isbn: string): Promise<string | null> {
     return core + (check === 10 ? 'X' : String(check))
   }
 
+  async function isRealCover(url: string): Promise<boolean> {
+    try {
+      const headRes = await fetch(url, { method: 'HEAD' })
+      if (!headRes.ok) return false
+      if (!headRes.headers.get('content-type')?.startsWith('image/jpeg')) return false
+      const size = parseInt(headRes.headers.get('content-length') || '0')
+      if (size > 15000) return true
+      if (size > 0 && size <= 15000) return false
+      const getRes = await fetch(url, { headers: { Range: 'bytes=0-32767' } })
+      if (!getRes.ok) return false
+      const buf = await getRes.arrayBuffer()
+      return buf.byteLength > 15000
+    } catch {
+      return false
+    }
+  }
+
   try {
     const isbn10 = isbn13ToIsbn10(isbn) || isbn
     const urls = [
@@ -232,11 +249,7 @@ async function searchAmazonCover(isbn: string): Promise<string | null> {
       `https://images-na.ssl-images-amazon.com/images/P/${isbn10}.01._SX300_.jpg`,
     ]
     for (const url of urls) {
-      const res = await fetch(url, { method: 'HEAD' })
-      if (res.ok && res.headers.get('content-type')?.startsWith('image/jpeg')) {
-        const size = parseInt(res.headers.get('content-length') || '0')
-        if (size > 5000) return url
-      }
+      if (await isRealCover(url)) return url
     }
   } catch {}
   return null
