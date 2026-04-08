@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { useToast } from "@/hooks/use-toast";
 import type { Book } from "@/hooks/useBooks";
 import * as XLSX from "xlsx";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ImportExportBooksProps {
   onImport: (books: Omit<Book, "id" | "addedAt">[]) => Promise<Book[] | void>;
@@ -37,7 +38,16 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
-function normalizeRows(rows: string[][]): Omit<Book, "id" | "addedAt">[] {
+interface ParsedBookWithISBN extends Omit<Book, "id" | "addedAt"> {
+  _isbn?: string;
+  _searchQuery?: string;
+}
+
+function cleanIsbn(raw: string): string {
+  return raw.replace(/[^0-9X]/gi, "").trim();
+}
+
+function normalizeRows(rows: string[][]): ParsedBookWithISBN[] {
   if (rows.length < 2) return [];
 
   const headerCols = rows[0];
@@ -70,8 +80,16 @@ function normalizeRows(rows: string[][]): Omit<Book, "id" | "addedAt">[] {
     h === "date added" || h === "fecha añadido" || h === "fecha agregado" || h === "fecha" ||
     h.includes("date added") || h.includes("añadido") || h.includes("agregado")
   );
+  const isbnIdx = header.findIndex(h => h === "isbn" || h === "isbn13");
+  const isbn13Idx = header.findIndex(h => h === "isbn13");
+  const notesIdx = header.findIndex(h =>
+    h === "my review" || h === "review" || h === "notes" || h === "notas" || h === "reseña"
+  );
+  const formatIdx = header.findIndex(h =>
+    h === "binding" || h === "format" || h === "formato" || h === "encuadernación"
+  );
 
-  const results: Omit<Book, "id" | "addedAt">[] = [];
+  const results: ParsedBookWithISBN[] = [];
 
   for (let i = 1; i < rows.length; i++) {
     const cols = rows[i];
@@ -89,22 +107,30 @@ function normalizeRows(rows: string[][]): Omit<Book, "id" | "addedAt">[] {
       const totalPages = pagesIdx >= 0 ? parseInt(String(cols[pagesIdx] ?? "0").replace(/\D/g, '') || "0") || 0 : 0;
       const dateRead = dateReadIdx >= 0 ? String(cols[dateReadIdx] ?? "").trim() : "";
       const dateAdded = dateAddedIdx >= 0 ? String(cols[dateAddedIdx] ?? "").trim() : "";
+      const notes = notesIdx >= 0 ? String(cols[notesIdx] ?? "").replace(/<br\s*\/?>/gi, "\n").trim() : "";
+      const format = formatIdx >= 0 ? String(cols[formatIdx] ?? "").trim() : "";
+
+      const rawIsbn13 = isbn13Idx >= 0 ? cleanIsbn(String(cols[isbn13Idx] ?? "")) : "";
+      const rawIsbn = isbnIdx >= 0 ? cleanIsbn(String(cols[isbnIdx] ?? "")) : "";
+      const isbn = rawIsbn13 || rawIsbn;
 
       results.push({
         title,
         author,
         hasSaga: false,
         genre: "",
-        format: "",
+        format,
         source: "",
         status,
         totalPages,
         pagesRead: status === "finished" ? totalPages : 0,
         rating,
-        notes: "",
+        notes,
         tags: [],
         startDate: dateAdded || undefined,
         endDate: dateRead || undefined,
+        _isbn: isbn || undefined,
+        _searchQuery: isbn ? `isbn:${isbn}` : `intitle:${title} inauthor:${author}`,
       });
     } catch (error) {
       console.error(`Error parsing row ${i}:`, error);
@@ -115,13 +141,50 @@ function normalizeRows(rows: string[][]): Omit<Book, "id" | "addedAt">[] {
   return results;
 }
 
-function parseCSV(text: string): Omit<Book, "id" | "addedAt">[] {
+async function fetchCoverUrl(searchQuery: string): Promise<string | undefined> {
+  try {
+    const { data, error } = await supabase.functions.invoke("search-books", {
+      body: { query: searchQuery },
+    });
+    if (error || !data?.books?.length) return undefined;
+    return data.books[0]?.coverUrl || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function enrichBooksWithCovers(
+  books: ParsedBookWithISBN[],
+  onProgress: (current: number, total: number) => void
+): Promise<Omit<Book, "id" | "addedAt">[]> {
+  const CONCURRENCY = 5;
+  const results: Omit<Book, "id" | "addedAt">[] = new Array(books.length);
+  let completed = 0;
+
+  for (let i = 0; i < books.length; i += CONCURRENCY) {
+    const batch = books.slice(i, i + CONCURRENCY);
+    await Promise.all(
+      batch.map(async (book, batchIdx) => {
+        const idx = i + batchIdx;
+        const { _isbn: _i, _searchQuery, ...rest } = book;
+        const coverUrl = _searchQuery ? await fetchCoverUrl(_searchQuery) : undefined;
+        results[idx] = { ...rest, coverUrl: coverUrl || undefined };
+        completed++;
+        onProgress(completed, books.length);
+      })
+    );
+  }
+
+  return results;
+}
+
+function parseCSV(text: string): ParsedBookWithISBN[] {
   const lines = text.split(/\r?\n/);
   const rows = lines.map(line => parseCSVLine(line));
   return normalizeRows(rows);
 }
 
-function parseExcel(buffer: ArrayBuffer): Omit<Book, "id" | "addedAt">[] {
+function parseExcel(buffer: ArrayBuffer): ParsedBookWithISBN[] {
   const workbook = XLSX.read(buffer, { type: "array" });
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
@@ -132,7 +195,9 @@ function parseExcel(buffer: ArrayBuffer): Omit<Book, "id" | "addedAt">[] {
 export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
   const [open, setOpen] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [preview, setPreview] = useState<Omit<Book, "id" | "addedAt">[]>([]);
+  const [fetchingCovers, setFetchingCovers] = useState(false);
+  const [coverProgress, setCoverProgress] = useState({ current: 0, total: 0 });
+  const [preview, setPreview] = useState<ParsedBookWithISBN[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -192,12 +257,25 @@ export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
 
   const handleImport = async () => {
     if (!preview.length) return;
+    setFetchingCovers(true);
+    setCoverProgress({ current: 0, total: preview.length });
+    let enriched: Omit<Book, "id" | "addedAt">[];
+    try {
+      enriched = await enrichBooksWithCovers(preview, (current, total) => {
+        setCoverProgress({ current, total });
+      });
+    } catch {
+      enriched = preview.map(({ _isbn: _i, _searchQuery: _q, ...rest }) => rest);
+    } finally {
+      setFetchingCovers(false);
+    }
+
     setImporting(true);
     try {
-      const result = await onImport(preview);
-      const importedCount = Array.isArray(result) ? result.length : preview.length;
+      const result = await onImport(enriched);
+      const importedCount = Array.isArray(result) ? result.length : enriched.length;
       toast({
-        title: "Importación completada",
+        title: "Importacion completada",
         description: `${importedCount} libro${importedCount !== 1 ? 's' : ''} importado${importedCount !== 1 ? 's' : ''} correctamente`
       });
       setOpen(false);
@@ -254,8 +332,14 @@ export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
                 ))}
                 {preview.length > 20 && <div className="p-2 text-center text-xs text-muted-foreground">...y {preview.length - 20} más</div>}
               </div>
-              <Button onClick={handleImport} disabled={importing} className="w-full">
-                {importing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Importando...</> : `Importar ${preview.length} libros`}
+              <Button onClick={handleImport} disabled={importing || fetchingCovers} className="w-full">
+                {fetchingCovers ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Buscando portadas... {coverProgress.current}/{coverProgress.total}</>
+                ) : importing ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Importando...</>
+                ) : (
+                  `Importar ${preview.length} libros con portadas`
+                )}
               </Button>
             </>
           )}
