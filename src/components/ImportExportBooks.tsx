@@ -6,8 +6,16 @@ import { useToast } from "@/hooks/use-toast";
 import type { Book } from "@/hooks/useBooks";
 import * as XLSX from "xlsx";
 
+interface WishlistImportItem {
+  title: string;
+  author: string;
+  coverUrl?: string;
+  totalPages: number;
+}
+
 interface ImportExportBooksProps {
   onImport: (books: Omit<Book, "id" | "addedAt">[]) => Promise<Book[] | void>;
+  onImportWishlist?: (items: WishlistImportItem[]) => Promise<void>;
 }
 
 function parseCSVLine(line: string): string[] {
@@ -40,6 +48,7 @@ function parseCSVLine(line: string): string[] {
 interface ParsedBookWithISBN extends Omit<Book, "id" | "addedAt"> {
   _isbn?: string;
   _searchQuery?: string;
+  _isWishlist?: boolean;
 }
 
 function fixEncoding(str: string): string {
@@ -109,7 +118,8 @@ function normalizeRows(rows: string[][]): ParsedBookWithISBN[] {
       if (!title || !author) continue;
 
       const shelf = shelfIdx >= 0 ? String(cols[shelfIdx] ?? "").trim().toLowerCase() : "";
-      const status = shelf === "currently-reading" ? "reading" as const : "finished" as const;
+      const isWishlist = shelf === "to-read" || shelf === "quiero-leer" || shelf === "quiero leer" || shelf === "want to read";
+      const status = shelf === "currently-reading" || shelf === "leyendo" ? "reading" as const : "finished" as const;
       const rating = ratingIdx >= 0 ? Math.min(5, Math.max(0, parseInt(String(cols[ratingIdx] ?? "0")) || 0)) : 0;
       const totalPages = pagesIdx >= 0 ? parseInt(String(cols[pagesIdx] ?? "0").replace(/\D/g, '') || "0") || 0 : 0;
       const dateRead = dateReadIdx >= 0 ? String(cols[dateReadIdx] ?? "").trim() : "";
@@ -138,6 +148,7 @@ function normalizeRows(rows: string[][]): ParsedBookWithISBN[] {
         endDate: dateRead || undefined,
         _isbn: isbn || undefined,
         _searchQuery: isbn ? `isbn:${isbn}` : `intitle:${title} inauthor:${author}`,
+        _isWishlist: isWishlist,
       });
     } catch (error) {
       console.error(`Error parsing row ${i}:`, error);
@@ -173,9 +184,9 @@ async function fetchCoverUrl(book: ParsedBookWithISBN): Promise<string | undefin
 async function enrichBooksWithCovers(
   books: ParsedBookWithISBN[],
   onProgress: (current: number, total: number) => void
-): Promise<Omit<Book, "id" | "addedAt">[]> {
+): Promise<ParsedBookWithISBN[]> {
   const CONCURRENCY = 5;
-  const results: Omit<Book, "id" | "addedAt">[] = new Array(books.length);
+  const results: ParsedBookWithISBN[] = new Array(books.length);
   let completed = 0;
 
   for (let i = 0; i < books.length; i += CONCURRENCY) {
@@ -183,9 +194,8 @@ async function enrichBooksWithCovers(
     await Promise.all(
       batch.map(async (book, batchIdx) => {
         const idx = i + batchIdx;
-        const { _isbn: _i, _searchQuery, ...rest } = book;
         const coverUrl = await fetchCoverUrl(book);
-        results[idx] = { ...rest, coverUrl: coverUrl || undefined };
+        results[idx] = { ...book, coverUrl: coverUrl || undefined };
         completed++;
         onProgress(completed, books.length);
       })
@@ -209,7 +219,7 @@ function parseExcel(buffer: ArrayBuffer): ParsedBookWithISBN[] {
   return normalizeRows(rows as string[][]);
 }
 
-export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
+export function ImportBooksDialog({ onImport, onImportWishlist }: ImportExportBooksProps) {
   const [open, setOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   const [fetchingCovers, setFetchingCovers] = useState(false);
@@ -276,24 +286,49 @@ export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
     if (!preview.length) return;
     setFetchingCovers(true);
     setCoverProgress({ current: 0, total: preview.length });
-    let enriched: Omit<Book, "id" | "addedAt">[];
+    let enriched: ParsedBookWithISBN[];
     try {
       enriched = await enrichBooksWithCovers(preview, (current, total) => {
         setCoverProgress({ current, total });
       });
     } catch {
-      enriched = preview.map(({ _isbn: _i, _searchQuery: _q, ...rest }) => rest);
+      enriched = preview;
     } finally {
       setFetchingCovers(false);
     }
 
+    const wishlistBooks = enriched.filter(b => b._isWishlist);
+    const libraryBooks = enriched.filter(b => !b._isWishlist);
+
     setImporting(true);
     try {
-      const result = await onImport(enriched);
-      const importedCount = Array.isArray(result) ? result.length : enriched.length;
+      let libraryCount = 0;
+      let wishlistCount = 0;
+
+      if (libraryBooks.length > 0) {
+        const toImport = libraryBooks.map(({ _isbn: _i, _searchQuery: _q, _isWishlist: _w, ...rest }) => rest);
+        const result = await onImport(toImport);
+        libraryCount = Array.isArray(result) ? result.length : toImport.length;
+      }
+
+      if (wishlistBooks.length > 0 && onImportWishlist) {
+        const wishItems = wishlistBooks.map(b => ({
+          title: b.title,
+          author: b.author,
+          coverUrl: b.coverUrl,
+          totalPages: b.totalPages,
+        }));
+        await onImportWishlist(wishItems);
+        wishlistCount = wishItems.length;
+      }
+
+      const parts: string[] = [];
+      if (libraryCount > 0) parts.push(`${libraryCount} libro${libraryCount !== 1 ? 's' : ''} a biblioteca`);
+      if (wishlistCount > 0) parts.push(`${wishlistCount} libro${wishlistCount !== 1 ? 's' : ''} a wishlist`);
+
       toast({
         title: "Importacion completada",
-        description: `${importedCount} libro${importedCount !== 1 ? 's' : ''} importado${importedCount !== 1 ? 's' : ''} correctamente`
+        description: parts.join(" y ") || "Sin cambios"
       });
       setOpen(false);
       setPreview([]);
@@ -334,7 +369,9 @@ export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
 
           {preview.length > 0 && (
             <>
-              <p className="text-sm text-muted-foreground">{preview.length} libros encontrados</p>
+              <div className="text-sm text-muted-foreground space-y-0.5">
+                <p>{preview.filter(b => !b._isWishlist).length} libros a biblioteca · {preview.filter(b => b._isWishlist).length} a wishlist</p>
+              </div>
               <div className="max-h-48 overflow-y-auto rounded-md border divide-y text-sm">
                 {preview.slice(0, 20).map((b, i) => (
                   <div key={i} className="p-2 flex justify-between">
@@ -343,7 +380,7 @@ export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
                       <p className="text-xs text-muted-foreground">{b.author}</p>
                     </div>
                     <span className="text-xs text-muted-foreground shrink-0 ml-2">
-                      {b.status === "finished" ? "Terminado" : "Leyendo"}
+                      {b._isWishlist ? "Wishlist" : b.status === "reading" ? "Leyendo" : "Terminado"}
                     </span>
                   </div>
                 ))}
@@ -355,7 +392,7 @@ export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
                 ) : importing ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Importando...</>
                 ) : (
-                  `Importar ${preview.length} libros con portadas`
+                  `Importar ${preview.length} libros`
                 )}
               </Button>
             </>

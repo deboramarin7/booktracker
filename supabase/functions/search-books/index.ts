@@ -49,27 +49,18 @@ function isGoodMatch(item: any, searchTitle: string, searchAuthor: string): bool
   const resultAuthors: string[] = (info.authors || []).map((a: string) => normalize(a))
 
   const normSearchTitle = normalize(cleanTitle(searchTitle))
-  const normFullTitle = normalize(searchTitle)
   const normLastName = normalize(lastNameOnly(searchAuthor))
-  const normSearchAuthor = normalize(cleanAuthor(searchAuthor))
 
-  const meaningfulWords = (s: string) => s.split(' ').filter((w: string) => w.length >= 3)
-
-  const titleMatch =
-    resultTitle.includes(normSearchTitle) ||
-    normSearchTitle.includes(resultTitle) ||
-    resultTitle.includes(normFullTitle) ||
-    normFullTitle.includes(resultTitle) ||
-    meaningfulWords(normSearchTitle).some((w: string) => resultTitle.includes(w)) ||
-    meaningfulWords(normFullTitle).some((w: string) => resultTitle.includes(w)) ||
-    meaningfulWords(normSearchTitle).filter((w: string) => resultTitle.includes(w)).length >= Math.min(2, meaningfulWords(normSearchTitle).length)
+  const titleWords = normSearchTitle.split(' ').filter((w: string) => w.length > 3)
+  const titleMatch = titleWords.length > 0
+    ? titleWords.filter((w: string) => resultTitle.includes(w)).length >= Math.ceil(titleWords.length * 0.5)
+    : resultTitle.includes(normSearchTitle)
 
   if (!titleMatch) return false
 
+  if (!normLastName) return true
   const authorMatch = resultAuthors.some((a: string) =>
-    a.includes(normLastName) ||
-    normLastName.includes(a) ||
-    normSearchAuthor.split(' ').some((part: string) => part.length > 3 && a.includes(part))
+    a.includes(normLastName) || normLastName.includes(a)
   )
 
   return authorMatch

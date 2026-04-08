@@ -31,6 +31,21 @@ export default function Library() {
   const [formatFilter, setFormatFilter] = useState<string>("all");
   const [sort, setSort] = useState<SortOption>("added-desc");
 
+  const handleImportWishlist = async (items: { title: string; author: string; coverUrl?: string; totalPages: number }[]) => {
+    for (const item of items) {
+      await addItem({
+        title: item.title,
+        author: item.author,
+        coverUrl: item.coverUrl,
+        hasSaga: false,
+        genre: "",
+        priority: 3,
+        status: "Buscar",
+        totalPages: item.totalPages,
+      });
+    }
+  };
+
   const handleMoveToWishlist = async (book: Book) => {
     const wishItem: Omit<WishItem, "id"> = {
       title: book.title,
@@ -104,7 +119,7 @@ export default function Library() {
         </div>
         <div className="flex items-center gap-2">
           <GlobalSearch books={books} />
-          <ImportBooksDialog onImport={addBooksInBatch} />
+          <ImportBooksDialog onImport={addBooksInBatch} onImportWishlist={handleImportWishlist} />
           <AddBookDialog onAdd={addBook} />
         </div>
       </div>
