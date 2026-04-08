@@ -258,10 +258,21 @@ Deno.serve(async (req: Request) => {
     const ca = author ? cleanAuthor(author) : ''
 
     if (title) {
-      const googleQuery = ca ? `intitle:${ct} inauthor:${ca}` : `intitle:${ct}`
-      let items = await searchGoogleBooks(googleQuery, apiKey)
-      if (!items.length) {
-        items = await searchGoogleBooks(ct, apiKey)
+      const ln = author ? lastNameOnly(author) : ''
+      const queries = ca
+        ? [
+            `intitle:"${ct}" inauthor:"${ca}"`,
+            `intitle:"${ct}" inauthor:"${ln}"`,
+            `intitle:"${ct}" ${ln}`,
+            `"${ct}" ${ca}`,
+            ct,
+          ]
+        : [`intitle:"${ct}"`, ct]
+
+      let items: any[] = []
+      for (const q of queries) {
+        items = await searchGoogleBooks(q, apiKey)
+        if (items.length > 0) break
       }
 
       const goodMatches = items.filter((item: any) => isGoodMatch(item, title, author || ''))
