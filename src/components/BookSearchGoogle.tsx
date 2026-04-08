@@ -1,8 +1,7 @@
-import { useState } from "react";
-import { Search, Loader2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { Search, Loader as Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 
 interface BookSearchResult {
   title: string;
@@ -21,31 +20,28 @@ export function BookSearchGoogle({ onSelect }: BookSearchGoogleProps) {
   const [results, setResults] = useState<BookSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const search = async () => {
-    if (!query.trim()) return;
+  const search = async (q: string) => {
+    if (!q.trim()) { setResults([]); setSearched(false); return; }
     setLoading(true);
     setSearched(true);
     setResults([]);
     try {
-      const { data, error } = await supabase.functions.invoke("search-books", {
-        body: { query: query.trim() },
-      });
-
-      if (error) {
-        console.error("Search error:", error);
-        setResults([]);
-        return;
-      }
-
-      const items: BookSearchResult[] = (data?.books || []).map((b: any) => ({
-        title: b.title || "",
-        author: b.author || "",
-        coverUrl: b.coverUrl || undefined,
-        totalPages: b.totalPages || 0,
-        genre: b.genre || undefined,
+      const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q.trim())}&fields=key,title,author_name,cover_i,number_of_pages_median,subject&limit=10&lang=es`;
+      const res = await fetch(url);
+      if (!res.ok) { setResults([]); return; }
+      const data = await res.json();
+      const docs: BookSearchResult[] = (data.docs || []).map((doc: any) => ({
+        title: doc.title || "",
+        author: (doc.author_name || []).join(", "),
+        coverUrl: doc.cover_i
+          ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`
+          : undefined,
+        totalPages: doc.number_of_pages_median || 0,
+        genre: (doc.subject || [])[0] || undefined,
       }));
-      setResults(items);
+      setResults(docs);
     } catch {
       setResults([]);
     } finally {
@@ -53,17 +49,37 @@ export function BookSearchGoogle({ onSelect }: BookSearchGoogleProps) {
     }
   };
 
+  const handleChange = (value: string) => {
+    setQuery(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (value.trim().length < 3) { setResults([]); setSearched(false); return; }
+    debounceRef.current = setTimeout(() => search(value), 500);
+  };
+
   return (
     <div className="space-y-2">
       <div className="flex gap-2">
         <Input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
           placeholder="Buscar por título, autor o ISBN..."
           className="text-sm h-8"
-          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), search())}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              if (debounceRef.current) clearTimeout(debounceRef.current);
+              search(query);
+            }
+          }}
         />
-        <Button type="button" size="sm" variant="outline" onClick={search} disabled={loading} className="h-8 px-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => { if (debounceRef.current) clearTimeout(debounceRef.current); search(query); }}
+          disabled={loading}
+          className="h-8 px-2"
+        >
           {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
         </Button>
       </div>
