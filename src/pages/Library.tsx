@@ -1,224 +1,200 @@
-import { useRef, useState } from "react";
-import { Upload, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import type { Book } from "@/hooks/useBooks";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useMemo } from "react";
+import { useBooks } from "@/hooks/useBooks";
+import { BookCard } from "@/components/BookCard";
+import { AddBookDialog } from "@/components/AddBookDialog";
+import { ImportBooksDialog } from "@/components/ImportExportBooks";
+import { GlobalSearch } from "@/components/GlobalSearch";
+import { useWishlist, type WishItem } from "@/hooks/useWishlist";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { BookOpen, Library as LibraryIcon } from "lucide-react";
+import type { Book, ReadingStatus } from "@/hooks/useBooks";
+import { GENRES, FORMATS, STATUSES } from "@/lib/constants";
 
-interface ImportExportBooksProps {
-  onImport: (books: Omit<Book, "id" | "addedAt">[]) => Promise<void>;
-}
+type SortOption = "added-desc" | "added-asc" | "title-asc" | "title-desc" | "rating-desc" | "author-asc";
 
-function parseGoodreadsCSV(text: string): Omit<Book, "id" | "addedAt">[] {
-  const lines = text.split("\n");
-  if (lines.length < 2) return [];
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: "added-desc", label: "Añadidos recientemente" },
+  { value: "added-asc", label: "Añadidos antes" },
+  { value: "title-asc", label: "Título A-Z" },
+  { value: "title-desc", label: "Título Z-A" },
+  { value: "rating-desc", label: "Mejor valorados" },
+  { value: "author-asc", label: "Autor A-Z" },
+];
 
-  const header = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, "").toLowerCase());
-  const titleIdx = header.findIndex(h => h === "title");
-  const authorIdx = header.findIndex(h => h.includes("author"));
-  const pagesIdx = header.findIndex(h => h.includes("number of pages") || h === "num pages");
-  const ratingIdx = header.findIndex(h => h === "my rating");
-  const shelfIdx = header.findIndex(h => h.includes("exclusive shelf") || h === "bookshelves");
-  const dateReadIdx = header.findIndex(h => h === "date read");
-  const dateAddedIdx = header.findIndex(h => h === "date added");
-  const isbn13Idx = header.findIndex(h => h === "isbn13");
-  const isbnIdx = header.findIndex(h => h === "isbn");
+export default function Library() {
+  const { books, loading, addBook, addBooksInBatch, updateBook, deleteBook } = useBooks();
+  const { addItem } = useWishlist();
 
-  const results: Omit<Book, "id" | "addedAt">[] = [];
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [genreFilter, setGenreFilter] = useState<string>("all");
+  const [formatFilter, setFormatFilter] = useState<string>("all");
+  const [sort, setSort] = useState<SortOption>("added-desc");
 
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    // Simple CSV parse (handle quoted fields)
-    const cols: string[] = [];
-    let current = "";
-    let inQuotes = false;
-    for (const char of line) {
-      if (char === '"') { inQuotes = !inQuotes; continue; }
-      if (char === "," && !inQuotes) { cols.push(current.trim()); current = ""; continue; }
-      current += char;
-    }
-    cols.push(current.trim());
-
-    const title = titleIdx >= 0 ? cols[titleIdx] : "";
-    const author = authorIdx >= 0 ? cols[authorIdx] : "";
-    if (!title || !author) continue;
-
-    const shelf = shelfIdx >= 0 ? cols[shelfIdx]?.toLowerCase() : "";
-    const status = shelf === "currently-reading" ? "reading" as const : "finished" as const;
-    const rating = ratingIdx >= 0 ? Math.min(5, Math.max(0, parseInt(cols[ratingIdx]) || 0)) : 0;
-    const totalPages = pagesIdx >= 0 ? parseInt(cols[pagesIdx]) || 0 : 0;
-    const dateRead = dateReadIdx >= 0 ? cols[dateReadIdx] : "";
-    const dateAdded = dateAddedIdx >= 0 ? cols[dateAddedIdx] : "";
-
-    // Goodreads exporta el ISBN con formato ="9780385333498", hay que limpiar los ="..."
-    const rawIsbn = (isbn13Idx >= 0 ? cols[isbn13Idx] : "") || (isbnIdx >= 0 ? cols[isbnIdx] : "");
-    const cleanIsbn = rawIsbn.replace(/[="]/g, "").trim();
-    const coverUrl = cleanIsbn ? `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg` : undefined;
-
-    results.push({
-      title,
-      author,
-      hasSaga: false,
-      genre: "",
-      format: "",
-      source: "",
-      status,
-      totalPages,
-      pagesRead: status === "finished" ? totalPages : 0,
-      rating,
-      notes: "",
-      tags: [],
-      startDate: dateAdded || undefined,
-      endDate: dateRead || undefined,
-      coverUrl,
-    });
-  }
-
-  return results;
-}
-
-// Busca portada via search-books edge function (la misma que usa el botón "Portadas")
-async function fetchCoverFromEdgeFunction(title: string, author: string): Promise<string | undefined> {
-  try {
-    const cleanTitle = title.replace(/\s*\(.*?\)\s*/g, "").trim();
-    const cleanAuthor = author.replace(/\s+/g, " ").trim();
-    const { data, error } = await supabase.functions.invoke("search-books", {
-      body: { title: cleanTitle, author: cleanAuthor },
-    });
-    if (!error && data?.books?.length) {
-      return data.books[0]?.coverUrl ?? undefined;
-    }
-  } catch { }
-  return undefined;
-}
-
-export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
-  const [open, setOpen] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [fetchingCovers, setFetchingCovers] = useState(false);
-  const [coverProgress, setCoverProgress] = useState({ current: 0, total: 0 });
-  const [preview, setPreview] = useState<Omit<Book, "id" | "addedAt">[]>([]);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = reader.result as string;
-      const books = parseGoodreadsCSV(text);
-      setPreview(books);
+  const handleMoveToWishlist = async (book: Book) => {
+    const wishItem: Omit<WishItem, "id"> = {
+      title: book.title,
+      author: book.author,
+      coverUrl: book.coverUrl,
+      hasSaga: book.hasSaga,
+      saga: book.saga,
+      sagaOrder: book.sagaOrder,
+      genre: book.genre,
+      priority: 3,
+      status: "Buscar",
+      totalPages: book.totalPages,
     };
-    reader.readAsText(file);
+    await addItem(wishItem);
+    await deleteBook(book.id);
   };
 
-  const handleImport = async () => {
-    if (!preview.length) return;
-    setImporting(true);
+  const filtered = useMemo(() => {
+    let result = [...books];
 
-    try {
-      // Paso 1: enriquecer con portadas via edge function los que Open Library no pudo cubrir
-      const withoutCover = preview.filter(b => !b.coverUrl);
-      if (withoutCover.length > 0) {
-        setFetchingCovers(true);
-        setCoverProgress({ current: 0, total: withoutCover.length });
-
-        const CONCURRENCY = 5;
-        let done = 0;
-
-        for (let i = 0; i < withoutCover.length; i += CONCURRENCY) {
-          const batch = withoutCover.slice(i, i + CONCURRENCY);
-          await Promise.all(batch.map(async (book) => {
-            const coverUrl = await fetchCoverFromEdgeFunction(book.title, book.author);
-            if (coverUrl) book.coverUrl = coverUrl;
-            done++;
-            setCoverProgress({ current: done, total: withoutCover.length });
-          }));
-        }
-
-        setFetchingCovers(false);
-      }
-
-      // Paso 2: importar todos los libros ya con sus portadas
-      setImporting(true);
-      await onImport(preview);
-
-      const withCover = preview.filter(b => b.coverUrl).length;
-      toast({
-        title: "✅ Importación completada",
-        description: `${preview.length} libros importados · ${withCover} con portada`,
-      });
-
-      setOpen(false);
-      setPreview([]);
-    } catch {
-      toast({ title: "Error", description: "Error al importar", variant: "destructive" });
-    } finally {
-      setImporting(false);
-      setFetchingCovers(false);
+    if (statusFilter !== "all") {
+      result = result.filter((b) => b.status === statusFilter);
     }
-  };
+    if (genreFilter !== "all") {
+      result = result.filter((b) => b.genre === genreFilter);
+    }
+    if (formatFilter !== "all") {
+      result = result.filter((b) => b.format === formatFilter);
+    }
 
-  const isWorking = importing || fetchingCovers;
+    result.sort((a, b) => {
+      switch (sort) {
+        case "added-desc":
+          return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
+        case "added-asc":
+          return new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime();
+        case "title-asc":
+          return a.title.localeCompare(b.title);
+        case "title-desc":
+          return b.title.localeCompare(a.title);
+        case "rating-desc":
+          return b.rating - a.rating;
+        case "author-asc":
+          return a.author.localeCompare(b.author);
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [books, statusFilter, genreFilter, formatFilter, sort]);
+
+  const counts = useMemo(() => ({
+    all: books.length,
+    "want-to-read": books.filter((b) => b.status === "want-to-read").length,
+    reading: books.filter((b) => b.status === "reading").length,
+    finished: books.filter((b) => b.status === "finished").length,
+  }), [books]);
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setPreview([]); }}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
-          <Upload className="h-4 w-4" />
-          <span className="hidden sm:inline">Importar</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="font-display">Importar libros</DialogTitle>
-          <DialogDescription>Importa tu biblioteca desde un CSV de Goodreads u otro formato compatible</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <input ref={fileRef} type="file" accept=".csv" onChange={handleFile} className="hidden" />
-            <Button variant="outline" onClick={() => fileRef.current?.click()} className="w-full">
-              Seleccionar archivo CSV
-            </Button>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <LibraryIcon className="h-5 w-5 text-primary" />
           </div>
-
-          {preview.length > 0 && (
-            <>
-              <p className="text-sm text-muted-foreground">{preview.length} libros encontrados</p>
-              <div className="max-h-48 overflow-y-auto rounded-md border divide-y text-sm">
-                {preview.slice(0, 20).map((b, i) => (
-                  <div key={i} className="p-2 flex justify-between">
-                    <div className="min-w-0">
-                      <p className="font-medium truncate">{b.title}</p>
-                      <p className="text-xs text-muted-foreground">{b.author}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground shrink-0 ml-2">
-                      {b.status === "finished" ? "✅" : "📖"}
-                    </span>
-                  </div>
-                ))}
-                {preview.length > 20 && (
-                  <div className="p-2 text-center text-xs text-muted-foreground">
-                    ...y {preview.length - 20} más
-                  </div>
-                )}
-              </div>
-              <Button onClick={handleImport} disabled={isWorking} className="w-full">
-                {fetchingCovers
-                  ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Buscando portadas... {coverProgress.current}/{coverProgress.total}</>
-                  : importing
-                  ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Importando...</>
-                  : `Importar ${preview.length} libros`
-                }
-              </Button>
-            </>
-          )}
+          <div>
+            <h1 className="text-2xl font-display font-semibold">Mi Biblioteca</h1>
+            <p className="text-sm text-muted-foreground">{books.length} libros en total</p>
+          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+        <div className="flex items-center gap-2">
+          <GlobalSearch books={books} />
+          <ImportBooksDialog onImport={addBooksInBatch} />
+          <AddBookDialog onAdd={addBook} />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {[{ value: "all", label: `Todos (${counts.all})` }, ...STATUSES.map(s => ({ value: s.value, label: `${s.label} (${counts[s.value as ReadingStatus] ?? 0})` }))].map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => setStatusFilter(opt.value)}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              statusFilter === opt.value
+                ? "bg-primary text-primary-foreground"
+                : "bg-card border border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-2 items-center">
+        <Select value={genreFilter} onValueChange={setGenreFilter}>
+          <SelectTrigger className="w-[150px] h-8 text-sm">
+            <SelectValue placeholder="Género" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los géneros</SelectItem>
+            {GENRES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        <Select value={formatFilter} onValueChange={setFormatFilter}>
+          <SelectTrigger className="w-[130px] h-8 text-sm">
+            <SelectValue placeholder="Formato" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los formatos</SelectItem>
+            {FORMATS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
+          <SelectTrigger className="w-[190px] h-8 text-sm">
+            <SelectValue placeholder="Ordenar por" />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        {(statusFilter !== "all" || genreFilter !== "all" || formatFilter !== "all") && (
+          <button
+            onClick={() => { setStatusFilter("all"); setGenreFilter("all"); setFormatFilter("all"); }}
+            className="text-xs text-muted-foreground hover:text-foreground underline"
+          >
+            Limpiar filtros
+          </button>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-48 rounded-xl" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <BookOpen className="h-12 w-12 text-muted-foreground/40 mb-4" />
+          <p className="text-lg font-medium text-muted-foreground">
+            {books.length === 0 ? "Tu biblioteca está vacía" : "No hay libros con estos filtros"}
+          </p>
+          <p className="text-sm text-muted-foreground/60 mt-1">
+            {books.length === 0 ? "Añade tu primer libro para empezar" : "Prueba a cambiar los filtros"}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((book, index) => (
+            <BookCard
+              key={book.id}
+              book={book}
+              index={index}
+              onUpdate={updateBook}
+              onDelete={deleteBook}
+              onMoveToWishlist={handleMoveToWishlist}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
