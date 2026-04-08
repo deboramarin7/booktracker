@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { useToast } from "@/hooks/use-toast";
 import type { Book } from "@/hooks/useBooks";
 import * as XLSX from "xlsx";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WishlistImportItem {
   title: string;
@@ -18,6 +19,11 @@ interface ImportExportBooksProps {
   onImportWishlist?: (items: WishlistImportItem[]) => Promise<void>;
 }
 
+interface ParsedBook extends Omit<Book, "id" | "addedAt"> {
+  _isbn?: string;
+  _isWishlist?: boolean;
+}
+
 function parseCSVLine(line: string): string[] {
   const result: string[] = [];
   let current = "";
@@ -25,206 +31,138 @@ function parseCSVLine(line: string): string[] {
 
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
-
     if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
+      if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+      else { inQuotes = !inQuotes; }
     } else if (char === ',' && !inQuotes) {
-      result.push(current);
-      current = "";
+      result.push(current); current = "";
     } else {
       current += char;
     }
   }
-
   result.push(current);
   return result;
 }
 
-interface ParsedBookWithISBN extends Omit<Book, "id" | "addedAt"> {
-  _isbn?: string;
-  _searchQuery?: string;
-  _isWishlist?: boolean;
-}
-
 function fixEncoding(str: string): string {
-  try {
-    return decodeURIComponent(escape(str));
-  } catch {
-    return str;
-  }
+  try { return decodeURIComponent(escape(str)); } catch { return str; }
 }
 
 function cleanIsbn(raw: string): string {
   return raw.replace(/[^0-9X]/gi, "").trim();
 }
 
-function normalizeRows(rows: string[][]): ParsedBookWithISBN[] {
+function findIdx(header: string[], ...matches: string[]): number {
+  return header.findIndex(h => matches.some(m => h === m || h.includes(m)));
+}
+
+function normalizeRows(rows: string[][]): ParsedBook[] {
   if (rows.length < 2) return [];
 
-  const headerCols = rows[0];
-  const header = headerCols.map(h => String(h ?? "").trim().toLowerCase());
+  const header = rows[0].map(h => String(h ?? "").trim().toLowerCase());
 
-  const titleIdx = header.findIndex(h =>
-    h === "title" || h === "título" || h === "titulo" || h === "libro" || h === "book"
-  );
-  const authorIdx = header.findIndex(h =>
-    h === "author" || h === "autor" || h === "autora" || h.includes("author") || h.includes("autor")
-  );
-  const pagesIdx = header.findIndex(h =>
-    h === "number of pages" || h === "num pages" || h === "páginas" || h === "paginas" ||
-    h === "pages" || h.includes("pages") || h.includes("página")
-  );
-  const ratingIdx = header.findIndex(h =>
-    h === "my rating" || h === "rating" || h === "puntuación" || h === "puntuacion" ||
-    h === "valoración" || h === "valoracion" || h === "calificación" || h === "calificacion" ||
-    h.includes("rating") || h.includes("puntuación")
-  );
-  const shelfIdx = header.findIndex(h =>
-    h === "exclusive shelf" || h === "bookshelves" || h === "shelf" || h === "estado" ||
-    h === "estante" || h.includes("shelf") || h.includes("estado")
-  );
-  const dateReadIdx = header.findIndex(h =>
-    h === "date read" || h === "fecha de lectura" || h === "fecha leído" || h === "fecha leido" ||
-    h.includes("date read") || (h.includes("fecha") && h.includes("lectura"))
-  );
-  const dateAddedIdx = header.findIndex(h =>
-    h === "date added" || h === "fecha añadido" || h === "fecha agregado" || h === "fecha" ||
-    h.includes("date added") || h.includes("añadido") || h.includes("agregado")
-  );
-  const isbnIdx = header.findIndex(h => h === "isbn" || h === "isbn13");
-  const isbn13Idx = header.findIndex(h => h === "isbn13");
-  const notesIdx = header.findIndex(h =>
-    h === "my review" || h === "review" || h === "notes" || h === "notas" || h === "reseña"
-  );
-  const formatIdx = header.findIndex(h =>
-    h === "binding" || h === "format" || h === "formato" || h === "encuadernación"
-  );
+  const idx = {
+    title:     findIdx(header, "title", "título", "titulo", "libro", "book"),
+    author:    findIdx(header, "author", "autor", "autora"),
+    pages:     findIdx(header, "number of pages", "num pages", "páginas", "paginas", "pages"),
+    rating:    findIdx(header, "my rating", "rating", "puntuación", "puntuacion", "valoración"),
+    shelf:     findIdx(header, "exclusive shelf", "bookshelves", "shelf", "estado", "estante"),
+    dateRead:  findIdx(header, "date read", "fecha de lectura", "fecha leído"),
+    dateAdded: findIdx(header, "date added", "fecha añadido", "fecha agregado"),
+    isbn13:    findIdx(header, "isbn13"),
+    isbn:      findIdx(header, "isbn"),
+    notes:     findIdx(header, "my review", "review", "notes", "notas", "reseña"),
+    format:    findIdx(header, "binding", "format", "formato", "encuadernación"),
+  };
 
-  const results: ParsedBookWithISBN[] = [];
+  const results: ParsedBook[] = [];
 
   for (let i = 1; i < rows.length; i++) {
     const cols = rows[i];
     if (!cols || cols.every(c => !c)) continue;
 
     try {
-      const title = titleIdx >= 0 ? fixEncoding(String(cols[titleIdx] ?? "").trim()) : "";
-      const author = authorIdx >= 0 ? fixEncoding(String(cols[authorIdx] ?? "").trim()) : "";
-
+      const title  = idx.title  >= 0 ? fixEncoding(String(cols[idx.title]  ?? "").trim()) : "";
+      const author = idx.author >= 0 ? fixEncoding(String(cols[idx.author] ?? "").trim()) : "";
       if (!title || !author) continue;
 
-      const shelf = shelfIdx >= 0 ? String(cols[shelfIdx] ?? "").trim().toLowerCase() : "";
-      const isWishlist = shelf === "to-read" || shelf === "quiero-leer" || shelf === "quiero leer" || shelf === "want to read";
-      const status = shelf === "currently-reading" || shelf === "leyendo" ? "reading" as const : "finished" as const;
-      const rating = ratingIdx >= 0 ? Math.min(5, Math.max(0, parseInt(String(cols[ratingIdx] ?? "0")) || 0)) : 0;
-      const totalPages = pagesIdx >= 0 ? parseInt(String(cols[pagesIdx] ?? "0").replace(/\D/g, '') || "0") || 0 : 0;
-      const dateRead = dateReadIdx >= 0 ? String(cols[dateReadIdx] ?? "").trim() : "";
-      const dateAdded = dateAddedIdx >= 0 ? String(cols[dateAddedIdx] ?? "").trim() : "";
-      const notes = notesIdx >= 0 ? String(cols[notesIdx] ?? "").replace(/<br\s*\/?>/gi, "\n").trim() : "";
-      const format = formatIdx >= 0 ? String(cols[formatIdx] ?? "").trim() : "";
-
-      const rawIsbn13 = isbn13Idx >= 0 ? cleanIsbn(String(cols[isbn13Idx] ?? "")) : "";
-      const rawIsbn = isbnIdx >= 0 ? cleanIsbn(String(cols[isbnIdx] ?? "")) : "";
-      const isbn = rawIsbn13 || rawIsbn;
+      const shelf      = idx.shelf >= 0 ? String(cols[idx.shelf] ?? "").trim().toLowerCase() : "";
+      const isWishlist = ["to-read", "quiero-leer", "quiero leer", "want to read"].includes(shelf);
+      const status     = shelf === "currently-reading" || shelf === "leyendo" ? "reading" as const : "finished" as const;
+      const rating     = idx.rating >= 0 ? Math.min(5, Math.max(0, parseInt(String(cols[idx.rating] ?? "0")) || 0)) : 0;
+      const totalPages = idx.pages >= 0 ? parseInt(String(cols[idx.pages] ?? "0").replace(/\D/g, "") || "0") || 0 : 0;
+      const dateRead   = idx.dateRead  >= 0 ? String(cols[idx.dateRead]  ?? "").trim() : "";
+      const dateAdded  = idx.dateAdded >= 0 ? String(cols[idx.dateAdded] ?? "").trim() : "";
+      const notes      = idx.notes  >= 0 ? String(cols[idx.notes]  ?? "").replace(/<br\s*\/?>/gi, "\n").trim() : "";
+      const format     = idx.format >= 0 ? String(cols[idx.format] ?? "").trim() : "";
+      const isbn       = cleanIsbn(String(cols[idx.isbn13] ?? "")) || cleanIsbn(String(cols[idx.isbn] ?? ""));
 
       results.push({
-        title,
-        author,
-        hasSaga: false,
-        genre: "",
-        format,
-        source: "",
-        status,
-        totalPages,
-        pagesRead: status === "finished" ? totalPages : 0,
-        rating,
-        notes,
-        tags: [],
-        startDate: dateAdded || undefined,
-        endDate: dateRead || undefined,
-        _isbn: isbn || undefined,
-        _searchQuery: isbn ? `isbn:${isbn}` : `intitle:${title} inauthor:${author}`,
+        title, author, format, status, totalPages, rating, notes,
+        hasSaga: false, genre: "", source: "", tags: [],
+        pagesRead:  status === "finished" ? totalPages : 0,
+        startDate:  dateAdded || undefined,
+        endDate:    dateRead  || undefined,
+        _isbn:      isbn      || undefined,
         _isWishlist: isWishlist,
       });
-    } catch (error) {
-      console.error(`Error parsing row ${i}:`, error);
-      continue;
+    } catch (err) {
+      console.error(`Error parsing row ${i}:`, err);
     }
   }
 
   return results;
 }
 
-const GOOGLE_BOOKS_API_KEY = "AIzaSyDgSYwnvsjk4IRKo6HSD8Xcza57V0XdQbk";
-
-async function fetchCoverUrl(book: ParsedBookWithISBN): Promise<string | undefined> {
-  try {
-    const query = book._isbn
-      ? `isbn:${book._isbn}`
-      : `intitle:${book.title.replace(/\s*\(.*?\)\s*/g, "").trim()} inauthor:${book.author}`;
-    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=1&printType=books&key=${GOOGLE_BOOKS_API_KEY}`;
-    const res = await fetch(url);
-    if (!res.ok) return undefined;
-    const data = await res.json();
-    const item = data.items?.[0];
-    if (!item) return undefined;
-    const links = item.volumeInfo?.imageLinks || {};
-    const raw = links.extraLarge || links.large || links.medium || links.small || links.thumbnail || links.smallThumbnail;
-    if (!raw) return undefined;
-    return raw.replace("http://", "https://").replace("&edge=curl", "").replace("zoom=1", "zoom=2");
-  } catch {
-    return undefined;
-  }
+function parseCSV(text: string): ParsedBook[] {
+  return normalizeRows(text.split(/\r?\n/).map(parseCSVLine));
 }
 
-async function enrichBooksWithCovers(
-  books: ParsedBookWithISBN[],
+function parseExcel(buffer: ArrayBuffer): ParsedBook[] {
+  const wb = XLSX.read(buffer, { type: "array" });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: "" });
+  return normalizeRows(rows as string[][]);
+}
+
+async function fetchCover(book: ParsedBook): Promise<string | undefined> {
+  try {
+    const cleanTitle  = book.title.replace(/\s*\(.*?\)\s*/g, "").trim();
+    const body: Record<string, string> = { title: cleanTitle, author: book.author };
+    if (book._isbn) body.isbn = book._isbn;
+
+    const { data, error } = await supabase.functions.invoke("search-books", { body });
+    if (!error && data?.books?.length) return data.books[0]?.coverUrl ?? undefined;
+  } catch { }
+  return undefined;
+}
+
+async function enrichWithCovers(
+  books: ParsedBook[],
   onProgress: (current: number, total: number) => void
-): Promise<ParsedBookWithISBN[]> {
+): Promise<ParsedBook[]> {
   const CONCURRENCY = 5;
-  const results: ParsedBookWithISBN[] = new Array(books.length);
-  let completed = 0;
+  const results: ParsedBook[] = new Array(books.length);
+  let done = 0;
 
   for (let i = 0; i < books.length; i += CONCURRENCY) {
     const batch = books.slice(i, i + CONCURRENCY);
-    await Promise.all(
-      batch.map(async (book, batchIdx) => {
-        const idx = i + batchIdx;
-        const coverUrl = await fetchCoverUrl(book);
-        results[idx] = { ...book, coverUrl: coverUrl || undefined };
-        completed++;
-        onProgress(completed, books.length);
-      })
-    );
+    await Promise.all(batch.map(async (book, j) => {
+      const coverUrl = await fetchCover(book);
+      results[i + j] = { ...book, coverUrl: coverUrl || undefined };
+      onProgress(++done, books.length);
+    }));
   }
 
   return results;
 }
 
-function parseCSV(text: string): ParsedBookWithISBN[] {
-  const lines = text.split(/\r?\n/);
-  const rows = lines.map(line => parseCSVLine(line));
-  return normalizeRows(rows);
-}
-
-function parseExcel(buffer: ArrayBuffer): ParsedBookWithISBN[] {
-  const workbook = XLSX.read(buffer, { type: "array" });
-  const sheetName = workbook.SheetNames[0];
-  const sheet = workbook.Sheets[sheetName];
-  const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: "" });
-  return normalizeRows(rows as string[][]);
-}
-
 export function ImportBooksDialog({ onImport, onImportWishlist }: ImportExportBooksProps) {
-  const [open, setOpen] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const [fetchingCovers, setFetchingCovers] = useState(false);
-  const [coverProgress, setCoverProgress] = useState({ current: 0, total: 0 });
-  const [preview, setPreview] = useState<ParsedBookWithISBN[]>([]);
+  const [open, setOpen]               = useState(false);
+  const [importing, setImporting]     = useState(false);
+  const [fetchingCovers, setFetching] = useState(false);
+  const [coverProgress, setProgress] = useState({ current: 0, total: 0 });
+  const [preview, setPreview]         = useState<ParsedBook[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -233,117 +171,77 @@ export function ImportBooksDialog({ onImport, onImportWishlist }: ImportExportBo
     if (!file) return;
 
     const isExcel = file.name.endsWith(".xlsx") || file.name.endsWith(".xls");
+    const reader = new FileReader();
 
-    if (isExcel) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const books = parseExcel(reader.result as ArrayBuffer);
-          if (books.length === 0) {
-            toast({
-              title: "No se encontraron libros",
-              description: "Verifica que el Excel tenga columnas como: Título, Autor, Páginas, etc.",
-              variant: "destructive"
-            });
-          }
-          setPreview(books);
-        } catch (error) {
-          toast({
-            title: "Error al leer el archivo",
-            description: error instanceof Error ? error.message : "Error desconocido",
-            variant: "destructive"
-          });
+    reader.onload = () => {
+      try {
+        const books = isExcel
+          ? parseExcel(reader.result as ArrayBuffer)
+          : parseCSV(reader.result as string);
+
+        if (!books.length) {
+          toast({ title: "No se encontraron libros", description: "Verifica que el archivo tenga columnas: Título, Autor, Páginas...", variant: "destructive" });
         }
-      };
-      reader.readAsArrayBuffer(file);
-    } else {
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const text = reader.result as string;
-          const books = parseCSV(text);
-          if (books.length === 0) {
-            toast({
-              title: "No se encontraron libros",
-              description: "Verifica que el CSV tenga columnas como: Título, Autor, Páginas, etc.",
-              variant: "destructive"
-            });
-          }
-          setPreview(books);
-        } catch (error) {
-          toast({
-            title: "Error al leer el archivo",
-            description: error instanceof Error ? error.message : "Error desconocido",
-            variant: "destructive"
-          });
-        }
-      };
-      reader.readAsText(file);
-    }
+        setPreview(books);
+      } catch (err) {
+        toast({ title: "Error al leer el archivo", description: err instanceof Error ? err.message : "Error desconocido", variant: "destructive" });
+      }
+    };
+
+    isExcel ? reader.readAsArrayBuffer(file) : reader.readAsText(file);
   };
 
   const handleImport = async () => {
     if (!preview.length) return;
-    setFetchingCovers(true);
-    setCoverProgress({ current: 0, total: preview.length });
-    let enriched: ParsedBookWithISBN[];
-    try {
-      enriched = await enrichBooksWithCovers(preview, (current, total) => {
-        setCoverProgress({ current, total });
-      });
-    } catch {
-      enriched = preview;
-    } finally {
-      setFetchingCovers(false);
-    }
 
-    const wishlistBooks = enriched.filter(b => b._isWishlist);
-    const libraryBooks = enriched.filter(b => !b._isWishlist);
+    setFetching(true);
+    setProgress({ current: 0, total: preview.length });
+    let enriched = preview;
+    try {
+      enriched = await enrichWithCovers(preview, (current, total) => setProgress({ current, total }));
+    } catch {
+    } finally {
+      setFetching(false);
+    }
 
     setImporting(true);
     try {
+      const libraryBooks  = enriched.filter(b => !b._isWishlist);
+      const wishlistBooks = enriched.filter(b => b._isWishlist);
       let libraryCount = 0;
       let wishlistCount = 0;
 
       if (libraryBooks.length > 0) {
-        const toImport = libraryBooks.map(({ _isbn: _i, _searchQuery: _q, _isWishlist: _w, ...rest }) => rest);
-        const result = await onImport(toImport);
-        libraryCount = Array.isArray(result) ? result.length : toImport.length;
+        const toSave = libraryBooks.map(({ _isbn, _isWishlist, ...rest }) => rest);
+        const result = await onImport(toSave);
+        libraryCount = Array.isArray(result) ? result.length : toSave.length;
       }
 
       if (wishlistBooks.length > 0 && onImportWishlist) {
-        const wishItems = wishlistBooks.map(b => ({
-          title: b.title,
-          author: b.author,
-          coverUrl: b.coverUrl,
-          totalPages: b.totalPages,
-        }));
-        await onImportWishlist(wishItems);
-        wishlistCount = wishItems.length;
+        const items = wishlistBooks.map(b => ({ title: b.title, author: b.author, coverUrl: b.coverUrl, totalPages: b.totalPages }));
+        await onImportWishlist(items);
+        wishlistCount = items.length;
       }
 
-      const parts: string[] = [];
-      if (libraryCount > 0) parts.push(`${libraryCount} libro${libraryCount !== 1 ? 's' : ''} a biblioteca`);
-      if (wishlistCount > 0) parts.push(`${wishlistCount} libro${wishlistCount !== 1 ? 's' : ''} a wishlist`);
+      const parts = [
+        libraryCount  > 0 ? `${libraryCount} libro${libraryCount  !== 1 ? "s" : ""} a biblioteca` : "",
+        wishlistCount > 0 ? `${wishlistCount} libro${wishlistCount !== 1 ? "s" : ""} a wishlist`   : "",
+      ].filter(Boolean);
 
-      toast({
-        title: "Importacion completada",
-        description: parts.join(" y ") || "Sin cambios"
-      });
+      toast({ title: "Importacion completada", description: parts.join(" · ") || "Sin cambios" });
       setOpen(false);
       setPreview([]);
       if (fileRef.current) fileRef.current.value = "";
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Error al importar los libros";
-      toast({
-        title: "Error al importar",
-        description: errorMessage,
-        variant: "destructive"
-      });
+    } catch (err) {
+      toast({ title: "Error al importar", description: err instanceof Error ? err.message : "Error desconocido", variant: "destructive" });
     } finally {
       setImporting(false);
     }
   };
+
+  const libCount  = preview.filter(b => !b._isWishlist).length;
+  const wishCount = preview.filter(b => b._isWishlist).length;
+  const isWorking = importing || fetchingCovers;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setPreview([]); }}>
@@ -356,7 +254,7 @@ export function ImportBooksDialog({ onImport, onImportWishlist }: ImportExportBo
       <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display">Importar libros</DialogTitle>
-          <DialogDescription>Importa tu biblioteca desde un archivo CSV o Excel (.xlsx, .xls) con columnas: Título, Autor, Páginas, etc.</DialogDescription>
+          <DialogDescription>Importa desde Goodreads o cualquier CSV/Excel con columnas: Título, Autor, Páginas...</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
@@ -364,35 +262,39 @@ export function ImportBooksDialog({ onImport, onImportWishlist }: ImportExportBo
             <Button variant="outline" onClick={() => fileRef.current?.click()} className="w-full">
               Seleccionar archivo CSV o Excel
             </Button>
-            <p className="text-xs text-muted-foreground mt-1.5 text-center">Formatos admitidos: .csv, .xlsx, .xls</p>
+            <p className="text-xs text-muted-foreground mt-1.5 text-center">Formatos: .csv · .xlsx · .xls</p>
           </div>
 
           {preview.length > 0 && (
             <>
-              <div className="text-sm text-muted-foreground space-y-0.5">
-                <p>{preview.filter(b => !b._isWishlist).length} libros a biblioteca · {preview.filter(b => b._isWishlist).length} a wishlist</p>
-              </div>
+              <p className="text-sm text-muted-foreground">
+                {libCount > 0 && <span>{libCount} a biblioteca</span>}
+                {libCount > 0 && wishCount > 0 && <span> · </span>}
+                {wishCount > 0 && <span>{wishCount} a wishlist</span>}
+              </p>
               <div className="max-h-48 overflow-y-auto rounded-md border divide-y text-sm">
                 {preview.slice(0, 20).map((b, i) => (
-                  <div key={i} className="p-2 flex justify-between">
+                  <div key={i} className="p-2 flex justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-medium truncate">{b.title}</p>
-                      <p className="text-xs text-muted-foreground">{b.author}</p>
+                      <p className="text-xs text-muted-foreground truncate">{b.author}</p>
                     </div>
-                    <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                    <span className="text-xs text-muted-foreground shrink-0">
                       {b._isWishlist ? "Wishlist" : b.status === "reading" ? "Leyendo" : "Terminado"}
                     </span>
                   </div>
                 ))}
-                {preview.length > 20 && <div className="p-2 text-center text-xs text-muted-foreground">...y {preview.length - 20} más</div>}
+                {preview.length > 20 && (
+                  <p className="p-2 text-center text-xs text-muted-foreground">...y {preview.length - 20} más</p>
+                )}
               </div>
-              <Button onClick={handleImport} disabled={importing || fetchingCovers} className="w-full">
+              <Button onClick={handleImport} disabled={isWorking} className="w-full">
                 {fetchingCovers ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Buscando portadas... {coverProgress.current}/{coverProgress.total}</>
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Buscando portadas... {coverProgress.current}/{coverProgress.total}</>
                 ) : importing ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Importando...</>
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Importando...</>
                 ) : (
-                  `Importar ${preview.length} libros`
+                  `Importar ${preview.length} libro${preview.length !== 1 ? "s" : ""}`
                 )}
               </Button>
             </>
