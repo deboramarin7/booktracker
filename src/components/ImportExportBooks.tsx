@@ -143,17 +143,11 @@ function normalizeRows(rows: string[][]): ParsedBookWithISBN[] {
 
 async function fetchCoverUrl(book: ParsedBookWithISBN): Promise<string | undefined> {
   try {
-    if (book._isbn) {
-      const isbnUrl = `https://covers.openlibrary.org/b/isbn/${book._isbn}-L.jpg`
-      const check = await fetch(isbnUrl, { method: "HEAD" })
-      if (check.ok && check.headers.get("content-type")?.startsWith("image")) {
-        return isbnUrl
-      }
-    }
+    const cleanTitle = book.title.replace(/\s*\(.*?\)\s*/g, "").trim();
+    const body: Record<string, string> = { title: cleanTitle, author: book.author };
+    if (book._isbn) body.isbn = book._isbn;
 
-    const { data, error } = await supabase.functions.invoke("search-books", {
-      body: { title: book.title, author: book.author },
-    });
+    const { data, error } = await supabase.functions.invoke("search-books", { body });
     if (error || !data?.books?.length) return undefined;
     return data.books[0]?.coverUrl || undefined;
   } catch {
