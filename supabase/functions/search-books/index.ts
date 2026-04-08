@@ -40,13 +40,20 @@ function isGoodMatch(item: any, searchTitle: string, searchAuthor: string): bool
   const resultAuthors: string[] = (info.authors || []).map((a: string) => normalize(a))
 
   const normSearchTitle = normalize(cleanTitle(searchTitle))
+  const normFullTitle = normalize(searchTitle)
   const normLastName = normalize(lastNameOnly(searchAuthor))
   const normSearchAuthor = normalize(cleanAuthor(searchAuthor))
+
+  const meaningfulWords = (s: string) => s.split(' ').filter((w: string) => w.length > 3)
 
   const titleMatch =
     resultTitle.includes(normSearchTitle) ||
     normSearchTitle.includes(resultTitle) ||
-    normSearchTitle.split(' ').filter((w: string) => w.length > 3).some((w: string) => resultTitle.includes(w))
+    resultTitle.includes(normFullTitle) ||
+    normFullTitle.includes(resultTitle) ||
+    meaningfulWords(normSearchTitle).some((w: string) => resultTitle.includes(w)) ||
+    meaningfulWords(normFullTitle).some((w: string) => resultTitle.includes(w)) ||
+    meaningfulWords(normSearchTitle).filter((w: string) => resultTitle.includes(w)).length >= Math.min(2, meaningfulWords(normSearchTitle).length)
 
   if (!titleMatch) return false
 
