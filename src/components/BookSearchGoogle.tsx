@@ -19,7 +19,7 @@ interface BookSearchGoogleProps {
 async function searchBooks(query: string): Promise<BookSearchResult[]> {
   try {
     const { data, error } = await supabase.functions.invoke("search-books", {
-      body: { query },
+      body: { title: query },
     });
     if (error || !data?.books?.length) return [];
     return data.books.map((b: any) => ({
