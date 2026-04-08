@@ -4,13 +4,39 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 }
 
+async function searchOpenLibrary(title: string, author: string): Promise<string | null> {
+  try {
+    const query = author ? `title=${encodeURIComponent(title)}&author=${encodeURIComponent(author)}` : `title=${encodeURIComponent(title)}`
+    const url = `https://openlibrary.org/search.json?${query}&fields=key,title,author_name,isbn,cover_i&limit=5`
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const data = await res.json()
+    const docs = data.docs || []
+    for (const doc of docs) {
+      if (doc.cover_i) {
+        return `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
+      }
+      if (doc.isbn?.length) {
+        return `https://covers.openlibrary.org/b/isbn/${doc.isbn[0]}-L.jpg`
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 async function searchGoogleBooks(query: string, apiKey?: string): Promise<any[]> {
-  const keyParam = apiKey ? `&key=${apiKey}` : ''
-  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&langRestrict=&${keyParam}`
-  const res = await fetch(url)
-  if (!res.ok) return []
-  const data = await res.json()
-  return data.items || []
+  try {
+    const keyParam = apiKey ? `&key=${apiKey}` : ''
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5${keyParam}`
+    const res = await fetch(url)
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.items || []
+  } catch {
+    return []
+  }
 }
 
 function extractBooks(items: any[]) {
@@ -53,23 +79,49 @@ Deno.serve(async (req: Request) => {
     }
 
     const apiKey = Deno.env.get('GOOGLE_BOOKS_API_KEY')
+    const cleanTitle = title ? title.replace(/\s*\(.*?\)\s*/g, '').trim() : ''
+    const cleanAuthor = author ? author.replace(/\s+/g, ' ').trim() : ''
 
     let items: any[] = []
 
-    if (title && author) {
-      items = await searchGoogleBooks(`${title} ${author}`, apiKey)
+    if (cleanTitle) {
+      const googleQuery = cleanAuthor ? `intitle:${cleanTitle} inauthor:${cleanAuthor}` : `intitle:${cleanTitle}`
+      items = await searchGoogleBooks(googleQuery, apiKey)
       if (!items.length) {
-        items = await searchGoogleBooks(title, apiKey)
+        items = await searchGoogleBooks(cleanTitle, apiKey)
       }
     } else if (query) {
       items = await searchGoogleBooks(query, apiKey)
-      if (!items.length && query.includes('intitle:')) {
-        const cleanQuery = query.replace(/intitle:|inauthor:/g, '').replace(/\s+/g, ' ').trim()
-        items = await searchGoogleBooks(cleanQuery, apiKey)
-      }
     }
 
-    const books = extractBooks(items)
+    let books = extractBooks(items)
+
+    if (cleanTitle) {
+      const enrichedBooks = await Promise.all(
+        books.map(async (book) => {
+          if (!book.coverUrl) {
+            const olCover = await searchOpenLibrary(cleanTitle, cleanAuthor)
+            return { ...book, coverUrl: olCover }
+          }
+          return book
+        })
+      )
+
+      if (!enrichedBooks.some(b => b.coverUrl)) {
+        const olCover = await searchOpenLibrary(cleanTitle, cleanAuthor)
+        if (olCover) {
+          if (enrichedBooks.length > 0) {
+            enrichedBooks[0].coverUrl = olCover
+          } else {
+            enrichedBooks.push({ title: cleanTitle, author: cleanAuthor, coverUrl: olCover, totalPages: 0, genre: null, description: null, language: null })
+          }
+        }
+      }
+
+      return new Response(JSON.stringify({ books: enrichedBooks }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
     return new Response(JSON.stringify({ books }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
