@@ -17,7 +17,10 @@ function cleanAuthor(author: string): string {
   if (parts.length > 1) {
     return `${parts[1].trim()} ${parts[0].trim()}`
   }
-  return author.replace(/\s+/g, ' ').trim()
+  return author
+    .replace(/\b[A-Z]\.\s*/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function lastNameOnly(author: string): string {
