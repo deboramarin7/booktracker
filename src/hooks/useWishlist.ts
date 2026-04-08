@@ -1,6 +1,28 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+async function fetchCoverForBook(title: string, author: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-books`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ title, author }),
+      }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const book = data.books?.[0];
+    return book?.coverUrl || null;
+  } catch {
+    return null;
+  }
+}
 
 export type WishStatus = "Comprado" | "Buscar" | "En biblioteca" | "En kindle";
 
@@ -74,6 +96,30 @@ export function useWishlist() {
   const { toast } = useToast();
   const [items, setItems] = useState<WishItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const enrichingRef = useRef(false);
+
+  const enrichMissingCovers = useCallback(async (loadedItems: WishItem[]) => {
+    if (enrichingRef.current) return;
+    const missing = loadedItems.filter((i) => !i.coverUrl);
+    if (!missing.length) return;
+    enrichingRef.current = true;
+
+    for (const item of missing) {
+      const cover = await fetchCoverForBook(item.title, item.author);
+      if (cover) {
+        await supabase
+          .from("wishlist")
+          .update({ cover_url: cover })
+          .eq("id", item.id)
+          .is("user_id", null);
+        setItems((prev) =>
+          prev.map((i) => (i.id === item.id ? { ...i, coverUrl: cover } : i))
+        );
+      }
+    }
+
+    enrichingRef.current = false;
+  }, []);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -86,10 +132,12 @@ export function useWishlist() {
     if (error) {
       toast({ title: "Error cargando wishlist", description: error.message, variant: "destructive" });
     } else {
-      setItems((data as DbWish[]).map(dbToWish));
+      const loaded = (data as DbWish[]).map(dbToWish);
+      setItems(loaded);
+      enrichMissingCovers(loaded);
     }
     setLoading(false);
-  }, [toast]);
+  }, [toast, enrichMissingCovers]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
