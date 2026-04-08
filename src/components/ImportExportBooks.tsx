@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { Book } from "@/hooks/useBooks";
+import * as XLSX from "xlsx";
 
 interface ImportExportBooksProps {
   onImport: (books: Omit<Book, "id" | "addedAt">[]) => Promise<Book[] | void>;
@@ -36,12 +37,11 @@ function parseCSVLine(line: string): string[] {
   return result;
 }
 
-function parseGoodreadsCSV(text: string): Omit<Book, "id" | "addedAt">[] {
-  const lines = text.split(/\r?\n/);
-  if (lines.length < 2) return [];
+function normalizeRows(rows: string[][]): Omit<Book, "id" | "addedAt">[] {
+  if (rows.length < 2) return [];
 
-  const headerCols = parseCSVLine(lines[0]);
-  const header = headerCols.map(h => h.trim().toLowerCase());
+  const headerCols = rows[0];
+  const header = headerCols.map(h => String(h ?? "").trim().toLowerCase());
 
   const titleIdx = header.findIndex(h =>
     h === "title" || h === "título" || h === "titulo" || h === "libro" || h === "book"
@@ -64,7 +64,7 @@ function parseGoodreadsCSV(text: string): Omit<Book, "id" | "addedAt">[] {
   );
   const dateReadIdx = header.findIndex(h =>
     h === "date read" || h === "fecha de lectura" || h === "fecha leído" || h === "fecha leido" ||
-    h.includes("date read") || h.includes("fecha") && h.includes("lectura")
+    h.includes("date read") || (h.includes("fecha") && h.includes("lectura"))
   );
   const dateAddedIdx = header.findIndex(h =>
     h === "date added" || h === "fecha añadido" || h === "fecha agregado" || h === "fecha" ||
@@ -73,24 +73,22 @@ function parseGoodreadsCSV(text: string): Omit<Book, "id" | "addedAt">[] {
 
   const results: Omit<Book, "id" | "addedAt">[] = [];
 
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
+  for (let i = 1; i < rows.length; i++) {
+    const cols = rows[i];
+    if (!cols || cols.every(c => !c)) continue;
 
     try {
-      const cols = parseCSVLine(line);
-
-      const title = titleIdx >= 0 ? cols[titleIdx]?.trim() || "" : "";
-      const author = authorIdx >= 0 ? cols[authorIdx]?.trim() || "" : "";
+      const title = titleIdx >= 0 ? String(cols[titleIdx] ?? "").trim() : "";
+      const author = authorIdx >= 0 ? String(cols[authorIdx] ?? "").trim() : "";
 
       if (!title || !author) continue;
 
-      const shelf = shelfIdx >= 0 ? (cols[shelfIdx]?.trim() || "").toLowerCase() : "";
+      const shelf = shelfIdx >= 0 ? String(cols[shelfIdx] ?? "").trim().toLowerCase() : "";
       const status = shelf === "currently-reading" ? "reading" as const : "finished" as const;
-      const rating = ratingIdx >= 0 ? Math.min(5, Math.max(0, parseInt(cols[ratingIdx]) || 0)) : 0;
-      const totalPages = pagesIdx >= 0 ? parseInt(cols[pagesIdx]?.replace(/\D/g, '') || "0") || 0 : 0;
-      const dateRead = dateReadIdx >= 0 ? cols[dateReadIdx]?.trim() || "" : "";
-      const dateAdded = dateAddedIdx >= 0 ? cols[dateAddedIdx]?.trim() || "" : "";
+      const rating = ratingIdx >= 0 ? Math.min(5, Math.max(0, parseInt(String(cols[ratingIdx] ?? "0")) || 0)) : 0;
+      const totalPages = pagesIdx >= 0 ? parseInt(String(cols[pagesIdx] ?? "0").replace(/\D/g, '') || "0") || 0 : 0;
+      const dateRead = dateReadIdx >= 0 ? String(cols[dateReadIdx] ?? "").trim() : "";
+      const dateAdded = dateAddedIdx >= 0 ? String(cols[dateAddedIdx] ?? "").trim() : "";
 
       results.push({
         title,
@@ -109,12 +107,26 @@ function parseGoodreadsCSV(text: string): Omit<Book, "id" | "addedAt">[] {
         endDate: dateRead || undefined,
       });
     } catch (error) {
-      console.error(`Error parsing line ${i}:`, error);
+      console.error(`Error parsing row ${i}:`, error);
       continue;
     }
   }
 
   return results;
+}
+
+function parseCSV(text: string): Omit<Book, "id" | "addedAt">[] {
+  const lines = text.split(/\r?\n/);
+  const rows = lines.map(line => parseCSVLine(line));
+  return normalizeRows(rows);
+}
+
+function parseExcel(buffer: ArrayBuffer): Omit<Book, "id" | "addedAt">[] {
+  const workbook = XLSX.read(buffer, { type: "array" });
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: "" });
+  return normalizeRows(rows as string[][]);
 }
 
 export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
@@ -127,47 +139,62 @@ export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const text = reader.result as string;
-        console.log('CSV text loaded, length:', text.length);
-        const books = parseGoodreadsCSV(text);
-        console.log('Books parsed:', books.length);
-        if (books.length === 0) {
+
+    const isExcel = file.name.endsWith(".xlsx") || file.name.endsWith(".xls");
+
+    if (isExcel) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const books = parseExcel(reader.result as ArrayBuffer);
+          if (books.length === 0) {
+            toast({
+              title: "No se encontraron libros",
+              description: "Verifica que el Excel tenga columnas como: Título, Autor, Páginas, etc.",
+              variant: "destructive"
+            });
+          }
+          setPreview(books);
+        } catch (error) {
           toast({
-            title: "No se encontraron libros",
-            description: "Verifica que el CSV tenga columnas como: Título, Autor, Páginas, etc.",
+            title: "Error al leer el archivo",
+            description: error instanceof Error ? error.message : "Error desconocido",
             variant: "destructive"
           });
         }
-        setPreview(books);
-      } catch (error) {
-        console.error('Error loading CSV:', error);
-        toast({
-          title: "Error al leer el archivo",
-          description: error instanceof Error ? error.message : "Error desconocido",
-          variant: "destructive"
-        });
-      }
-    };
-    reader.onerror = () => {
-      toast({
-        title: "Error al leer el archivo",
-        description: "No se pudo leer el archivo CSV",
-        variant: "destructive"
-      });
-    };
-    reader.readAsText(file);
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const text = reader.result as string;
+          const books = parseCSV(text);
+          if (books.length === 0) {
+            toast({
+              title: "No se encontraron libros",
+              description: "Verifica que el CSV tenga columnas como: Título, Autor, Páginas, etc.",
+              variant: "destructive"
+            });
+          }
+          setPreview(books);
+        } catch (error) {
+          toast({
+            title: "Error al leer el archivo",
+            description: error instanceof Error ? error.message : "Error desconocido",
+            variant: "destructive"
+          });
+        }
+      };
+      reader.readAsText(file);
+    }
   };
 
   const handleImport = async () => {
     if (!preview.length) return;
     setImporting(true);
     try {
-      console.log('Starting import of', preview.length, 'books');
       const result = await onImport(preview);
-      console.log('Import result:', result);
       const importedCount = Array.isArray(result) ? result.length : preview.length;
       toast({
         title: "Importación completada",
@@ -177,7 +204,6 @@ export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
       setPreview([]);
       if (fileRef.current) fileRef.current.value = "";
     } catch (error) {
-      console.error('Import error:', error);
       const errorMessage = error instanceof Error ? error.message : "Error al importar los libros";
       toast({
         title: "Error al importar",
@@ -200,14 +226,15 @@ export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
       <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display">Importar libros</DialogTitle>
-          <DialogDescription>Importa tu biblioteca desde cualquier CSV con columnas: Título, Autor, Páginas, etc.</DialogDescription>
+          <DialogDescription>Importa tu biblioteca desde un archivo CSV o Excel (.xlsx, .xls) con columnas: Título, Autor, Páginas, etc.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <input ref={fileRef} type="file" accept=".csv" onChange={handleFile} className="hidden" />
+            <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFile} className="hidden" />
             <Button variant="outline" onClick={() => fileRef.current?.click()} className="w-full">
-              Seleccionar archivo CSV
+              Seleccionar archivo CSV o Excel
             </Button>
+            <p className="text-xs text-muted-foreground mt-1.5 text-center">Formatos admitidos: .csv, .xlsx, .xls</p>
           </div>
 
           {preview.length > 0 && (
@@ -221,7 +248,7 @@ export function ImportBooksDialog({ onImport }: ImportExportBooksProps) {
                       <p className="text-xs text-muted-foreground">{b.author}</p>
                     </div>
                     <span className="text-xs text-muted-foreground shrink-0 ml-2">
-                      {b.status === "finished" ? "✅" : "📖"}
+                      {b.status === "finished" ? "Terminado" : "Leyendo"}
                     </span>
                   </div>
                 ))}
