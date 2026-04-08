@@ -26,6 +26,10 @@ function lastNameOnly(author: string): string {
   return parts[parts.length - 1]
 }
 
+function removeDiacritics(str: string): string {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
 function normalize(str: string): string {
   return str
     .toLowerCase()
@@ -219,6 +223,8 @@ async function findBestCover(title: string, author: string, isbn?: string, apiKe
     `intitle:${ct} inauthor:${ca}`,
     `intitle:${ct} inauthor:${ln}`,
     `intitle:"${ct}" inauthor:${ln}`,
+    `intitle:${removeDiacritics(ct)} inauthor:${removeDiacritics(ln)}`,
+    `intitle:${removeDiacritics(ct)}`,
     ct,
   ]
 
@@ -273,6 +279,12 @@ Deno.serve(async (req: Request) => {
       for (const q of queries) {
         items = await searchGoogleBooks(q, apiKey)
         if (items.length > 0) break
+      }
+      if (!items.length) {
+        items = await searchGoogleBooks(`intitle:${removeDiacritics(ct)} inauthor:${removeDiacritics(ca)}`, apiKey)
+      }
+      if (!items.length) {
+        items = await searchGoogleBooks(removeDiacritics(ct), apiKey)
       }
 
       const goodMatches = items.filter((item: any) => isGoodMatch(item, title, author || ''))
