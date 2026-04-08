@@ -62,7 +62,7 @@ function normalizeRows(rows: string[][]): ParsedBook[] {
   const header = rows[0].map(h => String(h ?? "").trim().toLowerCase());
 
   const idx = {
-    title:     findIdx(header, "title", "título", "titulo", "libro", "book"),
+    title:     findIdx(header, "title", "título", "titulo", "libro"),
     author:    findIdx(header, "author", "autor", "autora"),
     pages:     findIdx(header, "number of pages", "num pages", "páginas", "paginas", "pages"),
     rating:    findIdx(header, "my rating", "rating", "puntuación", "puntuacion", "valoración"),
