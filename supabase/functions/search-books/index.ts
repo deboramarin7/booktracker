@@ -153,7 +153,8 @@ async function searchOpenLibraryByISBN(isbn: string): Promise<string | null> {
   }
 }
 
-async function searchOpenLibraryByTitle(title: string, author: string): Promise<string | null> {
+async function searchOpenLibraryByTitle(title: string, author: string): Promise<{ url: string; source: string }[]> {
+  const results: { url: string; source: string }[] = []
   try {
     const queries = [
       author ? `title=${encodeURIComponent(title)}&author=${encodeURIComponent(author)}` : null,
@@ -162,7 +163,10 @@ async function searchOpenLibraryByTitle(title: string, author: string): Promise<
       `title=${encodeURIComponent(title)}`,
     ].filter(Boolean) as string[]
 
+    const seen = new Set<string>()
+
     for (const q of queries) {
+      if (results.length >= 4) break
       const url = `https://openlibrary.org/search.json?${q}&fields=key,cover_i,isbn,title,author_name&limit=10`
       const res = await fetch(url)
       if (!res.ok) continue
@@ -170,6 +174,7 @@ async function searchOpenLibraryByTitle(title: string, author: string): Promise<
       const docs = data.docs || []
 
       for (const doc of docs) {
+        if (results.length >= 4) break
         const docTitle = normalize(doc.title || '')
         const docAuthors: string[] = (doc.author_name || []).map((a: string) => normalize(a))
         const normTitle = normalize(cleanTitle(title))
@@ -177,29 +182,35 @@ async function searchOpenLibraryByTitle(title: string, author: string): Promise<
 
         const titleOk = docTitle.includes(normTitle) || normTitle.includes(docTitle) ||
           normTitle.split(' ').filter((w: string) => w.length > 3).some((w: string) => docTitle.includes(w))
-        const authorOk = docAuthors.some((a: string) => a.includes(normLastName) || normLastName.includes(a))
+        const authorOk = !author || docAuthors.some((a: string) => a.includes(normLastName) || normLastName.includes(a))
 
         if (!titleOk || !authorOk) continue
 
         if (doc.cover_i) {
-          return `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
+          const coverUrl = `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
+          if (!seen.has(coverUrl)) {
+            seen.add(coverUrl)
+            results.push({ url: coverUrl, source: 'Open Library' })
+          }
         }
+
         const isbns: string[] = doc.isbn || []
         for (const isbn of isbns.slice(0, 3)) {
-          const cover = await searchOpenLibraryByISBN(isbn)
-          if (cover) return cover
+          if (results.length >= 4) break
           const directUrl = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`
+          if (seen.has(directUrl)) continue
           const check = await fetch(directUrl, { method: 'HEAD' })
           if (check.ok && check.headers.get('content-type')?.startsWith('image/jpeg')) {
-            return directUrl
+            seen.add(directUrl)
+            results.push({ url: directUrl, source: 'Open Library (ISBN)' })
           }
         }
       }
     }
-    return null
   } catch {
-    return null
+    // ignore
   }
+  return results
 }
 
 async function findBestCover(title: string, author: string, isbn?: string, apiKey?: string): Promise<string | null> {
@@ -240,10 +251,68 @@ async function findBestCover(title: string, author: string, isbn?: string, apiKe
     }
   }
 
-  const olCover = await searchOpenLibraryByTitle(title, author)
-  if (olCover) return olCover
+  const olCovers = await searchOpenLibraryByTitle(title, author)
+  if (olCovers.length > 0) return olCovers[0].url
 
   return null
+}
+
+async function findAllCovers(title: string, author: string, isbn?: string, apiKey?: string): Promise<{ url: string; source: string }[]> {
+  const results: { url: string; source: string }[] = []
+  const seen = new Set<string>()
+
+  const ct = cleanTitle(title)
+  const ca = cleanAuthor(author)
+  const ln = lastNameOnly(author)
+
+  const addCover = (url: string, source: string) => {
+    if (!seen.has(url)) {
+      seen.add(url)
+      results.push({ url, source })
+    }
+  }
+
+  if (isbn) {
+    const googleByIsbn = await searchGoogleByISBN(isbn, apiKey)
+    for (const item of googleByIsbn) {
+      const cover = extractCoverFromGoogleItem(item)
+      if (cover) addCover(cover, 'Google Books (ISBN)')
+    }
+
+    const isbnDirect = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`
+    const check = await fetch(isbnDirect, { method: 'HEAD' })
+    if (check.ok && check.headers.get('content-type')?.startsWith('image/jpeg')) {
+      addCover(isbnDirect, 'Open Library (ISBN)')
+    }
+
+    const olByIsbn = await searchOpenLibraryByISBN(isbn)
+    if (olByIsbn) addCover(olByIsbn, 'Open Library')
+  }
+
+  const googleStrategies = [
+    `intitle:"${ct}" inauthor:"${ca}"`,
+    `intitle:"${ct}" inauthor:"${ln}"`,
+    `intitle:${removeDiacritics(ct)} inauthor:${removeDiacritics(ln)}`,
+    `intitle:${removeDiacritics(ct)}`,
+  ]
+
+  for (const q of googleStrategies) {
+    if (results.length >= 6) break
+    const items = await searchGoogleBooks(q, apiKey)
+    for (const item of items) {
+      if (results.length >= 6) break
+      if (!isGoodMatch(item, title, author)) continue
+      const cover = extractCoverFromGoogleItem(item)
+      if (cover) addCover(cover, 'Google Books')
+    }
+  }
+
+  const olCovers = await searchOpenLibraryByTitle(title, author)
+  for (const c of olCovers) {
+    addCover(c.url, c.source)
+  }
+
+  return results.slice(0, 8)
 }
 
 Deno.serve(async (req: Request) => {
@@ -253,7 +322,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json()
-    const { query, title, author, isbn } = body
+    const { query, title, author, isbn, coversOnly } = body
 
     if (!query && !title) {
       return new Response(JSON.stringify({ error: 'Query or title is required' }), {
@@ -263,6 +332,14 @@ Deno.serve(async (req: Request) => {
     }
 
     const apiKey = Deno.env.get('GOOGLE_BOOKS_API_KEY')
+
+    if (coversOnly && title) {
+      const covers = await findAllCovers(title, author || '', isbn, apiKey)
+      return new Response(JSON.stringify({ covers }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const ct = title ? cleanTitle(title) : ''
     const ca = author ? cleanAuthor(author) : ''
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { RichNotesEditor } from "@/components/RichNotesEditor";
 import { TagInput } from "@/components/TagInput";
+import { CoverSearch } from "@/components/CoverSearch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,10 +79,13 @@ export function EditBookDialog({ book, open, onOpenChange, onSave }: EditBookDia
             <Label className="font-body text-sm">Autor/a</Label>
             <Input value={author} onChange={(e) => setAuthor(e.target.value)} required />
           </div>
-          <div className="space-y-1.5">
-            <Label className="font-body text-sm">URL de portada</Label>
-            <Input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} />
-          </div>
+
+          <CoverSearch
+            title={title}
+            author={author}
+            currentCoverUrl={coverUrl}
+            onCoverSelect={setCoverUrl}
+          />
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -151,7 +155,6 @@ export function EditBookDialog({ book, open, onOpenChange, onSave }: EditBookDia
             </div>
           </div>
 
-          {/* Pages read - only if reading */}
           {status === "reading" && (
             <div className="space-y-1.5 animate-fade-in">
               <Label className="font-body text-sm">Páginas leídas</Label>
@@ -159,7 +162,6 @@ export function EditBookDialog({ book, open, onOpenChange, onSave }: EditBookDia
             </div>
           )}
 
-          {/* Dates */}
           <div className="grid grid-cols-2 gap-3">
             {(status === "reading" || status === "finished") && (
               <div className="space-y-1.5 animate-fade-in">
@@ -175,7 +177,6 @@ export function EditBookDialog({ book, open, onOpenChange, onSave }: EditBookDia
             )}
           </div>
 
-          {/* Rating - only finished */}
           {status === "finished" && (
             <div className="space-y-1.5 animate-fade-in">
               <Label className="font-body text-sm">Puntuación (0-5)</Label>
