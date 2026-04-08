@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&langRestrict=es&maxResults=10&key=${apiKey}`
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&key=${apiKey}`
     const res = await fetch(url)
     const data = await res.json()
 

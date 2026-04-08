@@ -3,7 +3,7 @@ import { useBooksContext } from "@/components/Layout";
 import { AddBookDialog } from "@/components/AddBookDialog";
 import { ImportBooksDialog } from "@/components/ImportExportBooks";
 import { BookCard } from "@/components/BookCard";
-import { BookOpen, Search, Target, Pencil, Loader as Loader2, Download, LayoutGrid, BookMarked, Filter, X } from "lucide-react";
+import { BookOpen, Search, Target, Pencil, Loader as Loader2, Download, LayoutGrid, BookMarked, Filter, X, Image as ImageIcon } from "lucide-react";
 import { useWishlist } from "@/hooks/useWishlist";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { GENRES, FORMATS, GENRE_COLORS } from "@/lib/constants";
 import { EditBookDialog } from "@/components/EditBookDialog";
 import type { Book } from "@/hooks/useBooks";
+import { supabase } from "@/integrations/supabase/client";
 
 function getYearFromBook(book: { endDate?: string; startDate?: string; addedAt: string }): number {
   const dateStr = book.endDate || book.startDate || book.addedAt;
@@ -51,6 +52,8 @@ export default function Library() {
   const { books, loading, addBook, addBooksInBatch, updateBook, deleteBook, addWishItem } = useBooksContext();
   const { addItem: addToWishlist } = useWishlist();
   const { toast } = useToast();
+  const [updatingCovers, setUpdatingCovers] = useState(false);
+  const [coverUpdateProgress, setCoverUpdateProgress] = useState({ current: 0, total: 0 });
   const [search, setSearch] = useState("");
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState("");
@@ -78,6 +81,42 @@ export default function Library() {
     await deleteBook(book.id);
     toast({ title: "Libro movido a Quiero leer", description: `"${book.title}" se ha movido a tu lista de deseos.` });
   }, [addToWishlist, deleteBook, toast]);
+
+  const handleUpdateCovers = useCallback(async () => {
+    const booksWithoutCover = books.filter(b => !b.coverUrl);
+    if (!booksWithoutCover.length) {
+      toast({ title: "Todos los libros ya tienen portada" });
+      return;
+    }
+    setUpdatingCovers(true);
+    setCoverUpdateProgress({ current: 0, total: booksWithoutCover.length });
+    let updated = 0;
+    let found = 0;
+    const CONCURRENCY = 5;
+    for (let i = 0; i < booksWithoutCover.length; i += CONCURRENCY) {
+      const batch = booksWithoutCover.slice(i, i + CONCURRENCY);
+      await Promise.all(batch.map(async (book) => {
+        try {
+          const query = `intitle:${book.title} inauthor:${book.author}`;
+          const { data, error } = await supabase.functions.invoke("search-books", { body: { query } });
+          if (!error && data?.books?.length) {
+            const coverUrl = data.books[0]?.coverUrl;
+            if (coverUrl) {
+              await updateBook(book.id, { coverUrl });
+              found++;
+            }
+          }
+        } catch { }
+        updated++;
+        setCoverUpdateProgress({ current: updated, total: booksWithoutCover.length });
+      }));
+    }
+    setUpdatingCovers(false);
+    toast({
+      title: "Portadas actualizadas",
+      description: `${found} portadas encontradas de ${booksWithoutCover.length} libros sin portada`,
+    });
+  }, [books, updateBook, toast]);
 
   const years = useMemo(() => {
     const yearSet = new Set<number>();
@@ -295,6 +334,19 @@ export default function Library() {
             </Button>
           </div>
           <ImportBooksDialog onImport={addBooksInBatch} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleUpdateCovers}
+            disabled={updatingCovers}
+            title="Buscar portadas para libros sin portada"
+            className="gap-1.5"
+          >
+            {updatingCovers
+              ? <><Loader2 className="h-4 w-4 animate-spin" /><span className="hidden sm:inline">{coverUpdateProgress.current}/{coverUpdateProgress.total}</span></>
+              : <><ImageIcon className="h-4 w-4" /><span className="hidden sm:inline">Portadas</span></>
+            }
+          </Button>
           <Button variant="outline" size="sm" onClick={exportToCSV} title="Exportar a CSV">
             <Download className="h-4 w-4" />
             <span className="hidden sm:inline ml-1">Exportar</span>
