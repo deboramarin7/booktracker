@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, CartesianGrid } from "recharts";
 import { CalendarDays, Flame, ChevronLeft, ChevronRight, BookOpen, TrendingUp, Trophy, Zap } from "lucide-react";
+import { BookCoverImage } from "@/components/BookCoverImage";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -589,11 +590,13 @@ export default function ReadingHabits() {
                           {data.reading.length > 0 && (
                             <div className="flex flex-wrap gap-1 mb-0.5">
                               {data.reading.slice(0, 3).map((b, idx) =>
-                                b.coverUrl ? (
-                                  <img key={idx} src={b.coverUrl} alt="" className="w-10 h-14 rounded-sm object-cover border border-background shadow-sm" />
-                                ) : (
-                                  <div key={idx} className="w-10 h-14 rounded-sm bg-primary/20 border border-background" />
-                                )
+                                <BookCoverImage
+                                  key={idx}
+                                  src={b.coverUrl}
+                                  className="w-10 h-14 rounded-sm object-cover border border-background shadow-sm"
+                                  fallbackClassName="w-10 h-14 rounded-sm border border-background bg-primary/20"
+                                  iconClassName="h-4 w-4"
+                                />
                               )}
                               {data.reading.length > 3 && (
                                 <span className="text-[8px] text-muted-foreground self-end">+{data.reading.length - 3}</span>

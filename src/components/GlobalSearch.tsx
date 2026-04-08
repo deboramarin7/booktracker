@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { Search, X, BookOpen } from "lucide-react";
+import { Search, X } from "lucide-react";
+import { BookCoverImage } from "@/components/BookCoverImage";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import type { Book } from "@/hooks/useBooks";
@@ -101,13 +102,12 @@ export function GlobalSearch({ books, onSelectBook }: GlobalSearchProps) {
                 }}
                 className="w-full flex items-center gap-3 p-3 hover:bg-secondary/50 transition-colors text-left border-b last:border-b-0"
               >
-                {book.coverUrl ? (
-                  <img src={book.coverUrl} alt="" className="w-8 h-12 object-cover rounded-sm shrink-0" />
-                ) : (
-                  <div className="w-8 h-12 bg-muted rounded-sm flex items-center justify-center shrink-0">
-                    <BookOpen className="h-3 w-3 text-muted-foreground" />
-                  </div>
-                )}
+                <BookCoverImage
+                  src={book.coverUrl}
+                  className="w-8 h-12 object-cover rounded-sm shrink-0"
+                  fallbackClassName="w-8 h-12 rounded-sm shrink-0"
+                  iconClassName="h-3 w-3"
+                />
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{book.title}</p>
                   <p className="text-xs text-muted-foreground truncate">{book.author}</p>

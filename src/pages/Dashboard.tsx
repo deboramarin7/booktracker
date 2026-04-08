@@ -3,10 +3,8 @@ import { GENRE_COLORS } from "@/lib/constants";
 import { useBooksContext } from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  BookOpen, TrendingUp, TrendingDown, User, Library,
-  BarChart3, Clock, CalendarRange, Star, Flame, BookMarked,
-} from "lucide-react";
+import { BookOpen, TrendingUp, TrendingDown, User, Library, ChartBar as BarChart3, Clock, CalendarRange, Star, Flame, BookMarked } from "lucide-react";
+import { BookCoverImage } from "@/components/BookCoverImage";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
   BarChart, Bar, XAxis, YAxis, LineChart, Line, CartesianGrid,
@@ -73,13 +71,12 @@ function BookHighlight({ book, label, metric, icon: Icon }: {
 }) {
   return (
     <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border/30">
-      {book.coverUrl ? (
-        <img src={book.coverUrl} alt={book.title} className="w-14 h-20 object-cover rounded-lg shadow-md flex-shrink-0" />
-      ) : (
-        <div className="w-14 h-20 bg-secondary rounded-lg flex items-center justify-center flex-shrink-0">
-          <BookOpen className="h-5 w-5 text-muted-foreground" />
-        </div>
-      )}
+      <BookCoverImage
+        src={book.coverUrl}
+        alt={book.title}
+        className="w-14 h-20 object-cover rounded-lg shadow-md flex-shrink-0"
+        fallbackClassName="w-14 h-20 rounded-lg flex-shrink-0"
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5 mb-1">
           <Icon className="h-3.5 w-3.5 text-primary/60" />
@@ -554,13 +551,12 @@ export default function Dashboard() {
                 <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
                   {yearBooks.map((book) => (
                     <div key={book.id} className="group relative">
-                      {book.coverUrl ? (
-                        <img src={book.coverUrl} alt={book.title} className="w-full aspect-[2/3] object-cover rounded-lg shadow-md group-hover:shadow-lg transition-all duration-200 group-hover:scale-105" />
-                      ) : (
-                        <div className="w-full aspect-[2/3] bg-secondary rounded-lg flex items-center justify-center">
-                          <BookOpen className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      )}
+                      <BookCoverImage
+                        src={book.coverUrl}
+                        alt={book.title}
+                        className="w-full aspect-[2/3] object-cover rounded-lg shadow-md group-hover:shadow-lg transition-all duration-200 group-hover:scale-105"
+                        fallbackClassName="w-full aspect-[2/3] rounded-lg"
+                      />
                       <div className="absolute inset-0 bg-foreground/70 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-end p-1.5">
                         <p className="text-background text-[10px] leading-tight font-medium line-clamp-3">{book.title}</p>
                       </div>

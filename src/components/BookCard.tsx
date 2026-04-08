@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Book } from "@/hooks/useBooks";
-import { Trash2, Star, Pencil, ChevronDown, ChevronUp, BookmarkPlus, BookOpen } from "lucide-react";
+import { Trash2, Star, Pencil, ChevronDown, ChevronUp, BookmarkPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { EditBookDialog } from "@/components/EditBookDialog";
 import { RichNotesDisplay } from "@/components/RichNotesEditor";
+import { BookCoverImage } from "@/components/BookCoverImage";
 import { STATUS_LABELS, STATUS_COLORS, GENRE_COLORS, FORMAT_COLORS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -57,13 +58,12 @@ export function BookCard({ book, onUpdate, onDelete, onMoveToWishlist, index }: 
         <div className="flex gap-4 p-4">
           {/* Cover - larger, with overlay on hover */}
           <div className="relative flex-shrink-0 w-[88px] h-[130px] rounded-lg overflow-hidden shadow-md ring-1 ring-border/20">
-            {book.coverUrl ? (
-              <img src={book.coverUrl} alt={book.title} className="h-full w-full object-cover" loading="lazy" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/15 to-accent/15">
-                <BookOpen className="h-8 w-8 text-primary/40" />
-              </div>
-            )}
+            <BookCoverImage
+              src={book.coverUrl}
+              alt={book.title}
+              className="h-full w-full object-cover"
+              iconClassName="h-8 w-8"
+            />
             {/* Hover overlay with quick actions */}
             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-1.5">
               <Button

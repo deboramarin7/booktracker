@@ -32,6 +32,7 @@ function saveOrder(order: string[]) {
 }
 
 function SortableBook({ book, onClick }: { book: Book; onClick: () => void }) {
+  const [coverFailed, setCoverFailed] = useState(false);
   const {
     attributes,
     listeners,
@@ -62,13 +63,14 @@ function SortableBook({ book, onClick }: { book: Book; onClick: () => void }) {
             onClick();
           }}
         >
-          {book.coverUrl ? (
+          {book.coverUrl && !coverFailed ? (
             <img
               src={book.coverUrl}
               alt={book.title}
               className="w-[52px] sm:w-[62px] h-[78px] sm:h-[93px] object-cover rounded-sm shadow-md border border-black/10"
               draggable={false}
               style={{ boxShadow: "2px 2px 6px rgba(0,0,0,0.3), inset -1px 0 2px rgba(255,255,255,0.1)" }}
+              onError={() => setCoverFailed(true)}
             />
           ) : (
             <div

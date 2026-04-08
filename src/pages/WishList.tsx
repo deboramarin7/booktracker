@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { WishItem, WishStatus } from "@/hooks/useWishlist";
 import { Heart, Plus, Pencil, Trash2, BookHeart, BookOpen, Loader as Loader2, Search, Filter, BookMarked, Flame } from "lucide-react";
+import { BookCoverImage } from "@/components/BookCoverImage";
 import { useBooksContext } from "@/components/Layout";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -142,13 +143,12 @@ function WishCard({ item, updateItem, deleteItem, onMoveToLibrary }: { item: Wis
           </div>
         )}
         <div className="flex items-start gap-3">
-          {item.coverUrl ? (
-            <img src={item.coverUrl} alt={item.title} className="w-14 h-20 object-cover rounded-lg shadow-sm shrink-0" />
-          ) : (
-            <div className="w-14 h-20 bg-secondary rounded-lg flex items-center justify-center shrink-0">
-              <BookOpen className="h-5 w-5 text-muted-foreground" />
-            </div>
-          )}
+          <BookCoverImage
+            src={item.coverUrl}
+            alt={item.title}
+            className="w-14 h-20 object-cover rounded-lg shadow-sm shrink-0"
+            fallbackClassName="w-14 h-20 rounded-lg shrink-0"
+          />
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between">
               <div>
