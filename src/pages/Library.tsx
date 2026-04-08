@@ -97,8 +97,7 @@ export default function Library() {
       const batch = booksWithoutCover.slice(i, i + CONCURRENCY);
       await Promise.all(batch.map(async (book) => {
         try {
-          const query = `intitle:${book.title} inauthor:${book.author}`;
-          const { data, error } = await supabase.functions.invoke("search-books", { body: { query } });
+          const { data, error } = await supabase.functions.invoke("search-books", { body: { title: book.title, author: book.author } });
           if (!error && data?.books?.length) {
             const coverUrl = data.books[0]?.coverUrl;
             if (coverUrl) {
