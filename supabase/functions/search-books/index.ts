@@ -228,22 +228,27 @@ async function searchAmazonCover(isbn: string): Promise<string | null> {
   async function isRealCover(url: string): Promise<boolean> {
     try {
       const headRes = await fetch(url, { method: 'HEAD' })
+      console.log(`[Amazon HEAD] ${url} -> status=${headRes.status} content-type=${headRes.headers.get('content-type')} content-length=${headRes.headers.get('content-length')}`)
       if (!headRes.ok) return false
       if (!headRes.headers.get('content-type')?.startsWith('image/jpeg')) return false
       const size = parseInt(headRes.headers.get('content-length') || '0')
       if (size > 15000) return true
       if (size > 0 && size <= 15000) return false
       const getRes = await fetch(url, { headers: { Range: 'bytes=0-32767' } })
+      console.log(`[Amazon GET] ${url} -> status=${getRes.status} content-length=${getRes.headers.get('content-length')}`)
       if (!getRes.ok) return false
       const buf = await getRes.arrayBuffer()
+      console.log(`[Amazon GET buf] byteLength=${buf.byteLength}`)
       return buf.byteLength > 15000
-    } catch {
+    } catch (e) {
+      console.log(`[Amazon ERROR] ${url} -> ${e}`)
       return false
     }
   }
 
   try {
     const isbn10 = isbn13ToIsbn10(isbn) || isbn
+    console.log(`[Amazon] isbn=${isbn} isbn10=${isbn10}`)
     const urls = [
       `https://images-na.ssl-images-amazon.com/images/P/${isbn10}.01.LZZZZZZZ.jpg`,
       `https://images-na.ssl-images-amazon.com/images/P/${isbn10}.01._SX300_.jpg`,
@@ -251,7 +256,9 @@ async function searchAmazonCover(isbn: string): Promise<string | null> {
     for (const url of urls) {
       if (await isRealCover(url)) return url
     }
-  } catch {}
+  } catch (e) {
+    console.log(`[Amazon OUTER ERROR] ${e}`)
+  }
   return null
 }
 
