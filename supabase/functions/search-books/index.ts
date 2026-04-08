@@ -213,6 +213,35 @@ async function searchOpenLibraryByTitle(title: string, author: string): Promise<
   return results
 }
 
+async function searchAmazonCover(isbn: string): Promise<string | null> {
+  function isbn13ToIsbn10(isbn13: string): string | null {
+    if (isbn13.length !== 13 || !isbn13.startsWith('978')) return null
+    const core = isbn13.slice(3, 12)
+    let sum = 0
+    for (let i = 0; i < 9; i++) {
+      sum += parseInt(core[i]) * (10 - i)
+    }
+    const check = (11 - (sum % 11)) % 11
+    return core + (check === 10 ? 'X' : String(check))
+  }
+
+  try {
+    const isbn10 = isbn13ToIsbn10(isbn) || isbn
+    const urls = [
+      `https://images-na.ssl-images-amazon.com/images/P/${isbn10}.01.LZZZZZZZ.jpg`,
+      `https://images-na.ssl-images-amazon.com/images/P/${isbn10}.01._SX300_.jpg`,
+    ]
+    for (const url of urls) {
+      const res = await fetch(url, { method: 'HEAD' })
+      if (res.ok && res.headers.get('content-type')?.startsWith('image/jpeg')) {
+        const size = parseInt(res.headers.get('content-length') || '0')
+        if (size > 5000) return url
+      }
+    }
+  } catch {}
+  return null
+}
+
 async function findBestCover(title: string, author: string, isbn?: string, apiKey?: string): Promise<string | null> {
   const ct = cleanTitle(title)
   const ca = cleanAuthor(author)
@@ -231,6 +260,9 @@ async function findBestCover(title: string, author: string, isbn?: string, apiKe
       const cover = extractCoverFromGoogleItem(item)
       if (cover) return cover
     }
+
+    const amazonCover = await searchAmazonCover(isbn)
+    if (amazonCover) return amazonCover
   }
 
   const googleStrategies = [
@@ -253,6 +285,11 @@ async function findBestCover(title: string, author: string, isbn?: string, apiKe
 
   const olCovers = await searchOpenLibraryByTitle(title, author)
   if (olCovers.length > 0) return olCovers[0].url
+
+  if (isbn) {
+    const amazonCover = await searchAmazonCover(isbn)
+    if (amazonCover) return amazonCover
+  }
 
   return null
 }
@@ -287,6 +324,9 @@ async function findAllCovers(title: string, author: string, isbn?: string, apiKe
 
     const olByIsbn = await searchOpenLibraryByISBN(isbn)
     if (olByIsbn) addCover(olByIsbn, 'Open Library')
+
+    const amazonCover = await searchAmazonCover(isbn)
+    if (amazonCover) addCover(amazonCover, 'Amazon')
   }
 
   const googleStrategies = [
