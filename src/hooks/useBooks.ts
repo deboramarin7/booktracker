@@ -3,23 +3,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 
+const GOOGLE_BOOKS_API_KEY = "AIzaSyDgSYwnvsjk4IRKo6HSD8Xcza57V0XdQbk";
+
 async function fetchCoverForBook(title: string, author: string): Promise<string | null> {
   try {
-    const res = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-books`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ title, author }),
-      }
-    );
+    const cleanTitle = title.replace(/\s*\(.*?\)\s*/g, "").trim();
+    const query = `intitle:${cleanTitle} inauthor:${author}`;
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=1&printType=books&key=${GOOGLE_BOOKS_API_KEY}`;
+    const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
-    const book = data.books?.[0];
-    return book?.coverUrl || null;
+    const item = data.items?.[0];
+    if (!item) return null;
+    const links = item.volumeInfo?.imageLinks || {};
+    const raw = links.extraLarge || links.large || links.medium || links.small || links.thumbnail || links.smallThumbnail;
+    if (!raw) return null;
+    return raw.replace("http://", "https://").replace("&edge=curl", "").replace("zoom=1", "zoom=2");
   } catch {
     return null;
   }
