@@ -3,6 +3,8 @@ import { Search, Loader as Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+const GOOGLE_BOOKS_API_KEY = "AIzaSyDgSYwnvsjk4IRKo6HSD8Xcza57V0XdQbk";
+
 interface BookSearchResult {
   title: string;
   author: string;
@@ -13,6 +15,19 @@ interface BookSearchResult {
 
 interface BookSearchGoogleProps {
   onSelect: (result: BookSearchResult) => void;
+}
+
+function extractCover(item: any): string | undefined {
+  const links = item?.volumeInfo?.imageLinks || {};
+  const url =
+    links.extraLarge ||
+    links.large ||
+    links.medium ||
+    links.small ||
+    links.thumbnail ||
+    links.smallThumbnail;
+  if (!url) return undefined;
+  return url.replace("http://", "https://").replace("&edge=curl", "").replace("zoom=1", "zoom=2");
 }
 
 export function BookSearchGoogle({ onSelect }: BookSearchGoogleProps) {
@@ -28,20 +43,22 @@ export function BookSearchGoogle({ onSelect }: BookSearchGoogleProps) {
     setSearched(true);
     setResults([]);
     try {
-      const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q.trim())}&fields=key,title,author_name,cover_i,number_of_pages_median,subject&limit=10&lang=es`;
+      const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q.trim())}&maxResults=15&printType=books&key=${GOOGLE_BOOKS_API_KEY}`;
       const res = await fetch(url);
       if (!res.ok) { setResults([]); return; }
       const data = await res.json();
-      const docs: BookSearchResult[] = (data.docs || []).map((doc: any) => ({
-        title: doc.title || "",
-        author: (doc.author_name || []).join(", "),
-        coverUrl: doc.cover_i
-          ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg`
-          : undefined,
-        totalPages: doc.number_of_pages_median || 0,
-        genre: (doc.subject || [])[0] || undefined,
-      }));
-      setResults(docs);
+      const items = data.items || [];
+      const books: BookSearchResult[] = items.map((item: any) => {
+        const info = item.volumeInfo || {};
+        return {
+          title: info.title || "",
+          author: (info.authors || []).join(", "),
+          coverUrl: extractCover(item),
+          totalPages: info.pageCount || 0,
+          genre: (info.categories || [])[0] || undefined,
+        };
+      });
+      setResults(books);
     } catch {
       setResults([]);
     } finally {
@@ -52,8 +69,8 @@ export function BookSearchGoogle({ onSelect }: BookSearchGoogleProps) {
   const handleChange = (value: string) => {
     setQuery(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (value.trim().length < 3) { setResults([]); setSearched(false); return; }
-    debounceRef.current = setTimeout(() => search(value), 500);
+    if (value.trim().length < 2) { setResults([]); setSearched(false); return; }
+    debounceRef.current = setTimeout(() => search(value), 400);
   };
 
   return (
@@ -84,7 +101,7 @@ export function BookSearchGoogle({ onSelect }: BookSearchGoogleProps) {
         </Button>
       </div>
       {results.length > 0 && (
-        <div className="max-h-48 overflow-y-auto rounded-md border bg-popover divide-y">
+        <div className="max-h-56 overflow-y-auto rounded-md border bg-popover divide-y">
           {results.map((r, i) => (
             <button
               key={i}
