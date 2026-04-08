@@ -213,51 +213,28 @@ async function searchOpenLibraryByTitle(title: string, author: string): Promise<
   return results
 }
 
-async function searchAmazonCover(isbn: string): Promise<string | null> {
-  function isbn13ToIsbn10(isbn13: string): string | null {
-    if (isbn13.length !== 13 || !isbn13.startsWith('978')) return null
-    const core = isbn13.slice(3, 12)
-    let sum = 0
-    for (let i = 0; i < 9; i++) {
-      sum += parseInt(core[i]) * (10 - i)
-    }
-    const check = (11 - (sum % 11)) % 11
-    return core + (check === 10 ? 'X' : String(check))
-  }
-
-  async function isRealCover(url: string): Promise<boolean> {
+async function searchExtraCover(isbn: string): Promise<string | null> {
+  async function isRealImage(url: string, minBytes = 5000): Promise<boolean> {
     try {
-      const headRes = await fetch(url, { method: 'HEAD' })
-      console.log(`[Amazon HEAD] ${url} -> status=${headRes.status} content-type=${headRes.headers.get('content-type')} content-length=${headRes.headers.get('content-length')}`)
-      if (!headRes.ok) return false
-      if (!headRes.headers.get('content-type')?.startsWith('image/jpeg')) return false
-      const size = parseInt(headRes.headers.get('content-length') || '0')
-      if (size > 15000) return true
-      if (size > 0 && size <= 15000) return false
-      const getRes = await fetch(url, { headers: { Range: 'bytes=0-32767' } })
-      console.log(`[Amazon GET] ${url} -> status=${getRes.status} content-length=${getRes.headers.get('content-length')}`)
-      if (!getRes.ok) return false
-      const buf = await getRes.arrayBuffer()
-      console.log(`[Amazon GET buf] byteLength=${buf.byteLength}`)
-      return buf.byteLength > 15000
-    } catch (e) {
-      console.log(`[Amazon ERROR] ${url} -> ${e}`)
+      const res = await fetch(url)
+      if (!res.ok) return false
+      const ct = res.headers.get('content-type') || ''
+      if (!ct.startsWith('image/')) return false
+      const buf = await res.arrayBuffer()
+      return buf.byteLength > minBytes
+    } catch {
       return false
     }
   }
 
-  try {
-    const isbn10 = isbn13ToIsbn10(isbn) || isbn
-    console.log(`[Amazon] isbn=${isbn} isbn10=${isbn10}`)
-    const urls = [
-      `https://images-na.ssl-images-amazon.com/images/P/${isbn10}.01.LZZZZZZZ.jpg`,
-      `https://images-na.ssl-images-amazon.com/images/P/${isbn10}.01._SX300_.jpg`,
-    ]
-    for (const url of urls) {
-      if (await isRealCover(url)) return url
-    }
-  } catch (e) {
-    console.log(`[Amazon OUTER ERROR] ${e}`)
+  const urls = [
+    `https://bookcover.longitood.com/bookcover/${isbn}`,
+    `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`,
+    `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`,
+  ]
+
+  for (const url of urls) {
+    if (await isRealImage(url)) return url
   }
   return null
 }
@@ -281,7 +258,7 @@ async function findBestCover(title: string, author: string, isbn?: string, apiKe
       if (cover) return cover
     }
 
-    const amazonCover = await searchAmazonCover(isbn)
+    const amazonCover = await searchExtraCover(isbn)
     if (amazonCover) return amazonCover
   }
 
@@ -307,7 +284,7 @@ async function findBestCover(title: string, author: string, isbn?: string, apiKe
   if (olCovers.length > 0) return olCovers[0].url
 
   if (isbn) {
-    const amazonCover = await searchAmazonCover(isbn)
+    const amazonCover = await searchExtraCover(isbn)
     if (amazonCover) return amazonCover
   }
 
@@ -345,7 +322,7 @@ async function findAllCovers(title: string, author: string, isbn?: string, apiKe
     const olByIsbn = await searchOpenLibraryByISBN(isbn)
     if (olByIsbn) addCover(olByIsbn, 'Open Library')
 
-    const amazonCover = await searchAmazonCover(isbn)
+    const amazonCover = await searchExtraCover(isbn)
     if (amazonCover) addCover(amazonCover, 'Amazon')
   }
 
