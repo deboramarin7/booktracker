@@ -2,8 +2,7 @@ import { useState, useRef } from "react";
 import { Search, Loader as Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
-const GOOGLE_BOOKS_API_KEY = "AIzaSyDgSYwnvsjk4IRKo6HSD8Xcza57V0XdQbk";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BookSearchResult {
   title: string;
@@ -17,23 +16,28 @@ interface BookSearchGoogleProps {
   onSelect: (result: BookSearchResult) => void;
 }
 
-function extractCover(item: any): string | undefined {
-  const links = item?.volumeInfo?.imageLinks || {};
-  const url =
-    links.extraLarge ||
-    links.large ||
-    links.medium ||
-    links.small ||
-    links.thumbnail ||
-    links.smallThumbnail;
-  if (!url) return undefined;
-  return url.replace("http://", "https://").replace("&edge=curl", "").replace("zoom=1", "zoom=2");
+async function searchBooks(query: string): Promise<BookSearchResult[]> {
+  try {
+    const { data, error } = await supabase.functions.invoke("search-books", {
+      body: { query },
+    });
+    if (error || !data?.books?.length) return [];
+    return data.books.map((b: any) => ({
+      title:      b.title      || "",
+      author:     b.author     || "",
+      coverUrl:   b.coverUrl   || undefined,
+      totalPages: b.totalPages || 0,
+      genre:      b.genre      || undefined,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export function BookSearchGoogle({ onSelect }: BookSearchGoogleProps) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<BookSearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [query, setQuery]       = useState("");
+  const [results, setResults]   = useState<BookSearchResult[]>([]);
+  const [loading, setLoading]   = useState(false);
   const [searched, setSearched] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -43,24 +47,8 @@ export function BookSearchGoogle({ onSelect }: BookSearchGoogleProps) {
     setSearched(true);
     setResults([]);
     try {
-      const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q.trim())}&maxResults=15&printType=books&key=${GOOGLE_BOOKS_API_KEY}`;
-      const res = await fetch(url);
-      if (!res.ok) { setResults([]); return; }
-      const data = await res.json();
-      const items = data.items || [];
-      const books: BookSearchResult[] = items.map((item: any) => {
-        const info = item.volumeInfo || {};
-        return {
-          title: info.title || "",
-          author: (info.authors || []).join(", "),
-          coverUrl: extractCover(item),
-          totalPages: info.pageCount || 0,
-          genre: (info.categories || [])[0] || undefined,
-        };
-      });
+      const books = await searchBooks(q.trim());
       setResults(books);
-    } catch {
-      setResults([]);
     } finally {
       setLoading(false);
     }
@@ -97,9 +85,13 @@ export function BookSearchGoogle({ onSelect }: BookSearchGoogleProps) {
           disabled={loading}
           className="h-8 px-2"
         >
-          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+          {loading
+            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            : <Search className="h-3.5 w-3.5" />
+          }
         </Button>
       </div>
+
       {results.length > 0 && (
         <div className="max-h-56 overflow-y-auto rounded-md border bg-popover divide-y">
           {results.map((r, i) => (
@@ -117,12 +109,15 @@ export function BookSearchGoogle({ onSelect }: BookSearchGoogleProps) {
               <div className="min-w-0">
                 <p className="text-xs font-medium truncate">{r.title}</p>
                 <p className="text-[10px] text-muted-foreground truncate">{r.author}</p>
-                {r.totalPages > 0 && <p className="text-[10px] text-muted-foreground">{r.totalPages} pág.</p>}
+                {r.totalPages > 0 && (
+                  <p className="text-[10px] text-muted-foreground">{r.totalPages} pág.</p>
+                )}
               </div>
             </button>
           ))}
         </div>
       )}
+
       {searched && results.length === 0 && !loading && (
         <p className="text-xs text-muted-foreground text-center py-2">No se encontraron resultados</p>
       )}
