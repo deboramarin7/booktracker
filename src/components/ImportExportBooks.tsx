@@ -5,7 +5,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { useToast } from "@/hooks/use-toast";
 import type { Book } from "@/hooks/useBooks";
 import * as XLSX from "xlsx";
-import { supabase } from "@/integrations/supabase/client";
 
 interface ImportExportBooksProps {
   onImport: (books: Omit<Book, "id" | "addedAt">[]) => Promise<Book[] | void>;
@@ -149,15 +148,23 @@ function normalizeRows(rows: string[][]): ParsedBookWithISBN[] {
   return results;
 }
 
+const GOOGLE_BOOKS_API_KEY = "AIzaSyDgSYwnvsjk4IRKo6HSD8Xcza57V0XdQbk";
+
 async function fetchCoverUrl(book: ParsedBookWithISBN): Promise<string | undefined> {
   try {
-    const cleanTitle = book.title.replace(/\s*\(.*?\)\s*/g, "").trim();
-    const body: Record<string, string> = { title: cleanTitle, author: book.author };
-    if (book._isbn) body.isbn = book._isbn;
-
-    const { data, error } = await supabase.functions.invoke("search-books", { body });
-    if (error || !data?.books?.length) return undefined;
-    return data.books[0]?.coverUrl || undefined;
+    const query = book._isbn
+      ? `isbn:${book._isbn}`
+      : `intitle:${book.title.replace(/\s*\(.*?\)\s*/g, "").trim()} inauthor:${book.author}`;
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=1&printType=books&key=${GOOGLE_BOOKS_API_KEY}`;
+    const res = await fetch(url);
+    if (!res.ok) return undefined;
+    const data = await res.json();
+    const item = data.items?.[0];
+    if (!item) return undefined;
+    const links = item.volumeInfo?.imageLinks || {};
+    const raw = links.extraLarge || links.large || links.medium || links.small || links.thumbnail || links.smallThumbnail;
+    if (!raw) return undefined;
+    return raw.replace("http://", "https://").replace("&edge=curl", "").replace("zoom=1", "zoom=2");
   } catch {
     return undefined;
   }
