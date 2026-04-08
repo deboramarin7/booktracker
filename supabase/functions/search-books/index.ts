@@ -29,31 +29,34 @@ function lastNameOnly(author: string): string {
 function normalize(str: string): string {
   return str
     .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9\s]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
 }
 
-function titleMatches(searchTitle: string, resultTitle: string): boolean {
-  if (!resultTitle) return false
-  const st = normalize(cleanTitle(searchTitle))
-  const rt = normalize(cleanTitle(resultTitle))
-  if (st === rt) return true
-  if (rt.includes(st) || st.includes(rt)) return true
-  const stWords = st.split(' ').filter(w => w.length > 3)
-  if (stWords.length === 0) return st === rt
-  const matchCount = stWords.filter(w => rt.includes(w)).length
-  return matchCount / stWords.length >= 0.6
-}
+function isGoodMatch(item: any, searchTitle: string, searchAuthor: string): boolean {
+  const info = item?.volumeInfo || {}
+  const resultTitle = normalize(info.title || '')
+  const resultAuthors: string[] = (info.authors || []).map((a: string) => normalize(a))
 
-function authorMatches(searchAuthor: string, resultAuthor: string): boolean {
-  if (!resultAuthor || !searchAuthor) return true
-  const sa = normalize(cleanAuthor(searchAuthor))
-  const ra = normalize(resultAuthor)
-  const saLast = normalize(lastNameOnly(searchAuthor))
-  return ra.includes(saLast) || sa.split(' ').some(part => part.length > 3 && ra.includes(part))
+  const normSearchTitle = normalize(cleanTitle(searchTitle))
+  const normLastName = normalize(lastNameOnly(searchAuthor))
+  const normSearchAuthor = normalize(cleanAuthor(searchAuthor))
+
+  const titleMatch =
+    resultTitle.includes(normSearchTitle) ||
+    normSearchTitle.includes(resultTitle) ||
+    normSearchTitle.split(' ').filter((w: string) => w.length > 3).some((w: string) => resultTitle.includes(w))
+
+  if (!titleMatch) return false
+
+  const authorMatch = resultAuthors.some((a: string) =>
+    a.includes(normLastName) ||
+    normLastName.includes(a) ||
+    normSearchAuthor.split(' ').some((part: string) => part.length > 3 && a.includes(part))
+  )
+
+  return authorMatch
 }
 
 async function searchGoogleBooks(query: string, apiKey?: string): Promise<any[]> {
@@ -151,7 +154,16 @@ async function searchOpenLibraryByTitle(title: string, author: string): Promise<
       const docs = data.docs || []
 
       for (const doc of docs) {
-        if (!titleMatches(title, doc.title || '')) continue
+        const docTitle = normalize(doc.title || '')
+        const docAuthors: string[] = (doc.author_name || []).map((a: string) => normalize(a))
+        const normTitle = normalize(cleanTitle(title))
+        const normLastName = normalize(lastNameOnly(author))
+
+        const titleOk = docTitle.includes(normTitle) || normTitle.includes(docTitle) ||
+          normTitle.split(' ').filter((w: string) => w.length > 3).some((w: string) => docTitle.includes(w))
+        const authorOk = docAuthors.some((a: string) => a.includes(normLastName) || normLastName.includes(a))
+
+        if (!titleOk || !authorOk) continue
 
         if (doc.cover_i) {
           return `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
@@ -204,11 +216,7 @@ async function findBestCover(title: string, author: string, isbn?: string, apiKe
   for (const q of googleStrategies) {
     const items = await searchGoogleBooks(q, apiKey)
     for (const item of items) {
-      const info = item.volumeInfo || {}
-      const resultTitle = info.title || ''
-      const resultAuthor = (info.authors || []).join(', ')
-      if (!titleMatches(title, resultTitle)) continue
-      if (!authorMatches(author, resultAuthor)) continue
+      if (!isGoodMatch(item, title, author)) continue
       const cover = extractCoverFromGoogleItem(item)
       if (cover) return cover
     }
@@ -239,33 +247,17 @@ Deno.serve(async (req: Request) => {
     const apiKey = Deno.env.get('GOOGLE_BOOKS_API_KEY')
     const ct = title ? cleanTitle(title) : ''
     const ca = author ? cleanAuthor(author) : ''
-    const ln = author ? lastNameOnly(author) : ''
 
     if (title) {
-      const googleStrategies = ca
-        ? [
-            `intitle:${ct} inauthor:${ca}`,
-            `intitle:${ct} inauthor:${ln}`,
-            ct,
-          ]
-        : [`intitle:${ct}`, ct]
-
-      let items: any[] = []
-      for (const q of googleStrategies) {
-        items = await searchGoogleBooks(q, apiKey)
-        if (items.length > 0) break
+      const googleQuery = ca ? `intitle:${ct} inauthor:${ca}` : `intitle:${ct}`
+      let items = await searchGoogleBooks(googleQuery, apiKey)
+      if (!items.length) {
+        items = await searchGoogleBooks(ct, apiKey)
       }
 
-      const matchingItems = items.filter((item: any) => {
-        const info = item.volumeInfo || {}
-        const resultTitle = info.title || ''
-        const resultAuthor = (info.authors || []).join(', ')
-        return titleMatches(title, resultTitle) && authorMatches(author || '', resultAuthor)
-      })
-
-      const itemsToUse = matchingItems.length > 0 ? matchingItems : items
-
-      let books = extractBooks(itemsToUse)
+      const goodMatches = items.filter((item: any) => isGoodMatch(item, title, author || ''))
+      const booksToUse = goodMatches.length > 0 ? goodMatches : items
+      let books = extractBooks(booksToUse)
 
       const enriched = await Promise.all(
         books.map(async (book) => {
@@ -282,8 +274,8 @@ Deno.serve(async (req: Request) => {
             enriched[0].coverUrl = cover
           } else {
             enriched.push({
-              title: ct || title,
-              author: ca || author || '',
+              title: ct,
+              author: ca,
               coverUrl: cover,
               totalPages: 0,
               genre: null,
