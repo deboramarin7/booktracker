@@ -43,6 +43,14 @@ interface ParsedBookWithISBN extends Omit<Book, "id" | "addedAt"> {
   _searchQuery?: string;
 }
 
+function fixEncoding(str: string): string {
+  try {
+    return decodeURIComponent(escape(str));
+  } catch {
+    return str;
+  }
+}
+
 function cleanIsbn(raw: string): string {
   return raw.replace(/[^0-9X]/gi, "").trim();
 }
@@ -96,8 +104,8 @@ function normalizeRows(rows: string[][]): ParsedBookWithISBN[] {
     if (!cols || cols.every(c => !c)) continue;
 
     try {
-      const title = titleIdx >= 0 ? String(cols[titleIdx] ?? "").trim() : "";
-      const author = authorIdx >= 0 ? String(cols[authorIdx] ?? "").trim() : "";
+      const title = titleIdx >= 0 ? fixEncoding(String(cols[titleIdx] ?? "").trim()) : "";
+      const author = authorIdx >= 0 ? fixEncoding(String(cols[authorIdx] ?? "").trim()) : "";
 
       if (!title || !author) continue;
 
