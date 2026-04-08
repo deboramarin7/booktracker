@@ -18,14 +18,8 @@ Deno.serve(async (req) => {
     }
 
     const apiKey = Deno.env.get('GOOGLE_BOOKS_API_KEY')
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'API key not configured' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&key=${apiKey}`
+    const keyParam = apiKey ? `&key=${apiKey}` : ''
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10${keyParam}`
     const res = await fetch(url)
     const data = await res.json()
 
