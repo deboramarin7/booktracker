@@ -74,15 +74,17 @@ function sortAndDeduplicateItems(items: any[], searchQuery: string): any[] {
     const info = item?.volumeInfo || {}
     const itemTitle = normalize(info.title || '')
     const lang = info.language || ''
-    const isSpanish = lang === 'es' ? 2 : 0
+    const isSpanish = lang === 'es' ? 20 : 0
     let titleScore = 0
-    if (itemTitle.includes(normQuery) || normQuery.includes(itemTitle)) {
-      titleScore = 3
+    if (itemTitle === normQuery || normQuery === itemTitle) {
+      titleScore = 50
+    } else if (itemTitle.includes(normQuery) || normQuery.includes(itemTitle)) {
+      titleScore = 30
     } else if (queryWords.length > 0) {
       const matched = queryWords.filter((w: string) => itemTitle.includes(w)).length
-      titleScore = matched / queryWords.length
+      titleScore = (matched / queryWords.length) * 10
     }
-    return { item, score: titleScore * 10 + isSpanish }
+    return { item, score: titleScore + isSpanish }
   })
 
   scored.sort((a, b) => b.score - a.score)
