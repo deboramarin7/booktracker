@@ -12,27 +12,29 @@ interface BookCoverImageProps {
   style?: React.CSSProperties;
 }
 
-// Genera un color de fondo consistente basado en el título
-function getColorFromTitle(title: string): string {
-  const colors = [
-    "from-violet-600/80 to-purple-800/80",
-    "from-emerald-600/80 to-teal-800/80",
-    "from-rose-600/80 to-pink-800/80",
-    "from-amber-600/80 to-orange-800/80",
-    "from-sky-600/80 to-blue-800/80",
-    "from-indigo-600/80 to-violet-800/80",
-    "from-fuchsia-600/80 to-pink-800/80",
-    "from-cyan-600/80 to-sky-800/80",
-  ];
-  if (!title) return colors[0];
-  const index = title.charCodeAt(0) % colors.length;
-  return colors[index];
+const PALETTES = [
+  { from: "#7c3aed", to: "#4c1d95" },
+  { from: "#059669", to: "#064e3b" },
+  { from: "#e11d48", to: "#881337" },
+  { from: "#d97706", to: "#78350f" },
+  { from: "#0284c7", to: "#0c4a6e" },
+  { from: "#4f46e5", to: "#312e81" },
+  { from: "#c026d3", to: "#701a75" },
+  { from: "#0891b2", to: "#164e63" },
+];
+
+function getPaletteFromTitle(title: string) {
+  if (!title) return PALETTES[0];
+  let hash = 0;
+  for (let i = 0; i < title.length; i++) {
+    hash = (hash * 31 + title.charCodeAt(i)) >>> 0;
+  }
+  return PALETTES[hash % PALETTES.length];
 }
 
-// Extrae las iniciales del título (máx 2 caracteres)
 function getInitials(title: string): string {
   if (!title) return "?";
-  const words = title.trim().split(/\s+/).filter(w => w.length > 0);
+  const words = title.trim().split(/\s+/).filter((w) => w.length > 0);
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
   return (words[0][0] + words[1][0]).toUpperCase();
 }
@@ -43,7 +45,6 @@ export function BookCoverImage({
   title = "",
   className,
   fallbackClassName,
-  iconClassName,
   draggable,
   style,
 }: BookCoverImageProps) {
@@ -63,28 +64,35 @@ export function BookCoverImage({
     );
   }
 
-  const initials = getInitials(title || alt);
-  const gradient = getColorFromTitle(title || alt);
+  const label = title || alt;
+  const initials = getInitials(label);
+  const palette = getPaletteFromTitle(label);
 
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center bg-gradient-to-br select-none",
-        gradient,
+        "flex flex-col items-center justify-center select-none overflow-hidden",
         fallbackClassName || className
       )}
-      style={style}
+      style={{
+        background: `linear-gradient(135deg, ${palette.from}, ${palette.to})`,
+        ...style,
+      }}
     >
       <span
-        className={cn(
-          "font-bold text-white/90 tracking-wide leading-none",
-          // Tamaño de fuente relativo al contenedor
-          "text-xl",
-          iconClassName
-        )}
+        className="font-bold text-white tracking-widest leading-none drop-shadow"
+        style={{ fontSize: "clamp(0.85rem, 3vw, 1.5rem)" }}
       >
         {initials}
       </span>
+      {label && (
+        <span
+          className="text-white/50 mt-1 px-1 text-center leading-tight font-medium"
+          style={{ fontSize: "clamp(0.45rem, 1.2vw, 0.6rem)", maxWidth: "90%" }}
+        >
+          {label.length > 18 ? label.slice(0, 16) + "…" : label}
+        </span>
+      )}
     </div>
   );
 }
