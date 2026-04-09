@@ -31,6 +31,32 @@ function saveOrder(order: string[]) {
   localStorage.setItem(SHELF_ORDER_KEY, JSON.stringify(order));
 }
 
+function getSpineColor(title: string): string {
+  const colors = [
+    { bg: "#7c3aed", text: "#ede9fe" },
+    { bg: "#0f766e", text: "#ccfbf1" },
+    { bg: "#b91c1c", text: "#fee2e2" },
+    { bg: "#b45309", text: "#fef3c7" },
+    { bg: "#1d4ed8", text: "#dbeafe" },
+    { bg: "#be185d", text: "#fce7f3" },
+    { bg: "#15803d", text: "#dcfce7" },
+    { bg: "#7e22ce", text: "#f3e8ff" },
+    { bg: "#c2410c", text: "#ffedd5" },
+    { bg: "#0e7490", text: "#cffafe" },
+  ];
+  const idx = (title.charCodeAt(0) + title.charCodeAt(title.length - 1)) % colors.length;
+  return colors[idx].bg;
+}
+
+function getSpineTextColor(title: string): string {
+  const colors = [
+    "#ede9fe", "#ccfbf1", "#fee2e2", "#fef3c7", "#dbeafe",
+    "#fce7f3", "#dcfce7", "#f3e8ff", "#ffedd5", "#cffafe",
+  ];
+  const idx = (title.charCodeAt(0) + title.charCodeAt(title.length - 1)) % colors.length;
+  return colors[idx];
+}
+
 function SortableBook({ book, onClick }: { book: Book; onClick: () => void }) {
   const [coverFailed, setCoverFailed] = useState(false);
   const {
@@ -46,8 +72,11 @@ function SortableBook({ book, onClick }: { book: Book; onClick: () => void }) {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : undefined,
-    opacity: isDragging ? 0.7 : 1,
+    opacity: isDragging ? 0.75 : 1,
   };
+
+  const spineColor = getSpineColor(book.title);
+  const spineTextColor = getSpineTextColor(book.title);
 
   return (
     <Tooltip>
@@ -55,44 +84,67 @@ function SortableBook({ book, onClick }: { book: Book; onClick: () => void }) {
         <div
           ref={setNodeRef}
           style={style}
-          className={`relative group shrink-0 cursor-grab active:cursor-grabbing touch-none ${isDragging ? "scale-105" : "transition-transform hover:-translate-y-2 hover:z-10"}`}
+          className={`relative group shrink-0 cursor-grab active:cursor-grabbing touch-none select-none
+            ${isDragging ? "scale-110 rotate-2" : "transition-all duration-200 hover:-translate-y-3 hover:z-20"}`}
           {...attributes}
           {...listeners}
-          onDoubleClick={(e) => {
-            e.stopPropagation();
-            onClick();
-          }}
+          onDoubleClick={(e) => { e.stopPropagation(); onClick(); }}
         >
           {book.coverUrl && !coverFailed ? (
-            <img
-              src={book.coverUrl}
-              alt={book.title}
-              className="w-[52px] sm:w-[62px] h-[78px] sm:h-[93px] object-cover rounded-sm shadow-md border border-black/10"
-              draggable={false}
-              style={{ boxShadow: "2px 2px 6px rgba(0,0,0,0.3), inset -1px 0 2px rgba(255,255,255,0.1)" }}
-              onError={() => setCoverFailed(true)}
-            />
+            <div className="relative">
+              <img
+                src={book.coverUrl}
+                alt={book.title}
+                className="w-[50px] sm:w-[60px] h-[75px] sm:h-[90px] object-cover rounded-[2px]"
+                draggable={false}
+                style={{
+                  boxShadow: "3px 3px 8px rgba(0,0,0,0.5), inset -2px 0 4px rgba(0,0,0,0.2), inset 1px 0 1px rgba(255,255,255,0.15)",
+                }}
+                onError={() => setCoverFailed(true)}
+              />
+              <div className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-r from-white/20 to-transparent rounded-l-[2px]" />
+              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-200 rounded-[2px]" />
+            </div>
           ) : (
             <div
-              className="w-[52px] sm:w-[62px] h-[78px] sm:h-[93px] rounded-sm shadow-md flex items-center justify-center border border-black/10 bg-muted"
-              style={{ boxShadow: "2px 2px 6px rgba(0,0,0,0.3)" }}
+              className="w-[50px] sm:w-[60px] h-[75px] sm:h-[90px] rounded-[2px] flex items-center justify-center relative overflow-hidden"
+              style={{
+                backgroundColor: spineColor,
+                boxShadow: "3px 3px 8px rgba(0,0,0,0.5), inset -2px 0 4px rgba(0,0,0,0.2), inset 1px 0 1px rgba(255,255,255,0.2)",
+              }}
             >
+              <div className="absolute inset-0 opacity-10"
+                style={{
+                  backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(0,0,0,0.3) 8px, rgba(0,0,0,0.3) 9px)"
+                }}
+              />
+              <div className="absolute top-[6px] left-[4px] right-[4px] h-[1px] opacity-40" style={{ backgroundColor: spineTextColor }} />
+              <div className="absolute bottom-[6px] left-[4px] right-[4px] h-[1px] opacity-40" style={{ backgroundColor: spineTextColor }} />
+              <div className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-r from-white/25 to-transparent" />
               <span
-                className="text-[7px] font-bold text-muted-foreground whitespace-nowrap overflow-hidden max-w-[90%]"
-                style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
+                className="text-[7px] font-bold tracking-widest whitespace-nowrap overflow-hidden max-w-[85%] z-10"
+                style={{
+                  writingMode: "vertical-rl",
+                  textOrientation: "mixed",
+                  color: spineTextColor,
+                  textShadow: "0 1px 2px rgba(0,0,0,0.4)",
+                }}
               >
-                {book.title.length > 18 ? book.title.slice(0, 18) + "…" : book.title}
+                {book.title.length > 16 ? book.title.slice(0, 16) + "…" : book.title}
               </span>
             </div>
           )}
-          <div className="absolute top-0 left-0 w-full h-full bg-black/0 group-hover:bg-black/10 rounded-sm transition-colors" />
         </div>
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-[200px]">
-        <p className="text-xs font-medium">{book.title}</p>
+      <TooltipContent side="top" className="max-w-[200px] bg-popover/95 backdrop-blur-sm">
+        <p className="text-xs font-semibold">{book.title}</p>
         <p className="text-[10px] text-muted-foreground">{book.author}</p>
-        {book.rating > 0 && <p className="text-amber-500 text-[10px]">{"★".repeat(book.rating)}{"☆".repeat(5 - book.rating)}</p>}
-        <p className="text-[9px] text-muted-foreground/70 mt-1">Doble clic para editar</p>
+        {book.rating > 0 && (
+          <p className="text-amber-400 text-[10px] mt-0.5">
+            {"★".repeat(book.rating)}{"☆".repeat(5 - book.rating)}
+          </p>
+        )}
+        <p className="text-[9px] text-muted-foreground/60 mt-1 italic">Doble clic para editar</p>
       </TooltipContent>
     </Tooltip>
   );
@@ -102,8 +154,8 @@ export default function Shelves() {
   const { books, updateBook } = useBooksContext();
   const [editingBook, setEditingBook] = useState<Book | null>(null);
 
-  const finishedBooks = useMemo(() =>
-    books.filter((b) => b.status === "finished"),
+  const finishedBooks = useMemo(
+    () => books.filter((b) => b.status === "finished"),
     [books]
   );
 
@@ -153,37 +205,106 @@ export default function Shelves() {
     return rows;
   }, [orderedBooks]);
 
+  const handleBookClick = (book: Book) => setEditingBook(book);
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold font-display">📚 Mi Estantería</h2>
-        <p className="text-muted-foreground mt-1">
-          {finishedBooks.length} libro{finishedBooks.length !== 1 ? "s" : ""} leído{finishedBooks.length !== 1 ? "s" : ""} — arrastra para reorganizar · doble clic para editar
-        </p>
+      <div className="flex items-end justify-between">
+        <div>
+          <h2 className="text-3xl font-bold font-display tracking-tight">Mi Estantería</h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            <span className="font-semibold text-foreground">{finishedBooks.length}</span> libro{finishedBooks.length !== 1 ? "s" : ""} leído{finishedBooks.length !== 1 ? "s" : ""}
+            <span className="mx-2 opacity-30">·</span>
+            <span className="opacity-60">arrastra para reorganizar</span>
+            <span className="mx-2 opacity-30">·</span>
+            <span className="opacity-60">doble clic para editar</span>
+          </p>
+        </div>
+        <div className="text-right text-xs text-muted-foreground/50 hidden sm:block">
+          <p>{shelves.length} estante{shelves.length !== 1 ? "s" : ""}</p>
+        </div>
       </div>
 
       {finishedBooks.length === 0 ? (
-        <div className="text-center py-16 border rounded-lg bg-card">
+        <div className="text-center py-20 rounded-2xl border border-border/40 bg-card/50">
+          <div className="text-5xl mb-4">📚</div>
           <p className="text-lg font-semibold mb-2">Tu estantería está vacía</p>
-          <p className="text-muted-foreground">Los libros terminados aparecerán aquí automáticamente</p>
+          <p className="text-muted-foreground text-sm">Los libros terminados aparecerán aquí automáticamente</p>
         </div>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={orderedIds} strategy={rectSortingStrategy}>
-            <div className="space-y-0 rounded-lg overflow-hidden p-4 bg-gradient-to-b from-amber-900/20 to-amber-950/30 dark:from-amber-900/15 dark:to-amber-950/25 border border-amber-800/20">
-              {shelves.map((row, rowIndex) => (
-                <div key={rowIndex} className="relative">
-                  <div className="flex flex-wrap items-end gap-[4px] px-3 pt-4 pb-1 min-h-[90px]">
-                    {row.map((book) => (
-                      <SortableBook key={book.id} book={book} onClick={() => setEditingBook(book)} />
-                    ))}
-                  </div>
-                  <div className="h-3.5 bg-gradient-to-b from-amber-700 to-amber-900 dark:from-amber-800 dark:to-amber-950 rounded-sm shadow-lg" 
-                    style={{ boxShadow: "0 4px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.2)" }}
-                  />
-                  <div className="h-1.5 bg-amber-950/40 dark:bg-amber-950/60 rounded-b-sm" />
+            <div
+              className="relative rounded-xl overflow-hidden"
+              style={{
+                background: "linear-gradient(135deg, #1c0f05 0%, #2d1a0e 30%, #1a0d04 70%, #150a03 100%)",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.6), inset 0 0 60px rgba(0,0,0,0.3), inset 2px 0 0 rgba(255,255,255,0.04), inset -2px 0 0 rgba(255,255,255,0.02)",
+                padding: "16px 20px 20px",
+                border: "1px solid rgba(146, 64, 14, 0.3)",
+              }}
+            >
+              <div
+                className="absolute top-0 left-0 right-0 h-4 rounded-t-xl"
+                style={{
+                  background: "linear-gradient(to bottom, #92400e, #78350f)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.4)",
+                }}
+              >
+                <div className="absolute inset-0 opacity-20 rounded-t-xl"
+                  style={{
+                    backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(0,0,0,0.1) 60px, rgba(0,0,0,0.1) 61px)",
+                  }}
+                />
+              </div>
+
+              <div
+                className="absolute top-4 bottom-0 left-0 w-5"
+                style={{
+                  background: "linear-gradient(to right, #78350f, #92400e 50%, #6b2d0c)",
+                  boxShadow: "inset -2px 0 4px rgba(0,0,0,0.3)",
+                }}
+              />
+
+              <div
+                className="absolute top-4 bottom-0 right-0 w-5"
+                style={{
+                  background: "linear-gradient(to left, #78350f, #92400e 50%, #6b2d0c)",
+                  boxShadow: "inset 2px 0 4px rgba(0,0,0,0.3)",
+                }}
+              />
+
+              <div
+                className="relative mt-4 rounded-sm overflow-hidden"
+                style={{
+                  background: "linear-gradient(to bottom, #0f0704 0%, #130a05 50%, #0f0704 100%)",
+                }}
+              >
+                <div className="space-y-0 py-2 px-1">
+                  {shelves.map((row, rowIndex) => (
+                    <ShelfUnitWrapper
+                      key={rowIndex}
+                      row={row}
+                      rowIndex={rowIndex}
+                      totalBooks={orderedBooks.length}
+                      onBookClick={handleBookClick}
+                    />
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              <div
+                className="absolute bottom-0 left-0 right-0 h-5 rounded-b-xl"
+                style={{
+                  background: "linear-gradient(to top, #6b2d0c, #92400e)",
+                  boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.1), 0 -2px 4px rgba(0,0,0,0.3)",
+                }}
+              >
+                <div className="absolute inset-0 opacity-20 rounded-b-xl"
+                  style={{
+                    backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(0,0,0,0.1) 60px, rgba(0,0,0,0.1) 61px)",
+                  }}
+                />
+              </div>
             </div>
           </SortableContext>
         </DndContext>
@@ -200,6 +321,75 @@ export default function Shelves() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+function ShelfUnitWrapper({
+  row,
+  rowIndex,
+  totalBooks,
+  onBookClick,
+}: {
+  row: Book[];
+  rowIndex: number;
+  totalBooks: number;
+  onBookClick: (book: Book) => void;
+}) {
+  const start = rowIndex * BOOKS_PER_SHELF + 1;
+  const end = Math.min(start + row.length - 1, totalBooks);
+
+  return (
+    <div className="relative">
+      <div className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center justify-center w-4">
+        <span className="text-[8px] text-amber-700/30 font-mono font-bold"
+          style={{ writingMode: "vertical-rl" }}>
+          {rowIndex + 1}
+        </span>
+      </div>
+
+      <div
+        className="flex items-end gap-[3px] px-6 pt-5 pb-0 min-h-[100px] relative"
+        style={{
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.0), rgba(0,0,0,0.1))",
+        }}
+      >
+        <div className="absolute inset-0 pointer-events-none opacity-[0.015]"
+          style={{
+            backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
+            backgroundSize: "20px 20px",
+          }}
+        />
+        <div className="absolute top-0 left-6 right-6 h-4 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
+
+        {row.map((book) => (
+          <SortableBook key={book.id} book={book} onClick={() => onBookClick(book)} />
+        ))}
+      </div>
+
+      <div
+        className="h-[14px]"
+        style={{
+          background: "linear-gradient(to bottom, #a16207 0%, #92400e 30%, #78350f 60%, #5c2408 100%)",
+          boxShadow: "0 5px 15px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,180,80,0.25), inset 0 -1px 0 rgba(0,0,0,0.4)",
+        }}
+      >
+        <div className="w-full h-full opacity-15"
+          style={{
+            backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent 35px, rgba(0,0,0,0.2) 35px, rgba(0,0,0,0.2) 36px, transparent 36px, transparent 70px, rgba(255,255,255,0.04) 70px, rgba(255,255,255,0.04) 71px)",
+          }}
+        />
+      </div>
+
+      <div className="h-[6px]"
+        style={{
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.0) 100%)",
+        }}
+      />
+
+      <div className="absolute right-1 bottom-8 text-[7px] text-amber-600/20 font-mono tabular-nums">
+        {start}–{end}
+      </div>
     </div>
   );
 }
