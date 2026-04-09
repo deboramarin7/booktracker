@@ -157,14 +157,16 @@ async function openLibraryByISBN(isbn: string): Promise<string | null> {
 async function openLibrarySearch(query: string): Promise<any[]> {
   try {
     const fields = 'key,cover_i,isbn,title,author_name,number_of_pages_median,subject,language,edition_count'
-    const [generalRes, titleRes] = await Promise.all([
+    const [generalRes, titleRes, spanishRes] = await Promise.all([
       fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&fields=${fields}&limit=20`),
       fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(query)}&fields=${fields}&limit=10`),
+      fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&language=spa&fields=${fields}&limit=15`),
     ])
     const generalDocs = generalRes.ok ? (await generalRes.json()).docs || [] : []
     const titleDocs = titleRes.ok ? (await titleRes.json()).docs || [] : []
+    const spanishDocs = spanishRes.ok ? (await spanishRes.json()).docs || [] : []
     const seenKeys = new Set<string>()
-    return [...generalDocs, ...titleDocs].filter(doc => {
+    return [...spanishDocs, ...generalDocs, ...titleDocs].filter(doc => {
       if (seenKeys.has(doc.key)) return false
       seenKeys.add(doc.key)
       return true
@@ -174,7 +176,7 @@ async function openLibrarySearch(query: string): Promise<any[]> {
 
 function olDocToBook(doc: any): any {
   const langs: string[] = doc.language || []
-  const isSpanish = langs.includes('spa') || langs.includes('es')
+  const isSpanish = langs.includes('spa') || langs.includes('es') || langs.includes('spanish')
   return {
     _source: 'ol',
     _isSpanish: isSpanish,
@@ -191,7 +193,8 @@ function olDocToBook(doc: any): any {
 
 function scoreBook(b: any, normQ: string, qWords: string[]): number {
   const t = normalize(b.title || '')
-  const isEs = b.language === 'es' || b._isSpanish ? 20 : 0
+  const isEs = b.language === 'es' || b._isSpanish ? 25 : 0
+  const hasCover = b.coverUrl ? 5 : 0
   let ts = 0
   if (t === normQ) {
     ts = 100
@@ -201,7 +204,7 @@ function scoreBook(b: any, normQ: string, qWords: string[]): number {
     const matched = qWords.filter((w: string) => t.includes(w)).length
     ts = (matched / qWords.length) * 30
   }
-  return ts + isEs
+  return ts + isEs + hasCover
 }
 
 async function openLibraryByTitle(title: string, author: string): Promise<string | null> {
@@ -299,6 +302,17 @@ async function findBestCover(title: string, author: string, isbn?: string, apiKe
   return null
 }
 
+async function openLibrarySearchSpanish(query: string): Promise<any[]> {
+  try {
+    const fields = 'key,cover_i,isbn,title,author_name,number_of_pages_median,subject,language,edition_count'
+    const res = await fetch(
+      `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&language=spa&fields=${fields}&limit=20`
+    )
+    if (!res.ok) return []
+    return (await res.json()).docs || []
+  } catch { return [] }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 200, headers: corsHeaders })
 
@@ -335,13 +349,21 @@ Deno.serve(async (req: Request) => {
       const normQ = normalize(query)
       const qWords = normQ.split(' ').filter((w: string) => w.length > 2)
 
-      const [esOnlyItems, allItems, olDocs] = await Promise.all([
+      const [esOnlyItems, allItems, olDocs, olSpanishDocs] = await Promise.all([
         googleSearch(query, apiKey, true),
         googleSearch(query, apiKey),
         openLibrarySearch(query),
+        openLibrarySearchSpanish(query),
       ])
 
-      const olBooks = olDocs.map(olDocToBook)
+      const seenOlKeys = new Set<string>()
+      const mergedOlDocs = [...olSpanishDocs, ...olDocs].filter(doc => {
+        if (seenOlKeys.has(doc.key)) return false
+        seenOlKeys.add(doc.key)
+        return true
+      })
+
+      const olBooks = mergedOlDocs.map(olDocToBook)
 
       const seen = new Set<string>()
       let googleItems: any[] = [...esOnlyItems, ...allItems].filter(item => {
