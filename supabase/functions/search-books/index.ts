@@ -154,19 +154,40 @@ async function openLibraryByISBN(isbn: string): Promise<string | null> {
   } catch { return null }
 }
 
+function extractAuthorFromQuery(query: string): string | null {
+  const words = query.trim().split(/\s+/)
+  if (words.length < 2) return null
+  const knownTitleWords = ['alas', 'sangre', 'hierro', 'onix', 'fuego', 'amor', 'guerra', 'luz', 'sombra', 'noche', 'dia', 'rey', 'reina', 'corona', 'espada', 'dragon', 'magia', 'mundo', 'cielo', 'tierra', 'mar', 'sol', 'luna']
+  const possibleAuthorWords = words.filter(w => !knownTitleWords.includes(normalize(w)) && normalize(w).length > 3)
+  if (possibleAuthorWords.length >= 2) return possibleAuthorWords.slice(0, 2).join(' ')
+  return null
+}
+
 async function openLibrarySearch(query: string): Promise<any[]> {
   try {
     const fields = 'key,cover_i,isbn,title,author_name,number_of_pages_median,subject,language,edition_count'
-    const [generalRes, titleRes, spanishRes] = await Promise.all([
+    const fetchPromises: Promise<Response>[] = [
       fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&fields=${fields}&limit=20`),
       fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(query)}&fields=${fields}&limit=10`),
       fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&language=spa&fields=${fields}&limit=15`),
-    ])
+    ]
+
+    const authorHint = extractAuthorFromQuery(query)
+    if (authorHint) {
+      fetchPromises.push(
+        fetch(`https://openlibrary.org/search.json?author=${encodeURIComponent(authorHint)}&language=spa&fields=${fields}&limit=20`)
+      )
+    }
+
+    const responses = await Promise.all(fetchPromises)
+    const [generalRes, titleRes, spanishRes, ...rest] = responses
     const generalDocs = generalRes.ok ? (await generalRes.json()).docs || [] : []
     const titleDocs = titleRes.ok ? (await titleRes.json()).docs || [] : []
     const spanishDocs = spanishRes.ok ? (await spanishRes.json()).docs || [] : []
+    const authorSpanishDocs = rest[0]?.ok ? (await rest[0].json()).docs || [] : []
+
     const seenKeys = new Set<string>()
-    return [...spanishDocs, ...generalDocs, ...titleDocs].filter(doc => {
+    return [...authorSpanishDocs, ...spanishDocs, ...generalDocs, ...titleDocs].filter(doc => {
       if (seenKeys.has(doc.key)) return false
       seenKeys.add(doc.key)
       return true
