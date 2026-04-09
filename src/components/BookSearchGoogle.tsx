@@ -16,67 +16,8 @@ interface BookSearchGoogleProps {
   onSelect: (result: BookSearchResult) => void;
 }
 
-function parseGoogleItems(items: any[]): BookSearchResult[] {
-  return items.map((item: any) => {
-    const info = item.volumeInfo || {};
-    const links = info.imageLinks || {};
-    const rawCover = links.extraLarge || links.large || links.medium || links.small || links.thumbnail || links.smallThumbnail || null;
-    const coverUrl = rawCover
-      ? rawCover.replace("http://", "https://").replace("zoom=1", "zoom=3").replace("&edge=curl", "")
-      : undefined;
-    return {
-      title: info.title || "",
-      author: (info.authors || []).join(", "),
-      coverUrl,
-      totalPages: info.pageCount || 0,
-      genre: (info.categories || [])[0] || undefined,
-    };
-  });
-}
-
-async function fetchGoogle(url: string): Promise<any[]> {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.items || [];
-  } catch {
-    return [];
-  }
-}
-
-async function searchGoogleBooksDirect(query: string): Promise<BookSearchResult[]> {
-  try {
-    const base = `https://www.googleapis.com/books/v1/volumes?printType=books&maxResults=10`;
-    const q = encodeURIComponent(query);
-    const intitleQ = encodeURIComponent(`intitle:${query}`);
-
-    const [esItems, esIntitleItems, allItems] = await Promise.all([
-      fetchGoogle(`${base}&langRestrict=es&q=${q}`),
-      fetchGoogle(`${base}&langRestrict=es&q=${intitleQ}`),
-      fetchGoogle(`${base}&q=${q}`),
-    ]);
-
-    const seenIds = new Set<string>();
-    const merged: any[] = [];
-    for (const item of [...esIntitleItems, ...esItems, ...allItems]) {
-      if (!seenIds.has(item.id)) {
-        seenIds.add(item.id);
-        merged.push(item);
-      }
-    }
-
-    return parseGoogleItems(merged.slice(0, 10));
-  } catch {
-    return [];
-  }
-}
-
 async function searchBooks(query: string): Promise<BookSearchResult[]> {
   try {
-    const googleResults = await searchGoogleBooksDirect(query);
-    if (googleResults.length > 0) return googleResults;
-
     const { data, error } = await supabase.functions.invoke("search-books", {
       body: { query },
     });
@@ -168,9 +109,7 @@ export function BookSearchGoogle({ onSelect }: BookSearchGoogleProps) {
               <div className="min-w-0">
                 <p className="text-xs font-medium truncate">{r.title}</p>
                 <p className="text-[10px] text-muted-foreground truncate">{r.author}</p>
-                {r.totalPages > 0 && (
-                  <p className="text-[10px] text-muted-foreground">{r.totalPages} pág.</p>
-                )}
+                {r.totalPages > 0 && <p className="text-[10px] text-muted-foreground">{r.totalPages} pág.</p>}
               </div>
             </button>
           ))}
