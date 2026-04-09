@@ -34,19 +34,36 @@ function parseGoogleItems(items: any[]): BookSearchResult[] {
   });
 }
 
+async function fetchGoogle(url: string): Promise<any[]> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.items || [];
+  } catch {
+    return [];
+  }
+}
+
 async function searchGoogleBooksDirect(query: string): Promise<BookSearchResult[]> {
   try {
     const base = `https://www.googleapis.com/books/v1/volumes?printType=books&maxResults=10`;
-    const esRes = await fetch(`${base}&langRestrict=es&q=${encodeURIComponent(query)}`);
-    if (esRes.ok) {
-      const esData = await esRes.json();
-      const esItems: any[] = esData.items || [];
-      if (esItems.length > 0) return parseGoogleItems(esItems);
+    const q = encodeURIComponent(query);
+    const [esItems, allItems] = await Promise.all([
+      fetchGoogle(`${base}&langRestrict=es&q=${q}`),
+      fetchGoogle(`${base}&q=${q}`),
+    ]);
+
+    const seenIds = new Set<string>();
+    const merged: any[] = [];
+    for (const item of [...esItems, ...allItems]) {
+      if (!seenIds.has(item.id)) {
+        seenIds.add(item.id);
+        merged.push(item);
+      }
     }
-    const res = await fetch(`${base}&q=${encodeURIComponent(query)}`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return parseGoogleItems(data.items || []);
+
+    return parseGoogleItems(merged.slice(0, 10));
   } catch {
     return [];
   }
