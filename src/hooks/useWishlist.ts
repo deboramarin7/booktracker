@@ -2,28 +2,20 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-const GOOGLE_BOOKS_API_KEY = "AIzaSyDgSYwnvsjk4IRKo6HSD8Xcza57V0XdQbk";
-
 async function fetchCoverForBook(title: string, author: string): Promise<string | null> {
   try {
-    const cleanTitle = title.replace(/\s*\(.*?\)\s*/g, "").trim();
-    const queries = [
-      `intitle:${cleanTitle} inauthor:${author}`,
-      `${cleanTitle} ${author}`,
-      cleanTitle,
-    ];
-    for (const query of queries) {
-      const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=3&printType=books&key=${GOOGLE_BOOKS_API_KEY}`;
-      const res = await fetch(url);
-      if (!res.ok) continue;
-      const data = await res.json();
-      for (const item of data.items || []) {
-        const links = item.volumeInfo?.imageLinks || {};
-        const raw = links.extraLarge || links.large || links.medium || links.small || links.thumbnail || links.smallThumbnail;
-        if (raw) return raw.replace("http://", "https://").replace("&edge=curl", "").replace("zoom=1", "zoom=2");
-      }
-    }
-    return null;
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-books`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ query: title, title, author }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.books?.[0]?.coverUrl || null;
   } catch {
     return null;
   }
