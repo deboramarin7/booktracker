@@ -212,9 +212,10 @@ function olDocToBook(doc: any): any {
   }
 }
 
-function scoreBook(b: any, normQ: string, qWords: string[]): number {
+function scoreBook(b: any, normQ: string, qWords: string[], authorHint?: string | null): number {
   const t = normalize(b.title || '')
-  const isEs = b.language === 'es' || b._isSpanish ? 25 : 0
+  const normAuthor = normalize(b.author || '')
+  const isEs = b.language === 'es' || b._isSpanish ? 40 : 0
   const hasCover = b.coverUrl ? 5 : 0
   let ts = 0
   if (t === normQ) {
@@ -222,10 +223,19 @@ function scoreBook(b: any, normQ: string, qWords: string[]): number {
   } else if (t.includes(normQ) || normQ.includes(t)) {
     ts = 60
   } else if (qWords.length > 0) {
-    const matched = qWords.filter((w: string) => t.includes(w)).length
-    ts = (matched / qWords.length) * 30
+    const titleOnlyWords = authorHint
+      ? qWords.filter((w: string) => !normalize(authorHint).includes(w))
+      : qWords
+    const wordsToMatch = titleOnlyWords.length > 0 ? titleOnlyWords : qWords
+    const matched = wordsToMatch.filter((w: string) => t.includes(w)).length
+    ts = (matched / wordsToMatch.length) * 60
   }
-  return ts + isEs + hasCover
+  let authorScore = 0
+  if (authorHint) {
+    const normHint = normalize(authorHint)
+    if (normAuthor.includes(normHint) || normHint.includes(normAuthor.split(',')[0])) authorScore = 15
+  }
+  return ts + isEs + hasCover + authorScore
 }
 
 async function openLibraryByTitle(title: string, author: string): Promise<string | null> {
@@ -453,7 +463,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const merged = deduped
-        .map(b => ({ b, score: scoreBook(b, normQ, qWords) }))
+        .map(b => ({ b, score: scoreBook(b, normQ, qWords, authorHint) }))
         .sort((a, b) => b.score - a.score)
         .map(({ b }) => b)
 
