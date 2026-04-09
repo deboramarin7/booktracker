@@ -66,6 +66,47 @@ function itemToBook(item: any) {
   }
 }
 
+function sortAndDeduplicateItems(items: any[], searchQuery: string): any[] {
+  const normQuery = normalize(searchQuery)
+  const queryWords = normQuery.split(' ').filter((w: string) => w.length > 2)
+
+  const scored = items.map(item => {
+    const info = item?.volumeInfo || {}
+    const itemTitle = normalize(info.title || '')
+    const lang = info.language || ''
+    const isSpanish = lang === 'es' ? 2 : 0
+    let titleScore = 0
+    if (itemTitle.includes(normQuery) || normQuery.includes(itemTitle)) {
+      titleScore = 3
+    } else if (queryWords.length > 0) {
+      const matched = queryWords.filter((w: string) => itemTitle.includes(w)).length
+      titleScore = matched / queryWords.length
+    }
+    return { item, score: titleScore * 10 + isSpanish }
+  })
+
+  scored.sort((a, b) => b.score - a.score)
+
+  const authorLangSeen = new Map<string, string>()
+  return scored.filter(({ item }) => {
+    const info = item?.volumeInfo || {}
+    const authors = (info.authors || []).map((a: string) => normalize(a)).join(',')
+    const normTitle = normalize(cleanTitle(info.title || ''))
+    const key = `${normTitle}||${authors}`
+    const lang = info.language || ''
+    const existing = authorLangSeen.get(key)
+    if (!existing) {
+      authorLangSeen.set(key, lang)
+      return true
+    }
+    if (existing !== 'es' && lang === 'es') {
+      authorLangSeen.set(key, lang)
+      return true
+    }
+    return false
+  }).map(({ item }) => item)
+}
+
 async function googleSearch(query: string, apiKey?: string): Promise<any[]> {
   try {
     const isISBN = /^(97(8|9))?\d{9}(\d|X)$/.test(query.replace(/-/g, ''))
@@ -239,6 +280,7 @@ Deno.serve(async (req: Request) => {
       if (!items.length) {
         items = await googleSearch(removeDiacritics(query), apiKey)
       }
+      items = sortAndDeduplicateItems(items, query)
       if (!items.length) {
         try {
           const olRes = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&fields=key,cover_i,isbn,title,author_name,number_of_pages_median,subject&limit=10`)
