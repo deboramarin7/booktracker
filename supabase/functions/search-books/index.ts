@@ -4,6 +4,10 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 }
 
+const OL_HEADERS = {
+  'User-Agent': 'MyBookTracker/1.0 (mybooktracker.net; deboramarin94@gmail.com)'
+}
+
 // ─── Utilidades ───────────────────────────────────────────────────────────────
 
 function normalize(str: string): string {
@@ -40,13 +44,13 @@ async function olSearch(query: string, author?: string): Promise<any[]> {
     const fields = 'key,title,author_name,cover_i,isbn,number_of_pages_median,subject,language,first_publish_year,editions,editions.title,editions.cover_i,editions.isbn,editions.number_of_pages,editions.language'
 
     const requests: Promise<Response>[] = [
-      fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&lang=es&fields=${fields}&limit=15`),
-      fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&language=spa&fields=${fields}&limit=10`),
+      fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&lang=es&fields=${fields}&limit=15`, { headers: OL_HEADERS }),
+      fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&language=spa&fields=${fields}&limit=10`, { headers: OL_HEADERS }),
     ]
 
     if (author) {
       requests.push(
-        fetch(`https://openlibrary.org/search.json?author=${encodeURIComponent(author)}&title=${encodeURIComponent(query)}&lang=es&fields=${fields}&limit=10`)
+        fetch(`https://openlibrary.org/search.json?author=${encodeURIComponent(author)}&title=${encodeURIComponent(query)}&lang=es&fields=${fields}&limit=10`, { headers: OL_HEADERS })
       )
     }
 
@@ -99,7 +103,7 @@ function olDocToBook(doc: any) {
 // Búsqueda por ISBN en Open Library
 async function olByISBN(isbn: string): Promise<any | null> {
   try {
-    const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`)
+    const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`, { headers: OL_HEADERS })
     if (!res.ok) return null
     const data = await res.json()
     const book = data[`ISBN:${isbn}`]
@@ -121,7 +125,7 @@ async function olByISBN(isbn: string): Promise<any | null> {
 async function olCoverByISBN(isbn: string): Promise<string | null> {
   try {
     const url = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`
-    const res = await fetch(url, { method: 'HEAD' })
+    const res = await fetch(url, { method: 'HEAD', headers: OL_HEADERS })
     if (res.ok && res.headers.get('content-type')?.startsWith('image/jpeg')) {
       const size = parseInt(res.headers.get('content-length') || '0')
       if (size > 2000) return url // Evitar placeholders pequeños
