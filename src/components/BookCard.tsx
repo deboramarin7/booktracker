@@ -61,6 +61,7 @@ export function BookCard({ book, onUpdate, onDelete, onMoveToWishlist, index }: 
             <BookCoverImage
               src={book.coverUrl}
               alt={book.title}
+              title={book.title}
               className="h-full w-full object-cover"
               iconClassName="h-8 w-8"
             />
