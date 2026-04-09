@@ -129,14 +129,14 @@ export default function Library() {
   const totalPages = useMemo(() => finishedYearBooks.reduce((s, b) => s + b.totalPages, 0), [finishedYearBooks]);
 
   const totalSpent = useMemo(() => {
-    return yearBooks.reduce((s, b) => {
+    return finishedYearBooks.reduce((s, b) => {
       const p = parseFloat(b.price || "0");
       return s + (isNaN(p) ? 0 : p);
     }, 0);
-  }, [yearBooks]);
+  }, [finishedYearBooks]);
 
-  const physicalCount = useMemo(() => yearBooks.filter((b) => b.format === "Físico").length, [yearBooks]);
-  const digitalCount = useMemo(() => yearBooks.filter((b) => b.format === "Digital").length, [yearBooks]);
+  const physicalCount = useMemo(() => finishedYearBooks.filter((b) => b.format === "Físico").length, [finishedYearBooks]);
+  const digitalCount = useMemo(() => finishedYearBooks.filter((b) => b.format === "Digital").length, [finishedYearBooks]);
 
   const filtered = useMemo(() => {
     let result = [...yearBooks];
@@ -230,18 +230,20 @@ export default function Library() {
           {physicalCount > 0 && (
             <>
               <span>·</span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block w-2 h-2 rounded-sm bg-rose-400" />
-                <span className="font-semibold text-foreground">{physicalCount}</span> físico
+              <span className="flex items-center gap-1.5">
+                <span className="text-base leading-none">📕</span>
+                <span className="font-semibold text-foreground">{physicalCount}</span>
+                <span>físico</span>
               </span>
             </>
           )}
           {digitalCount > 0 && (
             <>
               <span>·</span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block w-2 h-2 rounded-sm bg-blue-400" />
-                <span className="font-semibold text-foreground">{digitalCount}</span> digital
+              <span className="flex items-center gap-1.5">
+                <span className="text-base leading-none">📱</span>
+                <span className="font-semibold text-foreground">{digitalCount}</span>
+                <span>digital</span>
               </span>
             </>
           )}
