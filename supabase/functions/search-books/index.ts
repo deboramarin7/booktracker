@@ -107,12 +107,16 @@ function sortAndDeduplicateItems(items: any[], searchQuery: string): any[] {
   }).map(({ item }) => item)
 }
 
-async function googleSearch(query: string, apiKey?: string): Promise<any[]> {
+async function googleSearch(query: string, apiKey?: string, forceSpanish = false): Promise<any[]> {
   try {
     const isISBN = /^(97(8|9))?\d{9}(\d|X)$/.test(query.replace(/-/g, ''))
     const searchQuery = isISBN ? `isbn:${query.replace(/-/g, '')}` : query
     const key = apiKey ? `&key=${apiKey}` : ''
-    const base = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=15&printType=books`
+    const base = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=20&printType=books`
+    if (forceSpanish) {
+      const res = await fetch(`${base}&langRestrict=es&country=ES${key}`)
+      return res.ok ? (await res.json()).items || [] : []
+    }
     const [esRes, allRes] = await Promise.all([
       fetch(`${base}&langRestrict=es&country=ES${key}`),
       fetch(`${base}${key}`)
@@ -124,7 +128,7 @@ async function googleSearch(query: string, apiKey?: string): Promise<any[]> {
       const duplicate = seen.has(item.id)
       seen.add(item.id)
       return !duplicate
-    }).slice(0, 20)
+    }).slice(0, 30)
   } catch { return [] }
 }
 
@@ -276,7 +280,16 @@ Deno.serve(async (req: Request) => {
     }
 
     if (query && !title) {
-      let items = await googleSearch(query, apiKey)
+      const [esOnlyItems, allItems] = await Promise.all([
+        googleSearch(query, apiKey, true),
+        googleSearch(query, apiKey),
+      ])
+      const seen = new Set<string>()
+      let items: any[] = [...esOnlyItems, ...allItems].filter(item => {
+        const dup = seen.has(item.id)
+        seen.add(item.id)
+        return !dup
+      })
       if (!items.length) {
         items = await googleSearch(removeDiacritics(query), apiKey)
       }
