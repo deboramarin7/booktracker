@@ -6,38 +6,38 @@ import { Users, Library } from "lucide-react";
 export default function AuthorsSagas() {
   const { books } = useBooksContext();
 
+  const finishedBooks = useMemo(() => books.filter((b) => b.status === "finished"), [books]);
+
   const authors = useMemo(() => {
-    const map = new Map<string, { total: number; finished: number; titles: string[] }>();
-    books.forEach((b) => {
+    const map = new Map<string, { total: number; titles: string[] }>();
+    finishedBooks.forEach((b) => {
       const key = b.author.trim();
       if (!key) return;
-      const entry = map.get(key) || { total: 0, finished: 0, titles: [] };
+      const entry = map.get(key) || { total: 0, titles: [] };
       entry.total++;
-      if (b.status === "finished") entry.finished++;
       entry.titles.push(b.title);
       map.set(key, entry);
     });
     return Array.from(map.entries())
       .map(([name, data]) => ({ name, ...data }))
       .sort((a, b) => b.total - a.total);
-  }, [books]);
+  }, [finishedBooks]);
 
   const sagas = useMemo(() => {
-    const map = new Map<string, { total: number; finished: number; titles: string[] }>();
-    books.forEach((b) => {
+    const map = new Map<string, { total: number; titles: string[] }>();
+    finishedBooks.forEach((b) => {
       if (!b.hasSaga || !b.saga) return;
       const key = b.saga.trim();
       if (!key) return;
-      const entry = map.get(key) || { total: 0, finished: 0, titles: [] };
+      const entry = map.get(key) || { total: 0, titles: [] };
       entry.total++;
-      if (b.status === "finished") entry.finished++;
       entry.titles.push(b.title);
       map.set(key, entry);
     });
     return Array.from(map.entries())
       .map(([name, data]) => ({ name, ...data }))
       .sort((a, b) => b.total - a.total);
-  }, [books]);
+  }, [finishedBooks]);
 
   return (
     <div className="space-y-6">
@@ -69,7 +69,7 @@ export default function AuthorsSagas() {
                     <div className="text-right shrink-0 ml-4">
                       <p className="text-2xl font-bold text-primary">{a.total}</p>
                       <p className="text-xs text-muted-foreground">
-                        {a.finished} leído{a.finished !== 1 ? "s" : ""}
+                        {a.total === 1 ? "libro" : "libros"}
                       </p>
                     </div>
                   </CardContent>
@@ -104,7 +104,7 @@ export default function AuthorsSagas() {
                     <div className="text-right shrink-0 ml-4">
                       <p className="text-2xl font-bold text-primary">{s.total}</p>
                       <p className="text-xs text-muted-foreground">
-                        {s.finished} leído{s.finished !== 1 ? "s" : ""}
+                        {s.total === 1 ? "libro" : "libros"}
                       </p>
                     </div>
                   </CardContent>
