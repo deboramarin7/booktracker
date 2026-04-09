@@ -16,10 +16,11 @@ interface BookSearchGoogleProps {
   onSelect: (result: BookSearchResult) => void;
 }
 
+// Búsqueda via edge function — soporta título, autor, o ambos combinados
 async function searchBooks(query: string): Promise<BookSearchResult[]> {
   try {
     const { data, error } = await supabase.functions.invoke("search-books", {
-      body: { query },
+      body: { query }, // búsqueda libre: la edge function busca en Google Books sin filtros
     });
     if (error || !data?.books?.length) return [];
     return data.books.map((b: any) => ({
