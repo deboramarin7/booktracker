@@ -16,28 +16,37 @@ interface BookSearchGoogleProps {
   onSelect: (result: BookSearchResult) => void;
 }
 
+function parseGoogleItems(items: any[]): BookSearchResult[] {
+  return items.map((item: any) => {
+    const info = item.volumeInfo || {};
+    const links = info.imageLinks || {};
+    const rawCover = links.extraLarge || links.large || links.medium || links.small || links.thumbnail || links.smallThumbnail || null;
+    const coverUrl = rawCover
+      ? rawCover.replace("http://", "https://").replace("zoom=1", "zoom=3").replace("&edge=curl", "")
+      : undefined;
+    return {
+      title: info.title || "",
+      author: (info.authors || []).join(", "),
+      coverUrl,
+      totalPages: info.pageCount || 0,
+      genre: (info.categories || [])[0] || undefined,
+    };
+  });
+}
+
 async function searchGoogleBooksDirect(query: string): Promise<BookSearchResult[]> {
   try {
-    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&printType=books`;
-    const res = await fetch(url);
+    const base = `https://www.googleapis.com/books/v1/volumes?printType=books&maxResults=10`;
+    const esRes = await fetch(`${base}&langRestrict=es&q=${encodeURIComponent(query)}`);
+    if (esRes.ok) {
+      const esData = await esRes.json();
+      const esItems: any[] = esData.items || [];
+      if (esItems.length > 0) return parseGoogleItems(esItems);
+    }
+    const res = await fetch(`${base}&q=${encodeURIComponent(query)}`);
     if (!res.ok) return [];
     const data = await res.json();
-    const items: any[] = data.items || [];
-    return items.map((item: any) => {
-      const info = item.volumeInfo || {};
-      const links = info.imageLinks || {};
-      const rawCover = links.extraLarge || links.large || links.medium || links.small || links.thumbnail || links.smallThumbnail || null;
-      const coverUrl = rawCover
-        ? rawCover.replace("http://", "https://").replace("zoom=1", "zoom=3").replace("&edge=curl", "")
-        : undefined;
-      return {
-        title: info.title || "",
-        author: (info.authors || []).join(", "),
-        coverUrl,
-        totalPages: info.pageCount || 0,
-        genre: (info.categories || [])[0] || undefined,
-      };
-    });
+    return parseGoogleItems(data.items || []);
   } catch {
     return [];
   }
