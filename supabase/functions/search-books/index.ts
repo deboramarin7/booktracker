@@ -377,27 +377,97 @@ Deno.serve(async (req: Request) => {
     }
 
     if (query && !title) {
-      const isISBN = /^(97[89])?\d{9}[\dX]$/.test(query.replace(/-/g, ''))
-      const searchQuery = isISBN ? `isbn:${query.replace(/-/g, '')}` : query
-      const key = apiKey ? `&key=${apiKey}` : ''
-      const base = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(searchQuery)}&maxResults=15&printType=books`
+      const normQ = normalize(query)
+      const qWords = normQ.split(' ').filter((w: string) => w.length > 2)
 
-      const [esRes, allRes] = await Promise.all([
-        fetch(`${base}&langRestrict=es&country=ES${key}`),
-        fetch(`${base}${key}`)
+      const authorHint = extractAuthorFromQuery(query)
+      const authorOnlySearches: Promise<any[]>[] = []
+      if (authorHint) {
+        const fields = 'key,cover_i,isbn,title,author_name,number_of_pages_median,subject,language,edition_count'
+        authorOnlySearches.push(
+          fetch(`https://openlibrary.org/search.json?author=${encodeURIComponent(authorHint)}&language=spa&fields=${fields}&limit=30`)
+            .then(r => r.ok ? r.json().then(d => d.docs || []) : [])
+            .catch(() => [])
+        )
+      }
+
+      const authorTitleSearches: Promise<any[]>[] = []
+      if (authorHint) {
+        const titleHintWords = qWords.filter((w: string) => !normalize(authorHint).includes(w))
+        if (titleHintWords.length > 0) {
+          const titleHint = titleHintWords.join(' ')
+          authorTitleSearches.push(
+            googleSearch(`intitle:${titleHint} inauthor:${authorHint}`, apiKey, true),
+            googleSearch(`intitle:${titleHint} inauthor:${authorHint}`, apiKey),
+          )
+        }
+      }
+
+      const [esOnlyItems, allItems, olDocs, olSpanishDocs, ...restResults] = await Promise.all([
+        googleSearch(query, apiKey, true),
+        googleSearch(query, apiKey),
+        openLibrarySearch(query),
+        openLibrarySearchSpanish(query),
+        ...authorOnlySearches,
+        ...authorTitleSearches,
       ])
 
-      const esItems = esRes.ok ? (await esRes.json()).items || [] : []
-      const allItems = allRes.ok ? (await allRes.json()).items || [] : []
+      const authorResults = restResults.slice(0, authorOnlySearches.length)
+      const authorTitleItems = restResults.slice(authorOnlySearches.length)
+
+      const authorSpanishDocs: any[] = authorResults[0] || []
+
+      const seenOlKeys = new Set<string>()
+      const mergedOlDocs = [...authorSpanishDocs, ...olSpanishDocs, ...olDocs].filter(doc => {
+        if (seenOlKeys.has(doc.key)) return false
+        seenOlKeys.add(doc.key)
+        return true
+      })
+
+      const olBooks = mergedOlDocs.map(olDocToBook)
 
       const seen = new Set<string>()
-      const merged = [...esItems, ...allItems].filter(item => {
-        if (seen.has(item.id)) return false
+      const extraGoogleItems = authorTitleItems.flat()
+      let googleItems: any[] = [...extraGoogleItems, ...esOnlyItems, ...allItems].filter(item => {
+        const dup = seen.has(item.id)
         seen.add(item.id)
-        return true
-      }).slice(0, 20)
+        return !dup
+      })
+      if (!googleItems.length) {
+        googleItems = await googleSearch(removeDiacritics(query), apiKey)
+      }
+      const googleBooks = sortAndDeduplicateItems(googleItems, query).map(itemToBook)
 
-      return new Response(JSON.stringify({ books: merged.map(itemToBook) }), {
+      const allBooks = [...olBooks, ...googleBooks]
+
+      const seenTitles = new Map<string, number>()
+      const deduped: any[] = []
+      for (const b of allBooks) {
+        const cleanedTitle = normalize(cleanTitle(b.title || ''))
+        const authorKey = normalize((b.author || '').split(',')[0].trim())
+        const key = `${cleanedTitle}||${authorKey}`
+        const existingIdx = seenTitles.get(key)
+        if (existingIdx === undefined) {
+          seenTitles.set(key, deduped.length)
+          deduped.push(b)
+        } else {
+          const existing = deduped[existingIdx]
+          const bIsSpanish = b.language === 'es' || b._isSpanish
+          const existingIsSpanish = existing.language === 'es' || existing._isSpanish
+          const bHasCover = !!b.coverUrl
+          const existingHasCover = !!existing.coverUrl
+          if ((!existingIsSpanish && bIsSpanish) || (!existingHasCover && bHasCover) || (b.totalPages > 0 && !existing.totalPages)) {
+            deduped[existingIdx] = { ...existing, ...b, coverUrl: b.coverUrl || existing.coverUrl, totalPages: b.totalPages || existing.totalPages }
+          }
+        }
+      }
+
+      const merged = deduped
+        .map(b => ({ b, score: scoreBook(b, normQ, qWords, authorHint) }))
+        .sort((a, b) => b.score - a.score)
+        .map(({ b }) => b)
+
+      return new Response(JSON.stringify({ books: merged.slice(0, 15) }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
