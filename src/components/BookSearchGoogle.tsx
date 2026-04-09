@@ -49,7 +49,7 @@ async function searchBooks(query: string): Promise<BookSearchResult[]> {
     if (googleResults.length > 0) return googleResults;
 
     const { data, error } = await supabase.functions.invoke("search-books", {
-      body: { title: query },
+      body: { query },
     });
     if (error || !data?.books?.length) return [];
     return data.books.map((b: any) => ({
