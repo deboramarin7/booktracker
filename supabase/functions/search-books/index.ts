@@ -438,7 +438,7 @@ Deno.serve(async (req: Request) => {
       }
       const googleBooks = sortAndDeduplicateItems(googleItems, query).map(itemToBook)
 
-      const allBooks = [...olBooks, ...googleBooks]
+      const allBooks = [...googleBooks, ...olBooks]
 
       const seenTitles = new Map<string, number>()
       const deduped: any[] = []
@@ -456,8 +456,21 @@ Deno.serve(async (req: Request) => {
           const existingIsSpanish = existing.language === 'es' || existing._isSpanish
           const bHasCover = !!b.coverUrl
           const existingHasCover = !!existing.coverUrl
-          if ((!existingIsSpanish && bIsSpanish) || (!existingHasCover && bHasCover) || (b.totalPages > 0 && !existing.totalPages)) {
-            deduped[existingIdx] = { ...existing, ...b, coverUrl: b.coverUrl || existing.coverUrl, totalPages: b.totalPages || existing.totalPages }
+          const bBetter = (!existingIsSpanish && bIsSpanish) || (!existingHasCover && bHasCover) || (b.totalPages > 0 && !existing.totalPages)
+          if (bBetter) {
+            deduped[existingIdx] = {
+              ...existing,
+              ...b,
+              coverUrl: b.coverUrl || existing.coverUrl,
+              totalPages: b.totalPages || existing.totalPages,
+              language: bIsSpanish ? 'es' : (existing.language || b.language),
+            }
+          } else {
+            deduped[existingIdx] = {
+              ...existing,
+              coverUrl: existing.coverUrl || b.coverUrl,
+              totalPages: existing.totalPages || b.totalPages,
+            }
           }
         }
       }
