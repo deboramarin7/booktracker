@@ -282,42 +282,77 @@ Deno.serve(async (req: Request) => {
     }
 
     if (query && !title) {
-      const [esOnlyItems, allItems] = await Promise.all([
+      const [esOnlyItems, allItems, olRes] = await Promise.all([
         googleSearch(query, apiKey, true),
         googleSearch(query, apiKey),
+        fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&lang=spa&fields=key,cover_i,isbn,title,author_name,number_of_pages_median,subject,language&limit=15`),
       ])
+
+      const olEsBooks: any[] = []
+      const olAllBooks: any[] = []
+      if (olRes.ok) {
+        const olData = await olRes.json()
+        for (const doc of (olData.docs || [])) {
+          const langs: string[] = doc.language || []
+          const isSpanish = langs.includes('spa')
+          const book = {
+            _source: 'ol',
+            _isSpanish: isSpanish,
+            title: doc.title || '',
+            author: (doc.author_name || []).join(', '),
+            coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg` : null,
+            totalPages: doc.number_of_pages_median || 0,
+            genre: (doc.subject || [])[0] || null,
+            description: null,
+            language: isSpanish ? 'es' : null,
+            isbn: (doc.isbn || [])[0] || null,
+          }
+          if (isSpanish) olEsBooks.push(book)
+          else olAllBooks.push(book)
+        }
+      }
+
       const seen = new Set<string>()
-      let items: any[] = [...esOnlyItems, ...allItems].filter(item => {
+      let googleItems: any[] = [...esOnlyItems, ...allItems].filter(item => {
         const dup = seen.has(item.id)
         seen.add(item.id)
         return !dup
       })
-      if (!items.length) {
-        items = await googleSearch(removeDiacritics(query), apiKey)
+      if (!googleItems.length) {
+        googleItems = await googleSearch(removeDiacritics(query), apiKey)
       }
-      items = sortAndDeduplicateItems(items, query)
-      if (!items.length) {
-        try {
-          const olRes = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&fields=key,cover_i,isbn,title,author_name,number_of_pages_median,subject&limit=10`)
-          if (olRes.ok) {
-            const olData = await olRes.json()
-            const olBooks = (olData.docs || []).map((doc: any) => ({
-              title: doc.title || '',
-              author: (doc.author_name || []).join(', '),
-              coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg` : null,
-              totalPages: doc.number_of_pages_median || 0,
-              genre: (doc.subject || [])[0] || null,
-              description: null,
-              language: null,
-              isbn: (doc.isbn || [])[0] || null,
-            }))
-            return new Response(JSON.stringify({ books: olBooks }), {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            })
-          }
-        } catch { }
+      const googleBooks = sortAndDeduplicateItems(googleItems, query).map(itemToBook)
+
+      const normQ = normalize(query)
+      const qWords = normQ.split(' ').filter((w: string) => w.length > 2)
+
+      const scoreBook = (b: any) => {
+        const t = normalize(b.title || '')
+        const isEs = b.language === 'es' || b._isSpanish ? 20 : 0
+        let ts = 0
+        if (t === normQ || normQ === t) ts = 50
+        else if (t.includes(normQ) || normQ.includes(t)) ts = 30
+        else if (qWords.length > 0) {
+          const matched = qWords.filter((w: string) => t.includes(w)).length
+          ts = (matched / qWords.length) * 10
+        }
+        return ts + isEs
       }
-      return new Response(JSON.stringify({ books: items.map(itemToBook) }), {
+
+      const allBooks = [...olEsBooks, ...googleBooks, ...olAllBooks]
+      const seenTitles = new Set<string>()
+      const merged = allBooks
+        .map(b => ({ b, score: scoreBook(b) }))
+        .sort((a, b) => b.score - a.score)
+        .filter(({ b }) => {
+          const key = normalize(b.title || '') + '||' + normalize(b.author || '')
+          if (seenTitles.has(key)) return false
+          seenTitles.add(key)
+          return true
+        })
+        .map(({ b }) => b)
+
+      return new Response(JSON.stringify({ books: merged.slice(0, 15) }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
