@@ -154,6 +154,56 @@ async function openLibraryByISBN(isbn: string): Promise<string | null> {
   } catch { return null }
 }
 
+async function openLibrarySearch(query: string): Promise<any[]> {
+  try {
+    const fields = 'key,cover_i,isbn,title,author_name,number_of_pages_median,subject,language,edition_count'
+    const [generalRes, titleRes] = await Promise.all([
+      fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&fields=${fields}&limit=20`),
+      fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(query)}&fields=${fields}&limit=10`),
+    ])
+    const generalDocs = generalRes.ok ? (await generalRes.json()).docs || [] : []
+    const titleDocs = titleRes.ok ? (await titleRes.json()).docs || [] : []
+    const seenKeys = new Set<string>()
+    return [...generalDocs, ...titleDocs].filter(doc => {
+      if (seenKeys.has(doc.key)) return false
+      seenKeys.add(doc.key)
+      return true
+    })
+  } catch { return [] }
+}
+
+function olDocToBook(doc: any): any {
+  const langs: string[] = doc.language || []
+  const isSpanish = langs.includes('spa') || langs.includes('es')
+  return {
+    _source: 'ol',
+    _isSpanish: isSpanish,
+    title: doc.title || '',
+    author: (doc.author_name || []).join(', '),
+    coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg` : null,
+    totalPages: doc.number_of_pages_median || 0,
+    genre: (doc.subject || [])[0] || null,
+    description: null,
+    language: isSpanish ? 'es' : (langs[0] || null),
+    isbn: (doc.isbn || [])[0] || null,
+  }
+}
+
+function scoreBook(b: any, normQ: string, qWords: string[]): number {
+  const t = normalize(b.title || '')
+  const isEs = b.language === 'es' || b._isSpanish ? 20 : 0
+  let ts = 0
+  if (t === normQ) {
+    ts = 100
+  } else if (t.includes(normQ) || normQ.includes(t)) {
+    ts = 60
+  } else if (qWords.length > 0) {
+    const matched = qWords.filter((w: string) => t.includes(w)).length
+    ts = (matched / qWords.length) * 30
+  }
+  return ts + isEs
+}
+
 async function openLibraryByTitle(title: string, author: string): Promise<string | null> {
   try {
     const ln = lastNameOnly(author)
@@ -282,35 +332,16 @@ Deno.serve(async (req: Request) => {
     }
 
     if (query && !title) {
-      const [esOnlyItems, allItems, olRes] = await Promise.all([
+      const normQ = normalize(query)
+      const qWords = normQ.split(' ').filter((w: string) => w.length > 2)
+
+      const [esOnlyItems, allItems, olDocs] = await Promise.all([
         googleSearch(query, apiKey, true),
         googleSearch(query, apiKey),
-        fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&lang=spa&fields=key,cover_i,isbn,title,author_name,number_of_pages_median,subject,language&limit=15`),
+        openLibrarySearch(query),
       ])
 
-      const olEsBooks: any[] = []
-      const olAllBooks: any[] = []
-      if (olRes.ok) {
-        const olData = await olRes.json()
-        for (const doc of (olData.docs || [])) {
-          const langs: string[] = doc.language || []
-          const isSpanish = langs.includes('spa')
-          const book = {
-            _source: 'ol',
-            _isSpanish: isSpanish,
-            title: doc.title || '',
-            author: (doc.author_name || []).join(', '),
-            coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg` : null,
-            totalPages: doc.number_of_pages_median || 0,
-            genre: (doc.subject || [])[0] || null,
-            description: null,
-            language: isSpanish ? 'es' : null,
-            isbn: (doc.isbn || [])[0] || null,
-          }
-          if (isSpanish) olEsBooks.push(book)
-          else olAllBooks.push(book)
-        }
-      }
+      const olBooks = olDocs.map(olDocToBook)
 
       const seen = new Set<string>()
       let googleItems: any[] = [...esOnlyItems, ...allItems].filter(item => {
@@ -323,26 +354,10 @@ Deno.serve(async (req: Request) => {
       }
       const googleBooks = sortAndDeduplicateItems(googleItems, query).map(itemToBook)
 
-      const normQ = normalize(query)
-      const qWords = normQ.split(' ').filter((w: string) => w.length > 2)
-
-      const scoreBook = (b: any) => {
-        const t = normalize(b.title || '')
-        const isEs = b.language === 'es' || b._isSpanish ? 20 : 0
-        let ts = 0
-        if (t === normQ || normQ === t) ts = 50
-        else if (t.includes(normQ) || normQ.includes(t)) ts = 30
-        else if (qWords.length > 0) {
-          const matched = qWords.filter((w: string) => t.includes(w)).length
-          ts = (matched / qWords.length) * 10
-        }
-        return ts + isEs
-      }
-
-      const allBooks = [...olEsBooks, ...googleBooks, ...olAllBooks]
+      const allBooks = [...olBooks, ...googleBooks]
       const seenTitles = new Set<string>()
       const merged = allBooks
-        .map(b => ({ b, score: scoreBook(b) }))
+        .map(b => ({ b, score: scoreBook(b, normQ, qWords) }))
         .sort((a, b) => b.score - a.score)
         .filter(({ b }) => {
           const key = normalize(b.title || '') + '||' + normalize(b.author || '')
