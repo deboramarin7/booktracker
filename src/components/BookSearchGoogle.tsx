@@ -16,8 +16,38 @@ interface BookSearchGoogleProps {
   onSelect: (result: BookSearchResult) => void;
 }
 
+async function searchGoogleBooksDirect(query: string): Promise<BookSearchResult[]> {
+  try {
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&printType=books`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const items: any[] = data.items || [];
+    return items.map((item: any) => {
+      const info = item.volumeInfo || {};
+      const links = info.imageLinks || {};
+      const rawCover = links.extraLarge || links.large || links.medium || links.small || links.thumbnail || links.smallThumbnail || null;
+      const coverUrl = rawCover
+        ? rawCover.replace("http://", "https://").replace("zoom=1", "zoom=3").replace("&edge=curl", "")
+        : undefined;
+      return {
+        title: info.title || "",
+        author: (info.authors || []).join(", "),
+        coverUrl,
+        totalPages: info.pageCount || 0,
+        genre: (info.categories || [])[0] || undefined,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 async function searchBooks(query: string): Promise<BookSearchResult[]> {
   try {
+    const googleResults = await searchGoogleBooksDirect(query);
+    if (googleResults.length > 0) return googleResults;
+
     const { data, error } = await supabase.functions.invoke("search-books", {
       body: { title: query },
     });

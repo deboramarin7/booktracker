@@ -4,6 +4,16 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 }
 
+function normalize(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 function cleanTitle(title: string): string {
   return title
     .replace(/\s*[:(–—-]\s*.+$/, '')
@@ -17,327 +27,121 @@ function cleanAuthor(author: string): string {
   if (parts.length > 1) {
     return `${parts[1].trim()} ${parts[0].trim()}`
   }
-  return author
-    .replace(/\b[A-Z]\.\s*/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
+  return author.replace(/\s+/g, ' ').trim()
 }
 
-function lastNameOnly(author: string): string {
-  const cleaned = cleanAuthor(author)
-  const parts = cleaned.split(' ')
-  return parts[parts.length - 1]
+interface BookResult {
+  title: string
+  author: string
+  coverUrl: string | null
+  totalPages: number
+  genre: string | null
+  description: string | null
+  language: string | null
+  isbn: string | null
 }
 
-function removeDiacritics(str: string): string {
-  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+async function searchOpenLibrary(query: string, author?: string): Promise<BookResult[]> {
+  try {
+    const params = new URLSearchParams({ q: query, limit: '15', fields: 'key,title,author_name,cover_i,isbn,number_of_pages_median,subject,first_sentence,language' })
+    if (author) params.set('author', author)
+    const url = `https://openlibrary.org/search.json?${params}`
+    const res = await fetch(url)
+    if (!res.ok) {
+      console.error('Open Library error:', res.status)
+      return []
+    }
+    const data = await res.json()
+    const docs: any[] = data.docs || []
+    return docs.slice(0, 10).map((doc: any) => {
+      const isbn13 = (doc.isbn || []).find((i: string) => i.length === 13) || (doc.isbn || [])[0] || null
+      const coverUrl = doc.cover_i
+        ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
+        : isbn13
+        ? `https://covers.openlibrary.org/b/isbn/${isbn13}-L.jpg`
+        : null
+      return {
+        title: doc.title || '',
+        author: (doc.author_name || []).join(', '),
+        coverUrl,
+        totalPages: doc.number_of_pages_median || 0,
+        genre: (doc.subject || [])[0] || null,
+        description: doc.first_sentence?.value || doc.first_sentence || null,
+        language: (doc.language || [])[0] || null,
+        isbn: isbn13,
+      }
+    })
+  } catch (e) {
+    console.error('Open Library fetch error:', e)
+    return []
+  }
 }
 
-function normalize(str: string): string {
-  return str
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function isGoodMatch(item: any, searchTitle: string, searchAuthor: string): boolean {
-  const info = item?.volumeInfo || {}
-  const resultTitle = normalize(info.title || '')
-  const resultAuthors: string[] = (info.authors || []).map((a: string) => normalize(a))
-
-  const normSearchTitle = normalize(cleanTitle(searchTitle))
-  const normLastName = normalize(lastNameOnly(searchAuthor))
-
-  const titleWords = normSearchTitle.split(' ').filter((w: string) => w.length > 3)
-  const titleMatch = titleWords.length > 0
-    ? titleWords.filter((w: string) => resultTitle.includes(w)).length >= Math.ceil(titleWords.length * 0.5)
-    : resultTitle.includes(normSearchTitle)
-
-  if (!titleMatch) return false
-
-  if (!normLastName) return true
-  const authorMatch = resultAuthors.some((a: string) =>
-    a.includes(normLastName) || normLastName.includes(a)
-  )
-
-  return authorMatch
-}
-
-async function searchGoogleBooks(query: string, apiKey?: string): Promise<any[]> {
+async function searchGoogleBooks(query: string, apiKey?: string): Promise<BookResult[]> {
   try {
     const keyParam = apiKey ? `&key=${apiKey}` : ''
     const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&printType=books${keyParam}`
     const res = await fetch(url)
     if (!res.ok) return []
     const data = await res.json()
-    return data.items || []
-  } catch {
-    return []
-  }
-}
-
-async function searchGoogleByISBN(isbn: string, apiKey?: string): Promise<any[]> {
-  try {
-    const keyParam = apiKey ? `&key=${apiKey}` : ''
-    const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&maxResults=3${keyParam}`
-    const res = await fetch(url)
-    if (!res.ok) return []
-    const data = await res.json()
-    return data.items || []
-  } catch {
-    return []
-  }
-}
-
-function extractCoverFromGoogleItem(item: any): string | null {
-  const info = item?.volumeInfo || {}
-  const links = info.imageLinks || {}
-  const thumbnail =
-    links.extraLarge ||
-    links.large ||
-    links.medium ||
-    links.small ||
-    links.thumbnail ||
-    links.smallThumbnail ||
-    null
-  if (!thumbnail) return null
-  return thumbnail
-    .replace('http://', 'https://')
-    .replace('zoom=1', 'zoom=3')
-    .replace('&edge=curl', '')
-}
-
-function extractBooks(items: any[]) {
-  return items.map((item: any) => {
-    const info = item.volumeInfo || {}
-    return {
-      title: info.title || '',
-      author: (info.authors || []).join(', '),
-      coverUrl: extractCoverFromGoogleItem(item),
-      totalPages: info.pageCount || 0,
-      genre: (info.categories || [])[0] || null,
-      description: info.description || null,
-      language: info.language || null,
-      isbn: (info.industryIdentifiers || []).find((x: any) => x.type === 'ISBN_13')?.identifier || null,
-    }
-  })
-}
-
-async function searchOpenLibraryByISBN(isbn: string): Promise<string | null> {
-  try {
-    const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`
-    const res = await fetch(url)
-    if (!res.ok) return null
-    const data = await res.json()
-    const key = `ISBN:${isbn}`
-    const book = data[key]
-    if (!book) return null
-    if (book.cover?.large) return book.cover.large
-    if (book.cover?.medium) return book.cover.medium
-    if (book.cover?.small) return book.cover.small
-    return null
-  } catch {
-    return null
-  }
-}
-
-async function searchOpenLibraryByTitle(title: string, author: string): Promise<{ url: string; source: string }[]> {
-  const results: { url: string; source: string }[] = []
-  try {
-    const queries = [
-      author ? `title=${encodeURIComponent(title)}&author=${encodeURIComponent(author)}` : null,
-      `title=${encodeURIComponent(title)}&author=${encodeURIComponent(lastNameOnly(author))}`,
-      `title=${encodeURIComponent(cleanTitle(title))}&author=${encodeURIComponent(lastNameOnly(author))}`,
-      `title=${encodeURIComponent(title)}`,
-    ].filter(Boolean) as string[]
-
-    const seen = new Set<string>()
-
-    for (const q of queries) {
-      if (results.length >= 4) break
-      const url = `https://openlibrary.org/search.json?${q}&fields=key,cover_i,isbn,title,author_name&limit=10`
-      const res = await fetch(url)
-      if (!res.ok) continue
-      const data = await res.json()
-      const docs = data.docs || []
-
-      for (const doc of docs) {
-        if (results.length >= 4) break
-        const docTitle = normalize(doc.title || '')
-        const docAuthors: string[] = (doc.author_name || []).map((a: string) => normalize(a))
-        const normTitle = normalize(cleanTitle(title))
-        const normLastName = normalize(lastNameOnly(author))
-
-        const titleOk = docTitle.includes(normTitle) || normTitle.includes(docTitle) ||
-          normTitle.split(' ').filter((w: string) => w.length > 3).some((w: string) => docTitle.includes(w))
-        const authorOk = !author || docAuthors.some((a: string) => a.includes(normLastName) || normLastName.includes(a))
-
-        if (!titleOk || !authorOk) continue
-
-        if (doc.cover_i) {
-          const coverUrl = `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
-          if (!seen.has(coverUrl)) {
-            seen.add(coverUrl)
-            results.push({ url: coverUrl, source: 'Open Library' })
-          }
-        }
-
-        const isbns: string[] = doc.isbn || []
-        for (const isbn of isbns.slice(0, 3)) {
-          if (results.length >= 4) break
-          const directUrl = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`
-          if (seen.has(directUrl)) continue
-          const check = await fetch(directUrl, { method: 'HEAD' })
-          if (check.ok && check.headers.get('content-type')?.startsWith('image/jpeg')) {
-            seen.add(directUrl)
-            results.push({ url: directUrl, source: 'Open Library (ISBN)' })
-          }
-        }
+    const items: any[] = data.items || []
+    return items.map((item: any) => {
+      const info = item.volumeInfo || {}
+      const links = info.imageLinks || {}
+      const rawCover = links.extraLarge || links.large || links.medium || links.small || links.thumbnail || links.smallThumbnail || null
+      const coverUrl = rawCover
+        ? rawCover.replace('http://', 'https://').replace('zoom=1', 'zoom=3').replace('&edge=curl', '')
+        : null
+      const isbn13 = (info.industryIdentifiers || []).find((x: any) => x.type === 'ISBN_13')?.identifier || null
+      return {
+        title: info.title || '',
+        author: (info.authors || []).join(', '),
+        coverUrl,
+        totalPages: info.pageCount || 0,
+        genre: (info.categories || [])[0] || null,
+        description: info.description || null,
+        language: info.language || null,
+        isbn: isbn13,
       }
-    }
-  } catch {
-    // ignore
+    })
+  } catch (e) {
+    console.error('Google Books error:', e)
+    return []
   }
-  return results
 }
 
-async function searchExtraCover(isbn: string): Promise<string | null> {
-  async function isRealImage(url: string, minBytes = 5000): Promise<boolean> {
-    try {
-      const res = await fetch(url)
-      if (!res.ok) return false
-      const ct = res.headers.get('content-type') || ''
-      if (!ct.startsWith('image/')) return false
-      const buf = await res.arrayBuffer()
-      return buf.byteLength > minBytes
-    } catch {
-      return false
-    }
-  }
-
-  const urls = [
-    `https://bookcover.longitood.com/bookcover/${isbn}`,
-    `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`,
-    `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg?default=false`,
-  ]
-
-  for (const url of urls) {
-    if (await isRealImage(url)) return url
-  }
-  return null
-}
-
-async function findBestCover(title: string, author: string, isbn?: string, apiKey?: string): Promise<string | null> {
-  const ct = cleanTitle(title)
-  const ca = cleanAuthor(author)
-  const ln = lastNameOnly(author)
-
-  if (isbn) {
-    const isbnDirect = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`
-    const check = await fetch(isbnDirect, { method: 'HEAD' })
-    if (check.ok && check.headers.get('content-type')?.startsWith('image/jpeg')) {
-      return isbnDirect
-    }
-    const olByIsbn = await searchOpenLibraryByISBN(isbn)
-    if (olByIsbn) return olByIsbn
-    const googleByIsbn = await searchGoogleByISBN(isbn, apiKey)
-    for (const item of googleByIsbn) {
-      const cover = extractCoverFromGoogleItem(item)
-      if (cover) return cover
-    }
-
-    const amazonCover = await searchExtraCover(isbn)
-    if (amazonCover) return amazonCover
-  }
-
-  const googleStrategies = [
-    `intitle:${ct} inauthor:${ca}`,
-    `intitle:${ct} inauthor:${ln}`,
-    `intitle:"${ct}" inauthor:${ln}`,
-    `intitle:${removeDiacritics(ct)} inauthor:${removeDiacritics(ln)}`,
-    `intitle:${removeDiacritics(ct)}`,
-    ct,
-  ]
-
-  for (const q of googleStrategies) {
-    const items = await searchGoogleBooks(q, apiKey)
-    for (const item of items) {
-      if (!isGoodMatch(item, title, author)) continue
-      const cover = extractCoverFromGoogleItem(item)
-      if (cover) return cover
-    }
-  }
-
-  const olCovers = await searchOpenLibraryByTitle(title, author)
-  if (olCovers.length > 0) return olCovers[0].url
-
-  if (isbn) {
-    const amazonCover = await searchExtraCover(isbn)
-    if (amazonCover) return amazonCover
-  }
-
-  return null
+function deduplicateBooks(books: BookResult[]): BookResult[] {
+  const seen = new Set<string>()
+  return books.filter((b) => {
+    const key = normalize(b.title + (b.author || ''))
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }
 
 async function findAllCovers(title: string, author: string, isbn?: string, apiKey?: string): Promise<{ url: string; source: string }[]> {
   const results: { url: string; source: string }[] = []
   const seen = new Set<string>()
+  const add = (url: string, source: string) => { if (!seen.has(url)) { seen.add(url); results.push({ url, source }) } }
 
-  const ct = cleanTitle(title)
-  const ca = cleanAuthor(author)
-  const ln = lastNameOnly(author)
+  const olBooks = await searchOpenLibrary(title, author || undefined)
+  for (const b of olBooks) {
+    if (b.coverUrl) add(b.coverUrl, 'Open Library')
+    if (results.length >= 4) break
+  }
 
-  const addCover = (url: string, source: string) => {
-    if (!seen.has(url)) {
-      seen.add(url)
-      results.push({ url, source })
+  if (apiKey) {
+    const googleBooks = await searchGoogleBooks(`intitle:"${cleanTitle(title)}"${author ? ` inauthor:"${author}"` : ''}`, apiKey)
+    for (const b of googleBooks) {
+      if (b.coverUrl) add(b.coverUrl, 'Google Books')
+      if (results.length >= 8) break
     }
   }
 
   if (isbn) {
-    const googleByIsbn = await searchGoogleByISBN(isbn, apiKey)
-    for (const item of googleByIsbn) {
-      const cover = extractCoverFromGoogleItem(item)
-      if (cover) addCover(cover, 'Google Books (ISBN)')
-    }
-
-    const isbnDirect = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`
-    const check = await fetch(isbnDirect, { method: 'HEAD' })
-    if (check.ok && check.headers.get('content-type')?.startsWith('image/jpeg')) {
-      addCover(isbnDirect, 'Open Library (ISBN)')
-    }
-
-    const olByIsbn = await searchOpenLibraryByISBN(isbn)
-    if (olByIsbn) addCover(olByIsbn, 'Open Library')
-
-    const amazonCover = await searchExtraCover(isbn)
-    if (amazonCover) addCover(amazonCover, 'Amazon')
-  }
-
-  const googleStrategies = [
-    `intitle:"${ct}" inauthor:"${ca}"`,
-    `intitle:"${ct}" inauthor:"${ln}"`,
-    `intitle:${removeDiacritics(ct)} inauthor:${removeDiacritics(ln)}`,
-    `intitle:${removeDiacritics(ct)}`,
-  ]
-
-  for (const q of googleStrategies) {
-    if (results.length >= 6) break
-    const items = await searchGoogleBooks(q, apiKey)
-    for (const item of items) {
-      if (results.length >= 6) break
-      if (!isGoodMatch(item, title, author)) continue
-      const cover = extractCoverFromGoogleItem(item)
-      if (cover) addCover(cover, 'Google Books')
-    }
-  }
-
-  const olCovers = await searchOpenLibraryByTitle(title, author)
-  for (const c of olCovers) {
-    addCover(c.url, c.source)
+    const isbnCover = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`
+    add(isbnCover, 'Open Library (ISBN)')
   }
 
   return results.slice(0, 8)
@@ -368,88 +172,21 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    const ct = title ? cleanTitle(title) : ''
-    const ca = author ? cleanAuthor(author) : ''
+    const searchQuery = title || query
+    let books: BookResult[] = []
 
-    if (title) {
-      const ln = author ? lastNameOnly(author) : ''
-      const queries = ca
-        ? [
-            `intitle:"${ct}" inauthor:"${ca}"`,
-            `intitle:"${ct}" inauthor:"${ln}"`,
-            `intitle:"${ct}" ${ln}`,
-            `"${ct}" ${ca}`,
-            ct,
-          ]
-        : [`intitle:"${ct}"`, ct]
+    const olResults = await searchOpenLibrary(searchQuery, author || undefined)
+    books = olResults
 
-      let items: any[] = []
-      for (const q of queries) {
-        items = await searchGoogleBooks(q, apiKey)
-        if (items.length > 0) break
-      }
-      if (!items.length) {
-        items = await searchGoogleBooks(`intitle:${removeDiacritics(ct)} inauthor:${removeDiacritics(ca)}`, apiKey)
-      }
-      if (!items.length) {
-        items = await searchGoogleBooks(removeDiacritics(ct), apiKey)
-      }
-
-      const goodMatches = items.filter((item: any) => isGoodMatch(item, title, author || ''))
-      const booksToUse = goodMatches.length > 0 ? goodMatches : items
-      let books = extractBooks(booksToUse)
-
-      const enriched = await Promise.all(
-        books.map(async (book) => {
-          if (book.coverUrl) return book
-          const cover = await findBestCover(title, author || '', isbn, apiKey)
-          return { ...book, coverUrl: cover }
-        })
+    if (apiKey) {
+      const googleResults = await searchGoogleBooks(
+        title ? `intitle:"${cleanTitle(title)}"${author ? ` inauthor:"${cleanAuthor(author)}"` : ''}` : query,
+        apiKey
       )
-
-      if (!enriched.some((b) => b.coverUrl)) {
-        const cover = await findBestCover(title, author || '', isbn, apiKey)
-        if (cover) {
-          if (enriched.length > 0) {
-            enriched[0].coverUrl = cover
-          } else {
-            enriched.push({
-              title: ct,
-              author: ca,
-              coverUrl: cover,
-              totalPages: 0,
-              genre: null,
-              description: null,
-              language: null,
-              isbn: isbn || null,
-            })
-          }
-        }
-      }
-
-      if (!enriched.length) {
-        const cover = await findBestCover(title, author || '', isbn, apiKey)
-        if (cover) {
-          enriched.push({
-            title: ct || title,
-            author: ca || author || '',
-            coverUrl: cover,
-            totalPages: 0,
-            genre: null,
-            description: null,
-            language: null,
-            isbn: isbn || null,
-          })
-        }
-      }
-
-      return new Response(JSON.stringify({ books: enriched }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      books = [...books, ...googleResults]
     }
 
-    const items = await searchGoogleBooks(query, apiKey)
-    const books = extractBooks(items)
+    books = deduplicateBooks(books)
 
     return new Response(JSON.stringify({ books }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
