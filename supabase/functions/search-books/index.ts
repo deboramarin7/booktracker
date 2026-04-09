@@ -288,8 +288,7 @@ Deno.serve(async (req: Request) => {
       const isISBN = /^(97[89])?\d{9}[\dX]$/i.test(query.replace(/-/g, ''))
 
       if (isISBN) {
-        const searchQuery = `isbn:${query.replace(/-/g, '')}`
-        const items = await googleSearch(searchQuery, apiKey)
+        const items = await googleSearch(`isbn:${query.replace(/-/g, '')}`, apiKey)
         if (items.length > 0) {
           return new Response(JSON.stringify({ books: items.map(itemToBook) }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -301,15 +300,34 @@ Deno.serve(async (req: Request) => {
         })
       }
 
-      const googleItems = await googleSearch(query, apiKey)
-      if (googleItems.length > 0) {
-        return new Response(JSON.stringify({ books: googleItems.map(itemToBook) }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
+      const [olRes, googleItems] = await Promise.all([
+        fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&fields=key,title,author_name,cover_i,isbn,number_of_pages_median,language&limit=15&language=spa`),
+        googleSearch(query, apiKey)
+      ])
 
-      const olBooks = await openLibrarySearch(query)
-      return new Response(JSON.stringify({ books: olBooks }), {
+      const olDocs = olRes.ok ? (await olRes.json()).docs || [] : []
+      const olBooks = olDocs.map((doc: any) => ({
+        title: doc.title || '',
+        author: (doc.author_name || []).join(', '),
+        coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg` : null,
+        totalPages: doc.number_of_pages_median || 0,
+        genre: null,
+        description: null,
+        language: (doc.language || []).includes('spa') ? 'es' : null,
+        isbn: (doc.isbn || [])[0] || null,
+      }))
+
+      const googleBooks = googleItems.map(itemToBook)
+
+      const seen = new Set<string>()
+      const merged = [...olBooks, ...googleBooks].filter(b => {
+        const key = normalize(b.title + (b.author || ''))
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+
+      return new Response(JSON.stringify({ books: merged.slice(0, 15) }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
