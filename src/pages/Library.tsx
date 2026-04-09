@@ -11,6 +11,13 @@ import { BookOpen, Library as LibraryIcon } from "lucide-react";
 import type { Book, ReadingStatus } from "@/hooks/useBooks";
 import { GENRES, FORMATS, STATUSES } from "@/lib/constants";
 
+function getBookYear(book: Book): number {
+  const dateStr = book.endDate || book.startDate || book.addedAt;
+  if (!dateStr) return new Date().getFullYear();
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? new Date().getFullYear() : d.getFullYear();
+}
+
 type SortOption = "added-desc" | "added-asc" | "title-asc" | "title-desc" | "rating-desc" | "author-asc";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -27,9 +34,16 @@ export default function Library() {
   const { addItem } = useWishlist();
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [yearFilter, setYearFilter] = useState<string>("all");
   const [genreFilter, setGenreFilter] = useState<string>("all");
   const [formatFilter, setFormatFilter] = useState<string>("all");
   const [sort, setSort] = useState<SortOption>("added-desc");
+
+  const availableYears = useMemo(() => {
+    const yearSet = new Set<number>();
+    books.forEach((b) => yearSet.add(getBookYear(b)));
+    return Array.from(yearSet).sort((a, b) => b - a);
+  }, [books]);
 
   const handleImportWishlist = async (items: { title: string; author: string; coverUrl?: string; totalPages: number }[]) => {
     for (const item of items) {
@@ -69,6 +83,9 @@ export default function Library() {
     if (statusFilter !== "all") {
       result = result.filter((b) => b.status === statusFilter);
     }
+    if (yearFilter !== "all") {
+      result = result.filter((b) => getBookYear(b) === Number(yearFilter));
+    }
     if (genreFilter !== "all") {
       result = result.filter((b) => b.genre === genreFilter);
     }
@@ -96,14 +113,19 @@ export default function Library() {
     });
 
     return result;
-  }, [books, statusFilter, genreFilter, formatFilter, sort]);
+  }, [books, statusFilter, yearFilter, genreFilter, formatFilter, sort]);
+
+  const booksForCounts = useMemo(() => {
+    if (yearFilter === "all") return books;
+    return books.filter((b) => getBookYear(b) === Number(yearFilter));
+  }, [books, yearFilter]);
 
   const counts = useMemo(() => ({
-    all: books.length,
-    "want-to-read": books.filter((b) => b.status === "want-to-read").length,
-    reading: books.filter((b) => b.status === "reading").length,
-    finished: books.filter((b) => b.status === "finished").length,
-  }), [books]);
+    all: booksForCounts.length,
+    "want-to-read": booksForCounts.filter((b) => b.status === "want-to-read").length,
+    reading: booksForCounts.filter((b) => b.status === "reading").length,
+    finished: booksForCounts.filter((b) => b.status === "finished").length,
+  }), [booksForCounts]);
 
   return (
     <div className="space-y-6">
@@ -141,6 +163,16 @@ export default function Library() {
       </div>
 
       <div className="flex flex-wrap gap-2 items-center">
+        <Select value={yearFilter} onValueChange={setYearFilter}>
+          <SelectTrigger className="w-[110px] h-8 text-sm">
+            <SelectValue placeholder="Año" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los años</SelectItem>
+            {availableYears.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
         <Select value={genreFilter} onValueChange={setGenreFilter}>
           <SelectTrigger className="w-[150px] h-8 text-sm">
             <SelectValue placeholder="Género" />
@@ -170,9 +202,9 @@ export default function Library() {
           </SelectContent>
         </Select>
 
-        {(statusFilter !== "all" || genreFilter !== "all" || formatFilter !== "all") && (
+        {(statusFilter !== "all" || yearFilter !== "all" || genreFilter !== "all" || formatFilter !== "all") && (
           <button
-            onClick={() => { setStatusFilter("all"); setGenreFilter("all"); setFormatFilter("all"); }}
+            onClick={() => { setStatusFilter("all"); setYearFilter("all"); setGenreFilter("all"); setFormatFilter("all"); }}
             className="text-xs text-muted-foreground hover:text-foreground underline"
           >
             Limpiar filtros

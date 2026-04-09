@@ -1,9 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { GENRE_COLORS } from "@/lib/constants";
 import { useBooksContext } from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, TrendingUp, TrendingDown, User, Library, ChartBar as BarChart3, Clock, CalendarRange, Star, Flame, BookMarked } from "lucide-react";
+import { BookOpen, TrendingUp, TrendingDown, User, Library, ChartBar as BarChart3, Clock, CalendarRange, Star, Flame, BookMarked, Target, Pencil, Check } from "lucide-react";
 import { BookCoverImage } from "@/components/BookCoverImage";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
@@ -21,6 +21,14 @@ function getYearFromBook(book: { endDate?: string; startDate?: string; addedAt: 
 const HABITS_KEY = "book-tracker-reading-habits";
 function loadHabits(): Record<string, string[]> {
   try { return JSON.parse(localStorage.getItem(HABITS_KEY) || "{}"); } catch { return {}; }
+}
+
+const GOALS_KEY = "book-tracker-reading-goals";
+function loadGoals(): Record<number, number> {
+  try { return JSON.parse(localStorage.getItem(GOALS_KEY) || "{}"); } catch { return {}; }
+}
+function saveGoals(goals: Record<number, number>) {
+  localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
 }
 
 const MONTH_SHORT = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -102,6 +110,29 @@ export default function Dashboard() {
   }, [books]);
 
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
+
+  const [goals, setGoals] = useState<Record<number, number>>(loadGoals);
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalInput, setGoalInput] = useState("");
+  const goalInputRef = useRef<HTMLInputElement>(null);
+
+  const currentGoal = goals[selectedYear] ?? 0;
+
+  const handleGoalSave = () => {
+    const val = parseInt(goalInput, 10);
+    if (!isNaN(val) && val >= 0) {
+      const updated = { ...goals, [selectedYear]: val };
+      setGoals(updated);
+      saveGoals(updated);
+    }
+    setEditingGoal(false);
+  };
+
+  const handleGoalEdit = () => {
+    setGoalInput(String(currentGoal || ""));
+    setEditingGoal(true);
+    setTimeout(() => goalInputRef.current?.focus(), 0);
+  };
 
   const yearBooks = useMemo(
     () => books.filter((b) => b.status === "finished" && getYearFromBook(b) === selectedYear),
@@ -252,6 +283,73 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* ═══ OBJETIVO ANUAL ═══ */}
+      <Card className="border-border/30">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Target className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold font-body">Objetivo de lectura {selectedYear}</p>
+                {currentGoal > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    {yearBooks.length} de {currentGoal} libros
+                    {yearBooks.length >= currentGoal && <span className="text-emerald-500 ml-1 font-medium">Completado!</span>}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Sin objetivo definido</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {editingGoal ? (
+                <>
+                  <input
+                    ref={goalInputRef}
+                    type="number"
+                    min={0}
+                    value={goalInput}
+                    onChange={(e) => setGoalInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleGoalSave(); if (e.key === "Escape") setEditingGoal(false); }}
+                    className="w-20 h-8 text-sm px-2 rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="0"
+                  />
+                  <button onClick={handleGoalSave} className="h-8 px-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+                    <Check className="h-4 w-4" />
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleGoalEdit}
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-md text-sm border border-border hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  {currentGoal > 0 ? "Editar objetivo" : "Fijar objetivo"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {currentGoal > 0 && (
+            <div className="mt-4">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                <span>{Math.round((yearBooks.length / currentGoal) * 100)}%</span>
+                <span>{Math.max(0, currentGoal - yearBooks.length)} por leer</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted/60 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${Math.min(100, (yearBooks.length / currentGoal) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {yearBooks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
