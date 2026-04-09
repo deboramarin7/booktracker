@@ -69,9 +69,19 @@ function itemToBook(item: any) {
 async function googleSearch(query: string, apiKey?: string): Promise<any[]> {
   try {
     const key = apiKey ? `&key=${apiKey}` : ''
-    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&printType=books${key}`)
-    if (!res.ok) return []
-    return (await res.json()).items || []
+    const base = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&printType=books`
+    const [esRes, allRes] = await Promise.all([
+      fetch(`${base}&langRestrict=es${key}`),
+      fetch(`${base}${key}`)
+    ])
+    const esItems = esRes.ok ? (await esRes.json()).items || [] : []
+    const allItems = allRes.ok ? (await allRes.json()).items || [] : []
+    const seen = new Set<string>()
+    const merged: any[] = []
+    for (const item of [...esItems, ...allItems]) {
+      if (!seen.has(item.id)) { seen.add(item.id); merged.push(item) }
+    }
+    return merged.slice(0, 15)
   } catch { return [] }
 }
 
