@@ -381,13 +381,29 @@ Deno.serve(async (req: Request) => {
         )
       }
 
-      const [esOnlyItems, allItems, olDocs, olSpanishDocs, ...authorResults] = await Promise.all([
+      const authorTitleSearches: Promise<any[]>[] = []
+      if (authorHint) {
+        const titleHintWords = qWords.filter((w: string) => !normalize(authorHint).includes(w))
+        if (titleHintWords.length > 0) {
+          const titleHint = titleHintWords.join(' ')
+          authorTitleSearches.push(
+            googleSearch(`intitle:${titleHint} inauthor:${authorHint}`, apiKey, true),
+            googleSearch(`intitle:${titleHint} inauthor:${authorHint}`, apiKey),
+          )
+        }
+      }
+
+      const [esOnlyItems, allItems, olDocs, olSpanishDocs, ...restResults] = await Promise.all([
         googleSearch(query, apiKey, true),
         googleSearch(query, apiKey),
         openLibrarySearch(query),
         openLibrarySearchSpanish(query),
         ...authorOnlySearches,
+        ...authorTitleSearches,
       ])
+
+      const authorResults = restResults.slice(0, authorOnlySearches.length)
+      const authorTitleItems = restResults.slice(authorOnlySearches.length)
 
       const authorSpanishDocs: any[] = authorResults[0] || []
 
@@ -401,7 +417,8 @@ Deno.serve(async (req: Request) => {
       const olBooks = mergedOlDocs.map(olDocToBook)
 
       const seen = new Set<string>()
-      let googleItems: any[] = [...esOnlyItems, ...allItems].filter(item => {
+      const extraGoogleItems = authorTitleItems.flat()
+      let googleItems: any[] = [...extraGoogleItems, ...esOnlyItems, ...allItems].filter(item => {
         const dup = seen.has(item.id)
         seen.add(item.id)
         return !dup
