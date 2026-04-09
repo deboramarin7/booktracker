@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useBooks } from "@/hooks/useBooks";
 import { BookCard } from "@/components/BookCard";
 import { AddBookDialog } from "@/components/AddBookDialog";
@@ -7,9 +7,17 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { useWishlist, type WishItem } from "@/hooks/useWishlist";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, Library as LibraryIcon } from "lucide-react";
+import { BookOpen, Pencil, Check, Target, LayoutGrid, List } from "lucide-react";
 import type { Book, ReadingStatus } from "@/hooks/useBooks";
 import { GENRES, FORMATS, STATUSES } from "@/lib/constants";
+
+const GOALS_KEY = "book-tracker-reading-goals";
+function loadGoals(): Record<number, number> {
+  try { return JSON.parse(localStorage.getItem(GOALS_KEY) || "{}"); } catch { return {}; }
+}
+function saveGoals(goals: Record<number, number>) {
+  localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
+}
 
 function getBookYear(book: Book): number {
   const dateStr = book.endDate || book.startDate || book.addedAt;
@@ -29,21 +37,52 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "author-asc", label: "Autor A-Z" },
 ];
 
+const STATUS_LABELS: Record<string, string> = {
+  "want-to-read": "Quiero leer",
+  reading: "Leyendo",
+  finished: "Terminado",
+};
+
 export default function Library() {
   const { books, loading, addBook, addBooksInBatch, updateBook, deleteBook } = useBooks();
   const { addItem } = useWishlist();
 
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [yearFilter, setYearFilter] = useState<string>("all");
+  const currentYear = new Date().getFullYear();
+  const [yearFilter, setYearFilter] = useState<string>(String(currentYear));
   const [genreFilter, setGenreFilter] = useState<string>("all");
   const [formatFilter, setFormatFilter] = useState<string>("all");
   const [sort, setSort] = useState<SortOption>("added-desc");
 
+  const [goals, setGoals] = useState<Record<number, number>>(loadGoals);
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalInput, setGoalInput] = useState("");
+  const goalInputRef = useRef<HTMLInputElement>(null);
+
   const availableYears = useMemo(() => {
     const yearSet = new Set<number>();
+    yearSet.add(currentYear);
     books.forEach((b) => yearSet.add(getBookYear(b)));
     return Array.from(yearSet).sort((a, b) => b - a);
-  }, [books]);
+  }, [books, currentYear]);
+
+  const selectedYear = yearFilter === "all" ? null : Number(yearFilter);
+  const currentGoal = selectedYear ? (goals[selectedYear] ?? 0) : 0;
+
+  const handleGoalSave = () => {
+    const val = parseInt(goalInput, 10);
+    if (!isNaN(val) && val >= 0 && selectedYear) {
+      const updated = { ...goals, [selectedYear]: val };
+      setGoals(updated);
+      saveGoals(updated);
+    }
+    setEditingGoal(false);
+  };
+
+  const handleGoalEdit = () => {
+    setGoalInput(String(currentGoal || ""));
+    setEditingGoal(true);
+    setTimeout(() => goalInputRef.current?.focus(), 0);
+  };
 
   const handleImportWishlist = async (items: { title: string; author: string; coverUrl?: string; totalPages: number }[]) => {
     for (const item of items) {
@@ -77,15 +116,31 @@ export default function Library() {
     await deleteBook(book.id);
   };
 
-  const filtered = useMemo(() => {
-    let result = [...books];
+  const yearBooks = useMemo(() => {
+    if (!selectedYear) return books;
+    return books.filter((b) => getBookYear(b) === selectedYear);
+  }, [books, selectedYear]);
 
-    if (statusFilter !== "all") {
-      result = result.filter((b) => b.status === statusFilter);
-    }
-    if (yearFilter !== "all") {
-      result = result.filter((b) => getBookYear(b) === Number(yearFilter));
-    }
+  const finishedYearBooks = useMemo(
+    () => yearBooks.filter((b) => b.status === "finished"),
+    [yearBooks]
+  );
+
+  const totalPages = useMemo(() => finishedYearBooks.reduce((s, b) => s + b.totalPages, 0), [finishedYearBooks]);
+
+  const totalSpent = useMemo(() => {
+    return yearBooks.reduce((s, b) => {
+      const p = parseFloat(b.price || "0");
+      return s + (isNaN(p) ? 0 : p);
+    }, 0);
+  }, [yearBooks]);
+
+  const physicalCount = useMemo(() => yearBooks.filter((b) => b.format === "Físico").length, [yearBooks]);
+  const digitalCount = useMemo(() => yearBooks.filter((b) => b.format === "Digital").length, [yearBooks]);
+
+  const filtered = useMemo(() => {
+    let result = [...yearBooks];
+
     if (genreFilter !== "all") {
       result = result.filter((b) => b.genre === genreFilter);
     }
@@ -113,31 +168,39 @@ export default function Library() {
     });
 
     return result;
-  }, [books, statusFilter, yearFilter, genreFilter, formatFilter, sort]);
+  }, [yearBooks, genreFilter, formatFilter, sort]);
 
-  const booksForCounts = useMemo(() => {
-    if (yearFilter === "all") return books;
-    return books.filter((b) => getBookYear(b) === Number(yearFilter));
-  }, [books, yearFilter]);
+  const groupedByStatus = useMemo(() => {
+    const groups: { status: ReadingStatus; label: string; books: Book[] }[] = [];
+    const statuses: ReadingStatus[] = ["finished", "reading", "want-to-read"];
+    for (const s of statuses) {
+      const booksInGroup = filtered.filter((b) => b.status === s);
+      if (booksInGroup.length > 0) {
+        groups.push({ status: s, label: STATUS_LABELS[s] ?? s, books: booksInGroup });
+      }
+    }
+    return groups;
+  }, [filtered]);
 
-  const counts = useMemo(() => ({
-    all: booksForCounts.length,
-    "want-to-read": booksForCounts.filter((b) => b.status === "want-to-read").length,
-    reading: booksForCounts.filter((b) => b.status === "reading").length,
-    finished: booksForCounts.filter((b) => b.status === "finished").length,
-  }), [booksForCounts]);
+  const goalPercent = currentGoal > 0 ? Math.min(100, Math.round((finishedYearBooks.length / currentGoal) * 100)) : 0;
 
   return (
     <div className="space-y-6">
+      {/* ── HEADER ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <LibraryIcon className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-display font-semibold">Mi Biblioteca</h1>
-            <p className="text-sm text-muted-foreground">{books.length} libros en total</p>
-          </div>
+          <h1 className="text-2xl font-display font-semibold">Mi Biblioteca</h1>
+          <Select value={yearFilter} onValueChange={setYearFilter}>
+            <SelectTrigger className="h-8 w-24 text-sm font-medium border-border/50">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              {availableYears.map((y) => (
+                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center gap-2">
           <GlobalSearch books={books} />
@@ -146,33 +209,121 @@ export default function Library() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {[{ value: "all", label: `Todos (${counts.all})` }, ...STATUSES.map(s => ({ value: s.value, label: `${s.label} (${counts[s.value as ReadingStatus] ?? 0})` }))].map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => setStatusFilter(opt.value)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              statusFilter === opt.value
-                ? "bg-primary text-primary-foreground"
-                : "bg-card border border-border text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
+      {/* ── STATS RÁPIDAS ── */}
+      {!loading && yearBooks.length > 0 && (
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+          <span>
+            <span className="font-semibold text-foreground">{finishedYearBooks.length}</span> libros leídos
+          </span>
+          <span>·</span>
+          <span>
+            <span className="font-semibold text-foreground">{totalPages.toLocaleString()}</span> páginas
+          </span>
+          {totalSpent > 0 && (
+            <>
+              <span>·</span>
+              <span>
+                <span className="font-semibold text-foreground">{totalSpent.toFixed(2)}€</span> gastos
+              </span>
+            </>
+          )}
+          {physicalCount > 0 && (
+            <>
+              <span>·</span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-sm bg-rose-400" />
+                <span className="font-semibold text-foreground">{physicalCount}</span> físico
+              </span>
+            </>
+          )}
+          {digitalCount > 0 && (
+            <>
+              <span>·</span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-sm bg-blue-400" />
+                <span className="font-semibold text-foreground">{digitalCount}</span> digital
+              </span>
+            </>
+          )}
+        </div>
+      )}
 
+      {/* ── OBJETIVO ANUAL ── */}
+      {selectedYear && (
+        <div className="rounded-xl border border-border/40 bg-card p-4">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+              <span className="text-sm font-semibold">Objetivo Anual {selectedYear}</span>
+            </div>
+            {editingGoal ? (
+              <div className="flex items-center gap-2">
+                <input
+                  ref={goalInputRef}
+                  type="number"
+                  min={0}
+                  value={goalInput}
+                  onChange={(e) => setGoalInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleGoalSave();
+                    if (e.key === "Escape") setEditingGoal(false);
+                  }}
+                  className="w-20 h-7 text-sm px-2 rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="0"
+                />
+                <button
+                  onClick={handleGoalSave}
+                  className="h-7 px-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleGoalEdit}
+                className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs border border-border hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+              >
+                <Pencil className="h-3 w-3" />
+                {currentGoal > 0 ? "Editar" : "Fijar objetivo"}
+              </button>
+            )}
+          </div>
+
+          {currentGoal > 0 ? (
+            <>
+              <div className="flex items-end gap-6 mb-3">
+                <div>
+                  <p className="text-3xl font-bold font-display text-foreground">{finishedYearBooks.length}</p>
+                  <p className="text-xs text-muted-foreground">Libros leídos</p>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold font-display text-muted-foreground">{currentGoal}</p>
+                  <p className="text-xs text-muted-foreground">Objetivo</p>
+                </div>
+                <div className="ml-auto text-right">
+                  <p className="text-2xl font-bold font-display text-emerald-500">{goalPercent}%</p>
+                  {finishedYearBooks.length >= currentGoal && (
+                    <p className="text-xs text-emerald-500 font-medium">Completado!</p>
+                  )}
+                </div>
+              </div>
+              <div className="h-2.5 rounded-full bg-muted/60 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-700"
+                  style={{ width: `${goalPercent}%` }}
+                />
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Sin objetivo definido. Haz clic en "Fijar objetivo" para establecer cuántos libros quieres leer este año.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── FILTROS ── */}
       <div className="flex flex-wrap gap-2 items-center">
-        <Select value={yearFilter} onValueChange={setYearFilter}>
-          <SelectTrigger className="w-[110px] h-8 text-sm">
-            <SelectValue placeholder="Año" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los años</SelectItem>
-            {availableYears.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-          </SelectContent>
-        </Select>
-
         <Select value={genreFilter} onValueChange={setGenreFilter}>
           <SelectTrigger className="w-[150px] h-8 text-sm">
             <SelectValue placeholder="Género" />
@@ -202,9 +353,9 @@ export default function Library() {
           </SelectContent>
         </Select>
 
-        {(statusFilter !== "all" || yearFilter !== "all" || genreFilter !== "all" || formatFilter !== "all") && (
+        {(genreFilter !== "all" || formatFilter !== "all") && (
           <button
-            onClick={() => { setStatusFilter("all"); setYearFilter("all"); setGenreFilter("all"); setFormatFilter("all"); }}
+            onClick={() => { setGenreFilter("all"); setFormatFilter("all"); }}
             className="text-xs text-muted-foreground hover:text-foreground underline"
           >
             Limpiar filtros
@@ -212,6 +363,7 @@ export default function Library() {
         )}
       </div>
 
+      {/* ── CONTENIDO ── */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -229,16 +381,28 @@ export default function Library() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((book, index) => (
-            <BookCard
-              key={book.id}
-              book={book}
-              index={index}
-              onUpdate={updateBook}
-              onDelete={deleteBook}
-              onMoveToWishlist={handleMoveToWishlist}
-            />
+        <div className="space-y-8">
+          {groupedByStatus.map(({ status, label, books: groupBooks }) => (
+            <div key={status}>
+              <div className="flex items-center gap-2 mb-4">
+                <h2 className="text-sm font-semibold text-foreground">{label}</h2>
+                <span className="text-xs text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full">
+                  {groupBooks.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {groupBooks.map((book, index) => (
+                  <BookCard
+                    key={book.id}
+                    book={book}
+                    index={index}
+                    onUpdate={updateBook}
+                    onDelete={deleteBook}
+                    onMoveToWishlist={handleMoveToWishlist}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
