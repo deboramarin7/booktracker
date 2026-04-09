@@ -49,14 +49,17 @@ async function searchGoogleBooksDirect(query: string): Promise<BookSearchResult[
   try {
     const base = `https://www.googleapis.com/books/v1/volumes?printType=books&maxResults=10`;
     const q = encodeURIComponent(query);
-    const [esItems, allItems] = await Promise.all([
+    const intitleQ = encodeURIComponent(`intitle:${query}`);
+
+    const [esItems, esIntitleItems, allItems] = await Promise.all([
       fetchGoogle(`${base}&langRestrict=es&q=${q}`),
+      fetchGoogle(`${base}&langRestrict=es&q=${intitleQ}`),
       fetchGoogle(`${base}&q=${q}`),
     ]);
 
     const seenIds = new Set<string>();
     const merged: any[] = [];
-    for (const item of [...esItems, ...allItems]) {
+    for (const item of [...esIntitleItems, ...esItems, ...allItems]) {
       if (!seenIds.has(item.id)) {
         seenIds.add(item.id);
         merged.push(item);
