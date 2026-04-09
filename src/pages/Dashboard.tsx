@@ -74,6 +74,7 @@ function BookHighlight({ book, label, metric, icon: Icon }: {
       <BookCoverImage
         src={book.coverUrl}
         alt={book.title}
+        title={book.title}
         className="w-14 h-20 object-cover rounded-lg shadow-md flex-shrink-0"
         fallbackClassName="w-14 h-20 rounded-lg flex-shrink-0"
       />
@@ -554,6 +555,7 @@ export default function Dashboard() {
                       <BookCoverImage
                         src={book.coverUrl}
                         alt={book.title}
+                        title={book.title}
                         className="w-full aspect-[2/3] object-cover rounded-lg shadow-md group-hover:shadow-lg transition-all duration-200 group-hover:scale-105"
                         fallbackClassName="w-full aspect-[2/3] rounded-lg"
                       />

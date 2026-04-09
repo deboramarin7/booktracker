@@ -146,6 +146,7 @@ function WishCard({ item, updateItem, deleteItem, onMoveToLibrary }: { item: Wis
           <BookCoverImage
             src={item.coverUrl}
             alt={item.title}
+            title={item.title}
             className="w-14 h-20 object-cover rounded-lg shadow-sm shrink-0"
             fallbackClassName="w-14 h-20 rounded-lg shrink-0"
           />

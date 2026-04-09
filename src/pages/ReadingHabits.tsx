@@ -593,6 +593,8 @@ export default function ReadingHabits() {
                                 <BookCoverImage
                                   key={idx}
                                   src={b.coverUrl}
+                                  alt={b.title}
+                                  title={b.title}
                                   className="w-10 h-14 rounded-sm object-cover border border-background shadow-sm"
                                   fallbackClassName="w-10 h-14 rounded-sm border border-background bg-primary/20"
                                   iconClassName="h-4 w-4"

@@ -104,6 +104,8 @@ export function GlobalSearch({ books, onSelectBook }: GlobalSearchProps) {
               >
                 <BookCoverImage
                   src={book.coverUrl}
+                  alt={book.title}
+                  title={book.title}
                   className="w-8 h-12 object-cover rounded-sm shrink-0"
                   fallbackClassName="w-8 h-12 rounded-sm shrink-0"
                   iconClassName="h-3 w-3"
