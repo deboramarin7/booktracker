@@ -67,19 +67,16 @@ async function olSearch(query: string, author?: string): Promise<any[]> {
 }
 
 function olDocToBook(doc: any) {
-  const spanishEdition = doc.editions?.docs?.find((e: any) =>
+  const spanishEd = doc.editions?.docs?.find((e: any) =>
     (e.language || []).some((l: string) => ['spa', 'es'].includes(l.toLowerCase()))
   )
 
-  const edition = spanishEdition || doc
   const langs: string[] = doc.language || []
-  const isSpanish = langs.some((l: string) => ['spa', 'es', 'spanish'].includes(l.toLowerCase()))
+  const isSpanish = !!spanishEd || langs.some((l: string) => ['spa', 'es', 'spanish'].includes(l.toLowerCase()))
 
-  const isbn = (edition.isbn || doc.isbn || []).find((i: string) => i.length === 13)
-    || (edition.isbn || doc.isbn || [])[0]
-    || null
+  const isbn = (spanishEd?.isbn || doc.isbn || []).find((i: string) => i.length === 13) || null
 
-  const coverId = edition.cover_i || doc.cover_i
+  const coverId = spanishEd?.cover_i || doc.cover_i
   const coverUrl = coverId
     ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`
     : isbn
@@ -87,10 +84,10 @@ function olDocToBook(doc: any) {
     : null
 
   return {
-    title: doc.title || '',
+    title: spanishEd?.title || doc.title || '',
     author: (doc.author_name || []).join(', '),
     coverUrl,
-    totalPages: edition.number_of_pages || doc.number_of_pages_median || 0,
+    totalPages: spanishEd?.number_of_pages || doc.number_of_pages_median || 0,
     genre: (doc.subject || [])[0] || null,
     description: null,
     language: isSpanish ? 'es' : (langs[0] || null),
