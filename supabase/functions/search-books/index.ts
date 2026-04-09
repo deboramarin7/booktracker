@@ -35,15 +35,49 @@ function lastNameOnly(author: string): string {
 
 // ─── Open Library: búsqueda ────────────────────────────────────────────────────
 
-const OL_FIELDS = 'key,title,author_name,cover_i,isbn,number_of_pages_median,subject,language,first_publish_year'
+async function olSearch(query: string, author?: string): Promise<any[]> {
+  try {
+    const fields = 'key,title,author_name,cover_i,isbn,number_of_pages_median,subject,language,first_publish_year,editions,editions.title,editions.cover_i,editions.isbn,editions.number_of_pages,editions.language'
 
-// Convierte un doc de Open Library a nuestro formato
+    const requests: Promise<Response>[] = [
+      fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&lang=es&fields=${fields}&limit=15`),
+      fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&language=spa&fields=${fields}&limit=10`),
+    ]
+
+    if (author) {
+      requests.push(
+        fetch(`https://openlibrary.org/search.json?author=${encodeURIComponent(author)}&title=${encodeURIComponent(query)}&lang=es&fields=${fields}&limit=10`)
+      )
+    }
+
+    const responses = await Promise.all(requests)
+    const allDocs = await Promise.all(responses.map(r => r.ok ? r.json().then((d: any) => d.docs || []) : []))
+
+    const seen = new Set<string>()
+    return allDocs.flat().filter((doc: any) => {
+      if (seen.has(doc.key)) return false
+      seen.add(doc.key)
+      return true
+    })
+  } catch { return [] }
+}
+
 function olDocToBook(doc: any) {
+  const spanishEdition = doc.editions?.docs?.find((e: any) =>
+    (e.language || []).some((l: string) => ['spa', 'es'].includes(l.toLowerCase()))
+  )
+
+  const edition = spanishEdition || doc
   const langs: string[] = doc.language || []
   const isSpanish = langs.some((l: string) => ['spa', 'es', 'spanish'].includes(l.toLowerCase()))
-  const isbn = (doc.isbn || []).find((i: string) => i.length === 13) || (doc.isbn || [])[0] || null
-  const coverUrl = doc.cover_i
-    ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`
+
+  const isbn = (edition.isbn || doc.isbn || []).find((i: string) => i.length === 13)
+    || (edition.isbn || doc.isbn || [])[0]
+    || null
+
+  const coverId = edition.cover_i || doc.cover_i
+  const coverUrl = coverId
+    ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`
     : isbn
     ? `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`
     : null
@@ -52,51 +86,14 @@ function olDocToBook(doc: any) {
     title: doc.title || '',
     author: (doc.author_name || []).join(', '),
     coverUrl,
-    totalPages: doc.number_of_pages_median || 0,
+    totalPages: edition.number_of_pages || doc.number_of_pages_median || 0,
     genre: (doc.subject || [])[0] || null,
     description: null,
     language: isSpanish ? 'es' : (langs[0] || null),
     isbn,
     _isSpanish: isSpanish,
-    _coverId: doc.cover_i || null,
+    _coverId: coverId || null,
   }
-}
-
-// Búsqueda en Open Library con múltiples estrategias priorizando español
-async function olSearch(query: string, author?: string): Promise<any[]> {
-  try {
-    const requests: Promise<Response>[] = []
-
-    // 1. Búsqueda en español por título
-    requests.push(
-      fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(query)}&language=spa&fields=${OL_FIELDS}&limit=15`)
-    )
-    // 2. Búsqueda general
-    requests.push(
-      fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&fields=${OL_FIELDS}&limit=20`)
-    )
-    // 3. Si hay autor, búsqueda por autor en español
-    if (author) {
-      requests.push(
-        fetch(`https://openlibrary.org/search.json?author=${encodeURIComponent(author)}&title=${encodeURIComponent(query)}&fields=${OL_FIELDS}&limit=10`)
-      )
-    }
-
-    const responses = await Promise.all(requests)
-    const [spanishRes, generalRes, authorRes] = responses
-
-    const spanishDocs = spanishRes.ok ? (await spanishRes.json()).docs || [] : []
-    const generalDocs = generalRes.ok ? (await generalRes.json()).docs || [] : []
-    const authorDocs = authorRes?.ok ? (await authorRes.json()).docs || [] : []
-
-    // Deduplicar: español primero, luego general
-    const seen = new Set<string>()
-    return [...spanishDocs, ...authorDocs, ...generalDocs].filter(doc => {
-      if (seen.has(doc.key)) return false
-      seen.add(doc.key)
-      return true
-    })
-  } catch { return [] }
 }
 
 // Búsqueda por ISBN en Open Library
