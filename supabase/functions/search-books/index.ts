@@ -223,7 +223,31 @@ Deno.serve(async (req: Request) => {
     }
 
     if (query && !title) {
-      const items = await googleSearch(query, apiKey)
+      let items = await googleSearch(query, apiKey)
+      if (!items.length) {
+        items = await googleSearch(removeDiacritics(query), apiKey)
+      }
+      if (!items.length) {
+        try {
+          const olRes = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&fields=key,cover_i,isbn,title,author_name,number_of_pages_median,subject&limit=10`)
+          if (olRes.ok) {
+            const olData = await olRes.json()
+            const olBooks = (olData.docs || []).map((doc: any) => ({
+              title: doc.title || '',
+              author: (doc.author_name || []).join(', '),
+              coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg` : null,
+              totalPages: doc.number_of_pages_median || 0,
+              genre: (doc.subject || [])[0] || null,
+              description: null,
+              language: null,
+              isbn: (doc.isbn || [])[0] || null,
+            }))
+            return new Response(JSON.stringify({ books: olBooks }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            })
+          }
+        } catch { }
+      }
       return new Response(JSON.stringify({ books: items.map(itemToBook) }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
