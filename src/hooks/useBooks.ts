@@ -1,42 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { TablesUpdate } from "@/integrations/supabase/types";
-
-const GOOGLE_BOOKS_API_KEY = "AIzaSyDgSYwnvsjk4IRKo6HSD8Xcza57V0XdQbk";
-
-function extractCoverUrl(item: { volumeInfo?: { imageLinks?: Record<string, string> } } | null): string | null {
-  if (!item) return null;
-  const links = item.volumeInfo?.imageLinks || {};
-  const raw = links.extraLarge || links.large || links.medium || links.small || links.thumbnail || links.smallThumbnail;
-  if (!raw) return null;
-  return raw.replace("http://", "https://").replace("&edge=curl", "").replace("zoom=1", "zoom=2");
-}
-
-async function fetchCoverForBook(title: string, author: string): Promise<string | null> {
-  try {
-    const cleanTitle = title.replace(/\s*\(.*?\)\s*/g, "").trim();
-    const queries = [
-      `intitle:${cleanTitle} inauthor:${author}`,
-      `${cleanTitle} ${author}`,
-      cleanTitle,
-    ];
-
-    for (const query of queries) {
-      const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=3&printType=books&key=${GOOGLE_BOOKS_API_KEY}`;
-      const res = await fetch(url);
-      if (!res.ok) continue;
-      const data = await res.json();
-      for (const item of data.items || []) {
-        const cover = extractCoverUrl(item);
-        if (cover) return cover;
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
 
 export type ReadingStatus = "want-to-read" | "reading" | "finished";
 
@@ -118,30 +83,6 @@ export function useBooks() {
   const { toast } = useToast();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
-  const enrichingRef = useRef(false);
-
-  const enrichMissingCovers = useCallback(async (loadedBooks: Book[]) => {
-    if (enrichingRef.current) return;
-    const missing = loadedBooks.filter((b) => !b.coverUrl);
-    if (!missing.length) return;
-    enrichingRef.current = true;
-
-    for (const book of missing) {
-      const cover = await fetchCoverForBook(book.title, book.author);
-      if (cover) {
-        await supabase
-          .from("books")
-          .update({ cover_url: cover })
-          .eq("id", book.id)
-          .is("user_id", null);
-        setBooks((prev) =>
-          prev.map((b) => (b.id === book.id ? { ...b, coverUrl: cover } : b))
-        );
-      }
-    }
-
-    enrichingRef.current = false;
-  }, []);
 
   const fetchBooks = useCallback(async () => {
     setLoading(true);
@@ -156,10 +97,9 @@ export function useBooks() {
     } else {
       const loaded = (data as DbBook[]).map(dbToBook);
       setBooks(loaded);
-      enrichMissingCovers(loaded);
     }
     setLoading(false);
-  }, [toast, enrichMissingCovers]);
+  }, [toast]);
 
   useEffect(() => { fetchBooks(); }, [fetchBooks]);
 
