@@ -80,7 +80,7 @@ async function searchOpenLibrary(query: string, author?: string): Promise<BookRe
 async function searchGoogleBooks(query: string, apiKey?: string): Promise<BookResult[]> {
   try {
     const keyParam = apiKey ? `&key=${apiKey}` : ''
-    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&printType=books${keyParam}`
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&printType=books&langRestrict=es${keyParam}`
     const res = await fetch(url)
     if (!res.ok) return []
     const data = await res.json()
