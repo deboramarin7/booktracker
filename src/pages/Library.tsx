@@ -26,9 +26,11 @@ function getBookYear(book: Book): number {
   return isNaN(d.getTime()) ? new Date().getFullYear() : d.getFullYear();
 }
 
-type SortOption = "added-desc" | "added-asc" | "title-asc" | "title-desc" | "rating-desc" | "author-asc";
+type SortOption = "read-desc" | "read-asc" | "added-desc" | "added-asc" | "title-asc" | "title-desc" | "rating-desc" | "author-asc";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: "read-desc", label: "Leídos recientemente" },
+  { value: "read-asc", label: "Leídos antes" },
   { value: "added-desc", label: "Añadidos recientemente" },
   { value: "added-asc", label: "Añadidos antes" },
   { value: "title-asc", label: "Título A-Z" },
@@ -51,7 +53,7 @@ export default function Library() {
   const [yearFilter, setYearFilter] = useState<string>(String(currentYear));
   const [genreFilter, setGenreFilter] = useState<string>("all");
   const [formatFilter, setFormatFilter] = useState<string>("all");
-  const [sort, setSort] = useState<SortOption>("added-desc");
+  const [sort, setSort] = useState<SortOption>("read-desc");
 
   const [goals, setGoals] = useState<Record<number, number>>(loadGoals);
   const [editingGoal, setEditingGoal] = useState(false);
@@ -150,6 +152,16 @@ export default function Library() {
 
     result.sort((a, b) => {
       switch (sort) {
+        case "read-desc": {
+          const aDate = a.endDate || a.startDate || a.addedAt;
+          const bDate = b.endDate || b.startDate || b.addedAt;
+          return new Date(bDate).getTime() - new Date(aDate).getTime();
+        }
+        case "read-asc": {
+          const aDate = a.endDate || a.startDate || a.addedAt;
+          const bDate = b.endDate || b.startDate || b.addedAt;
+          return new Date(aDate).getTime() - new Date(bDate).getTime();
+        }
         case "added-desc":
           return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
         case "added-asc":
