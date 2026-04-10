@@ -24,7 +24,8 @@ async function searchBooks(query: string): Promise<BookSearchResult[]> {
     const { data, error } = await supabase.functions.invoke("search-books", {
       body: { query }, // búsqueda libre: la edge function busca en Google Books sin filtros
     });
-    if (error || !data?.books?.length) return [];
+  const books = data?.books || data;
+if (error || !books?.length) return books || [];
     return data.books.map((b: any) => ({
       title:      b.title      || "",
       author:     b.author     || "",
