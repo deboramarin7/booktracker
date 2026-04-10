@@ -31,8 +31,8 @@ async function searchBooks(query: string): Promise<BookSearchResult[]> {
       coverUrl:   b.coverUrl   || undefined,
       totalPages: b.totalPages || 0,
       genre:      b.genre      || undefined,
-      sagaName:   b.sagaName   || undefined,
-      sagaOrder:  b.sagaOrder  || undefined,
+      sagaName:   b.sagaName   ? String(b.sagaName).trim() || undefined : undefined,
+      sagaOrder:  b.sagaOrder  ? String(b.sagaOrder).trim() || undefined : undefined,
     }));
   } catch {
     return [];
