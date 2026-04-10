@@ -10,6 +10,8 @@ interface BookSearchResult {
   coverUrl?: string;
   totalPages: number;
   genre?: string;
+  sagaName?: string;
+  sagaOrder?: string;
 }
 
 interface BookSearchGoogleProps {
@@ -29,6 +31,8 @@ async function searchBooks(query: string): Promise<BookSearchResult[]> {
       coverUrl:   b.coverUrl   || undefined,
       totalPages: b.totalPages || 0,
       genre:      b.genre      || undefined,
+      sagaName:   b.sagaName   || undefined,
+      sagaOrder:  b.sagaOrder  || undefined,
     }));
   } catch {
     return [];

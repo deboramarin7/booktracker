@@ -41,7 +41,7 @@ function lastNameOnly(author: string): string {
 
 async function olSearch(query: string, author?: string): Promise<any[]> {
   try {
-    const fields = 'key,title,author_name,cover_i,isbn,number_of_pages_median,subject,language,first_publish_year,editions,editions.title,editions.cover_i,editions.isbn,editions.number_of_pages,editions.language'
+    const fields = 'key,title,author_name,cover_i,isbn,number_of_pages_median,subject,language,series,first_publish_year,editions,editions.title,editions.cover_i,editions.isbn,editions.number_of_pages,editions.language,editions.series'
 
     const requests: Promise<Response>[] = [
       fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&lang=es&fields=${fields}&limit=15`, { headers: OL_HEADERS }),
@@ -83,6 +83,12 @@ function olDocToBook(doc: any) {
     ? `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`
     : null
 
+  const seriesRaw = spanishEd?.series || doc.series || []
+  const seriesText = seriesRaw[0] || ''
+  const seriesMatch = seriesText.match(/^(.+?)[,\s]+#?(\d+\.?\d*)$/)
+  const sagaName = seriesMatch?.[1]?.trim() || (seriesText.trim() || '')
+  const sagaOrder = seriesMatch?.[2] || ''
+
   return {
     title: spanishEd?.title || doc.title || '',
     author: (doc.author_name || []).join(', '),
@@ -92,6 +98,8 @@ function olDocToBook(doc: any) {
     description: null,
     language: isSpanish ? 'es' : (langs[0] || null),
     isbn,
+    sagaName,
+    sagaOrder,
     _isSpanish: isSpanish,
     _coverId: coverId || null,
   }

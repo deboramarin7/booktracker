@@ -113,6 +113,11 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
               setAuthor(r.author);
               if (r.coverUrl) setCoverUrl(r.coverUrl);
               if (r.totalPages) setTotalPages(String(r.totalPages));
+              if (r.sagaName) {
+                setHasSaga(true);
+                setSagaName(r.sagaName);
+                setSagaOrder(r.sagaOrder || "");
+              }
             }} />
           </div>
 
