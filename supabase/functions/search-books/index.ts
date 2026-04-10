@@ -66,30 +66,33 @@ async function olSearch(query: string, author?: string): Promise<any[]> {
   } catch { return [] }
 }
 
-function olDocToBook(doc: any) {
+async function olDocToBook(doc: any) {
   const spanishEd = doc.editions?.docs?.find((e: any) =>
     (e.language || []).some((l: string) => ['spa', 'es'].includes(l.toLowerCase()))
   )
-
   const langs: string[] = doc.language || []
   const isSpanish = !!spanishEd || langs.some((l: string) => ['spa', 'es', 'spanish'].includes(l.toLowerCase()))
-
   const isbn = (spanishEd?.isbn || doc.isbn || []).find((i: string) => i.length === 13) || null
-
   const coverId = spanishEd?.cover_i || doc.cover_i
   const coverUrl = coverId
     ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`
     : isbn
     ? `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`
     : null
-
-  const seriesRaw = spanishEd?.series || doc.series || []
+  const seriesRaw: string[] = spanishEd?.series || doc.series || []
+  if (seriesRaw.length === 0 && spanishEd?.key) {
+    try {
+      const edRes = await fetch(`https://openlibrary.org${spanishEd.key}.json`, { headers: OL_HEADERS })
+      if (edRes.ok) {
+        const edData = await edRes.json()
+        if (edData.series?.length > 0) seriesRaw.push(...edData.series)
+      }
+    } catch { }
+  }
   const seriesText = (seriesRaw[0] || '').trim()
-  // Matches: "Empireo 1", "Empireo, 1", "Empireo #1", "Empireo, #1.5", "Empireo vol. 2", "Empireo (Book 1)"
   const seriesMatch = seriesText.match(/^(.+?)[\s,]+(?:vol\.?\s*|book\s*|tome\s*|#)?(\d+\.?\d*)\s*$/i)
   const sagaName = seriesMatch ? seriesMatch[1].trim() : seriesText
   const sagaOrder = seriesMatch ? seriesMatch[2] : ''
-
   return {
     title: spanishEd?.title || doc.title || '',
     author: (doc.author_name || []).join(', '),
