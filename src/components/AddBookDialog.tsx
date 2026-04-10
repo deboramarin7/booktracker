@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Plus } from "lucide-react";
 import type { ReadingStatus, Book } from "@/hooks/useBooks";
 import type { WishItem } from "@/hooks/useWishlist";
@@ -24,7 +23,6 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
-  const [hasSaga, setHasSaga] = useState(false);
   const [sagaName, setSagaName] = useState("");
   const [sagaOrder, setSagaOrder] = useState("");
   const [genre, setGenre] = useState(GENRES[0]);
@@ -40,7 +38,7 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
   const [tags, setTags] = useState<string[]>([]);
 
   const reset = () => {
-    setTitle(""); setAuthor(""); setCoverUrl(""); setHasSaga(false);
+    setTitle(""); setAuthor(""); setCoverUrl("");
     setSagaName(""); setSagaOrder(""); setGenre(GENRES[0]);
     setFormat(FORMATS[0]); setSource(SOURCES[0]); setPrice("");
     setStatus("reading"); setTotalPages(""); setPagesRead("");
@@ -56,9 +54,9 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
         title: title.trim(),
         author: author.trim(),
         coverUrl: coverUrl.trim() || undefined,
-        hasSaga,
-        saga: hasSaga ? sagaName.trim() || undefined : undefined,
-        sagaOrder: hasSaga ? sagaOrder.trim() || undefined : undefined,
+        hasSaga: !!sagaName.trim(),
+        saga: sagaName.trim() || undefined,
+        sagaOrder: sagaOrder.trim() || undefined,
         genre,
         priority: 3,
         status: "Buscar",
@@ -70,9 +68,9 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
         title: title.trim(),
         author: author.trim(),
         coverUrl: coverUrl.trim() || undefined,
-        hasSaga,
-        saga: hasSaga ? sagaName.trim() || undefined : undefined,
-        sagaOrder: hasSaga ? sagaOrder.trim() || undefined : undefined,
+        hasSaga: !!sagaName.trim(),
+        saga: sagaName.trim() || undefined,
+        sagaOrder: sagaOrder.trim() || undefined,
         genre,
         format,
         source,
@@ -114,7 +112,6 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
               if (r.coverUrl) setCoverUrl(r.coverUrl);
               if (r.totalPages) setTotalPages(String(r.totalPages));
               if (r.sagaName) {
-                setHasSaga(true);
                 setSagaName(r.sagaName);
                 setSagaOrder(r.sagaOrder || "");
               }
@@ -135,23 +132,15 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
           </div>
 
           {/* Saga */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="font-body text-sm">¿Pertenece a una saga?</Label>
-              <Switch checked={hasSaga} onCheckedChange={setHasSaga} />
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2 space-y-1.5">
+              <Label className="font-body text-sm">Nombre de saga</Label>
+              <Input value={sagaName} onChange={(e) => setSagaName(e.target.value)} placeholder="Ej: Empíreo" />
             </div>
-            {hasSaga && (
-              <div className="grid grid-cols-3 gap-3 animate-fade-in">
-                <div className="col-span-2 space-y-1.5">
-                  <Label className="font-body text-xs text-muted-foreground">Nombre de la saga</Label>
-                  <Input value={sagaName} onChange={(e) => setSagaName(e.target.value)} placeholder="Ej: Empíreo" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="font-body text-xs text-muted-foreground">Orden</Label>
-                  <Input value={sagaOrder} onChange={(e) => setSagaOrder(e.target.value)} placeholder="1" />
-                </div>
-              </div>
-            )}
+            <div className="space-y-1.5">
+              <Label className="font-body text-sm">Orden en saga</Label>
+              <Input value={sagaOrder} onChange={(e) => setSagaOrder(e.target.value)} placeholder="1" />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
