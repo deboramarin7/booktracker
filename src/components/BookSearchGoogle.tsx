@@ -26,7 +26,7 @@ async function searchBooks(query: string): Promise<BookSearchResult[]> {
     });
   const books = data?.books || data;
 if (error || !books?.length) return books || [];
-    return data.books.map((b: any) => ({
+    return books.map((b: any) => ({
       title:      b.title      || "",
       author:     b.author     || "",
       coverUrl:   b.coverUrl   || undefined,
