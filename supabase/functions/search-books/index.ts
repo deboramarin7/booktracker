@@ -85,11 +85,10 @@ function olDocToBook(doc: any) {
 
   const seriesRaw = spanishEd?.series || doc.series || []
   const seriesText = (seriesRaw[0] || '').trim()
-  // Matches: "Empireo 1", "Empireo, 1", "Empireo #1", "Empireo, #1.5", "Empireo vol. 2"
-  const seriesMatch = seriesText.match(/^(.+?)(?:[,\s]+(?:vol\.?\s*)?#?(\d+\.?\d*))?\s*$/)
-  const hasNumber = seriesMatch && seriesMatch[2]
-  const sagaName = seriesText ? (hasNumber ? seriesMatch![1].trim() : seriesText) : ''
-  const sagaOrder = hasNumber ? seriesMatch![2] : ''
+  // Matches: "Empireo 1", "Empireo, 1", "Empireo #1", "Empireo, #1.5", "Empireo vol. 2", "Empireo (Book 1)"
+  const seriesMatch = seriesText.match(/^(.+?)[\s,]+(?:vol\.?\s*|book\s*|tome\s*|#)?(\d+\.?\d*)\s*$/i)
+  const sagaName = seriesMatch ? seriesMatch[1].trim() : seriesText
+  const sagaOrder = seriesMatch ? seriesMatch[2] : ''
 
   return {
     title: spanishEd?.title || doc.title || '',
