@@ -85,9 +85,9 @@ function olDocToBook(doc: any) {
 
   const seriesRaw = spanishEd?.series || doc.series || []
   const seriesText = seriesRaw[0] || ''
-  const seriesMatch = seriesText.match(/^(.+?)[,\s]+#?(\d+\.?\d*)$/)
-  const sagaName = seriesMatch?.[1]?.trim() || (seriesText.trim() || '')
-  const sagaOrder = seriesMatch?.[2] || ''
+  const seriesMatch = seriesText.match(/^(.+?)[\s,]+#?(\d+\.?\d*)\s*$/)
+  const sagaName = seriesMatch ? seriesMatch[1].trim() : seriesText.trim()
+  const sagaOrder = seriesMatch ? seriesMatch[2] : ''
 
   return {
     title: spanishEd?.title || doc.title || '',
