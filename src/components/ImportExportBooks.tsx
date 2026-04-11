@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Upload, Loader as Loader2 } from "lucide-react";
+import { Upload, Download, Loader as Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -302,5 +302,53 @@ export function ImportBooksDialog({ onImport, onImportWishlist }: ImportExportBo
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+export function ExportBooksButton({ books }: { books: Book[] }) {
+  const { toast } = useToast();
+
+  const handleExport = () => {
+    if (!books.length) {
+      toast({ title: "No hay libros para exportar", variant: "destructive" });
+      return;
+    }
+
+    const rows = books.map(b => ({
+      "Título":        b.title,
+      "Autor/a":       b.author,
+      "Estado":        b.status === "finished" ? "Terminado" : b.status === "reading" ? "Leyendo" : "Quiero leer",
+      "Género":        b.genre || "",
+      "Formato":       b.format || "",
+      "Páginas":       b.totalPages || "",
+      "Valoración":    b.rating || "",
+      "Saga":          b.hasSaga && b.saga ? b.saga : "",
+      "Orden en saga": b.sagaOrder || "",
+      "Precio (€)":    b.price || "",
+      "Procedencia":   b.source || "",
+      "Fecha inicio":  b.startDate || "",
+      "Fecha fin":     b.endDate || "",
+      "Notas":         b.notes || "",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Mis libros");
+
+    // Auto column width
+    const colWidths = Object.keys(rows[0]).map(key => ({
+      wch: Math.max(key.length, ...rows.map(r => String(r[key as keyof typeof r] || "").length)) + 2
+    }));
+    ws["!cols"] = colWidths;
+
+    XLSX.writeFile(wb, `mybooktracker_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast({ title: "Exportado correctamente", description: `${books.length} libros exportados a Excel` });
+  };
+
+  return (
+    <Button variant="outline" size="sm" className="gap-1.5" onClick={handleExport}>
+      <Download className="h-4 w-4" />
+      <span className="hidden sm:inline">Exportar</span>
+    </Button>
   );
 }
