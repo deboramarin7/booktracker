@@ -40,6 +40,10 @@ export default function Layout() {
   const { dark, setDark } = useTheme();
   const [searchEditBook, setSearchEditBook] = useState<Book | null>(null);
 
+  const menuBg = dark ? "hsl(220, 16%, 12%)" : "hsl(220, 14%, 98%)";
+  const menuText = dark ? "hsl(220, 10%, 92%)" : "hsl(220, 15%, 12%)";
+  const menuHoverBg = dark ? "hsl(220, 12%, 20%)" : "hsl(220, 10%, 91%)";
+
   const navLinks = [
     { to: "/", label: "Mi Biblioteca", end: true },
     { to: "/autores-sagas", label: "Autores y Sagas" },
@@ -116,14 +120,11 @@ export default function Layout() {
                 <SheetContent
                   side="right"
                   className="w-72 pt-10 border-l border-border"
-                  style={{
-                    backgroundColor: dark ? "hsl(220, 16%, 12%)" : "hsl(220, 14%, 98%)",
-                    color: dark ? "hsl(220, 10%, 92%)" : "hsl(220, 15%, 12%)",
-                  }}
+                  style={{ backgroundColor: menuBg, color: menuText }}
                 >
                   <div className="flex items-center gap-2 mb-8 px-4">
                     <BookOpen className="h-5 w-5 text-primary" />
-                    <span className="font-display text-lg font-semibold">Menú</span>
+                    <span className="font-display text-lg font-semibold" style={{ color: menuText }}>Menú</span>
                   </div>
                   <nav className="flex flex-col gap-1 px-2">
                     {navLinks.map((link) => (
@@ -131,13 +132,11 @@ export default function Layout() {
                         <NavLink
                           to={link.to}
                           end={link.end}
-                          className={({ isActive }) =>
-                            `block px-4 py-3 rounded-lg text-base font-body font-medium transition-all ${
-                              isActive
-                                ? "bg-primary text-primary-foreground warm-shadow"
-                                : "text-foreground hover:bg-secondary/80"
-                            }`
-                          }
+                          className="block px-4 py-3 rounded-lg text-base font-body font-medium transition-all"
+                          style={({ isActive }) => ({
+                            backgroundColor: isActive ? "hsl(var(--primary))" : "transparent",
+                            color: isActive ? "hsl(var(--primary-foreground))" : menuText,
+                          })}
                         >
                           {link.label}
                         </NavLink>
