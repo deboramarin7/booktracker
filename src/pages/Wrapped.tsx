@@ -621,7 +621,6 @@ export default function Wrapped() {
   );
 
   const handleDownload = async () => {
-    // Get the outer slide container (rounded-2xl div)
     const container = slideRef.current?.querySelector(".rounded-2xl") as HTMLElement;
     if (!container) return;
     setIsDownloading(true);
@@ -636,11 +635,8 @@ export default function Wrapped() {
         });
       }
       const h2c = (window as any).html2canvas;
-
-      // Hide nav dots + arrows before capture
       const navEl = container.querySelector(".slide-nav") as HTMLElement | null;
       if (navEl) navEl.style.visibility = "hidden";
-
       const raw = await h2c(container, {
         useCORS: true,
         allowTaint: true,
@@ -648,59 +644,36 @@ export default function Wrapped() {
         scale: 3,
         logging: false,
         onclone: (doc: Document) => {
-          // In the cloned doc, hide all inactive slides and nav
           const clonedContainer = doc.querySelector(".rounded-2xl");
           if (!clonedContainer) return;
-          // Hide nav
           const nav = clonedContainer.querySelector(".slide-nav") as HTMLElement | null;
           if (nav) nav.style.display = "none";
-          // Hide inactive slides (opacity-0 ones)
           const slides = clonedContainer.querySelectorAll(".absolute.inset-0");
           slides.forEach((s) => {
             const el = s as HTMLElement;
             const style = window.getComputedStyle(s);
-            if (style.opacity === "0" || parseFloat(style.opacity) < 0.5) {
-              el.style.display = "none";
-            }
+            if (parseFloat(style.opacity) < 0.5) el.style.display = "none";
           });
         },
       });
-
-      // Restore nav
       if (navEl) navEl.style.visibility = "";
-
-      // Output exactly 1080×1920 (Instagram/WhatsApp Stories standard)
-      const STORY_W = 1080;
-      const STORY_H = 1920;
+      const targetRatio = 9 / 16;
       const srcW = raw.width;
       const srcH = raw.height;
-      const srcRatio = srcW / srcH;
-      const storyRatio = STORY_W / STORY_H;
       const out = document.createElement("canvas");
-      out.width = STORY_W;
-      out.height = STORY_H;
-      const ctx2d = out.getContext("2d")!;
-      ctx2d.fillStyle = "#000000";
-      ctx2d.fillRect(0, 0, STORY_W, STORY_H);
-      let drawW, drawH, drawX, drawY;
-      if (srcRatio > storyRatio) {
-        drawH = STORY_H;
-        drawW = Math.round(srcRatio * STORY_H);
-        drawX = Math.round((STORY_W - drawW) / 2);
-        drawY = 0;
-      } else {
-        drawW = STORY_W;
-        drawH = Math.round(STORY_W / srcRatio);
-        drawX = 0;
-        drawY = Math.round((STORY_H - drawH) / 2);
+      let cropX = 0, cropW = srcW, cropH = srcH;
+      if (srcW / srcH > targetRatio) {
+        cropW = Math.round(srcH * targetRatio);
+        cropX = Math.round((srcW - cropW) / 2);
       }
-      ctx2d.drawImage(raw, drawX, drawY, drawW, drawH);
-
+      out.width = cropW;
+      out.height = cropH;
+      out.getContext("2d")!.drawImage(raw, cropX, 0, cropW, cropH, 0, 0, cropW, cropH);
       const link = document.createElement("a");
       link.download = `wrapped-${selectedYear}-slide${currentSlide + 1}.png`;
       link.href = out.toDataURL("image/png");
       link.click();
-    } catch (err) { console.error(err); setIsDownloading(false); }
+    } catch (err) { console.error(err); }
     finally { setIsDownloading(false); }
   };
 
