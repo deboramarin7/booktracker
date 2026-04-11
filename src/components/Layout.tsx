@@ -115,7 +115,7 @@ export default function Layout() {
                              `block px-4 py-3 rounded-lg text-sm font-body transition-all ${
                               isActive
                                 ? "bg-primary text-primary-foreground warm-shadow"
-                                : "!text-black dark:!text-white hover:bg-secondary/80"
+                                : "text-gray-800 dark:text-gray-100 hover:bg-secondary/80"
                             }`
                           }
                         >
