@@ -2,11 +2,11 @@ import { useState, useMemo, useRef } from "react";
 import { useBooks } from "@/hooks/useBooks";
 import { BookCard } from "@/components/BookCard";
 import { AddBookDialog } from "@/components/AddBookDialog";
-import { ImportBooksDialog } from "@/components/ImportExportBooks";
+import { ImportBooksDialog, ExportBooksButton } from "@/components/ImportExportBooks";
 import { useWishlist, type WishItem } from "@/hooks/useWishlist";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, Pencil, Check, Target, LayoutGrid, List } from "lucide-react";
+import { BookOpen, Pencil, Check, LayoutGrid, AlignJustify } from "lucide-react";
 import type { Book, ReadingStatus } from "@/hooks/useBooks";
 import { GENRES, FORMATS, STATUSES } from "@/lib/constants";
 
@@ -50,6 +50,7 @@ export default function Library() {
 
   const currentYear = new Date().getFullYear();
   const [yearFilter, setYearFilter] = useState<string>(String(currentYear));
+  const [viewMode, setViewMode] = useState<"grid" | "spine">("grid");
   const [genreFilter, setGenreFilter] = useState<string>("all");
   const [formatFilter, setFormatFilter] = useState<string>("all");
   const [sort, setSort] = useState<SortOption>("read-desc");
@@ -214,7 +215,24 @@ export default function Library() {
           </Select>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex items-center border border-border/40 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`px-2.5 py-1.5 transition-colors ${viewMode === "grid" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              title="Vista grid"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("spine")}
+              className={`px-2.5 py-1.5 transition-colors ${viewMode === "spine" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              title="Vista lomos"
+            >
+              <AlignJustify className="h-4 w-4" />
+            </button>
+          </div>
           <ImportBooksDialog onImport={addBooksInBatch} onImportWishlist={handleImportWishlist} />
+          <ExportBooksButton books={books} />
           <AddBookDialog onAdd={addBook} onAddToWishlist={addItem} />
         </div>
       </div>
@@ -402,18 +420,43 @@ export default function Library() {
                   {groupBooks.length}
                 </span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {groupBooks.map((book, index) => (
-                  <BookCard
-                    key={book.id}
-                    book={book}
-                    index={index}
-                    onUpdate={updateBook}
-                    onDelete={deleteBook}
-                    onMoveToWishlist={handleMoveToWishlist}
-                  />
-                ))}
-              </div>
+              {viewMode === "grid" ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {groupBooks.map((book, index) => (
+                    <BookCard
+                      key={book.id}
+                      book={book}
+                      index={index}
+                      onUpdate={updateBook}
+                      onDelete={deleteBook}
+                      onMoveToWishlist={handleMoveToWishlist}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex gap-1 overflow-x-auto pb-4 pt-1">
+                  {groupBooks.map((book) => (
+                    <div
+                      key={book.id}
+                      className="relative flex-shrink-0 w-[42px] h-[180px] rounded-sm overflow-hidden cursor-pointer group shadow-md hover:scale-105 transition-transform duration-150"
+                      title={`${book.title} — ${book.author}`}
+                    >
+                      {book.coverUrl ? (
+                        <img src={book.coverUrl} alt={book.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-end justify-center pb-2 px-1"
+                          style={{ background: `hsl(${Math.abs(book.title.charCodeAt(0) * 7 + book.title.charCodeAt(1) * 13) % 360}, 35%, 25%)` }}>
+                          <span className="text-[8px] text-white/70 text-center leading-tight font-display" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+                            {book.title}
+                          </span>
+                        </div>
+                      )}
+                      {/* Tooltip on hover */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
