@@ -215,7 +215,7 @@ export default function Library() {
         </div>
         <div className="flex items-center gap-2">
           <ImportBooksDialog onImport={addBooksInBatch} onImportWishlist={handleImportWishlist} />
-          <AddBookDialog onAdd={addBook} onAddToWishlist={addWishItem} />
+          <AddBookDialog onAdd={addBook} onAddToWishlist={addItem} />
         </div>
       </div>
 
