@@ -56,6 +56,7 @@ export default function Layout() {
       <div className="min-h-screen">
         <header className="border-b border-border/40 bg-card/90 backdrop-blur-xl sticky top-0 z-10">
           <div className="container flex items-center justify-between py-3">
+            {/* Logo */}
             <div className="flex items-center gap-3">
               <div className="relative">
                 <BookOpen className="h-7 w-7 text-primary" />
@@ -65,6 +66,8 @@ export default function Layout() {
                 Book Tracker
               </h1>
             </div>
+
+            {/* Desktop nav */}
             <nav className="hidden md:flex gap-1 items-center">
               {navLinks.map((link) => (
                 <NavLink
@@ -72,20 +75,36 @@ export default function Layout() {
                   to={link.to}
                   end={link.end}
                   className={({ isActive }) =>
-                    `px-3 py-2 rounded-lg text-sm font-body transition-all duration-200 ${isActive ? "bg-primary text-primary-foreground warm-shadow" : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground"}`
+                    `px-3 py-2 rounded-lg text-sm font-body transition-all duration-200 ${
+                      isActive
+                        ? "bg-primary text-primary-foreground warm-shadow"
+                        : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
+                    }`
                   }
                 >
                   {link.label}
                 </NavLink>
               ))}
               <GlobalSearch books={books} onSelectBook={setSearchEditBook} />
-              <Button variant="ghost" size="icon" onClick={() => setDark(!dark)} className="ml-1 hover:bg-warm-gold/10 hover:text-warm-gold transition-colors">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setDark(!dark)}
+                className="ml-1 hover:bg-warm-gold/10 hover:text-warm-gold transition-colors"
+              >
                 {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
             </nav>
+
+            {/* Mobile nav */}
             <div className="flex md:hidden items-center gap-1">
               <GlobalSearch books={books} onSelectBook={setSearchEditBook} />
-              <Button variant="ghost" size="icon" onClick={() => setDark(!dark)} className="hover:bg-warm-gold/10">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setDark(!dark)}
+                className="hover:bg-warm-gold/10"
+              >
                 {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
               <Sheet>
@@ -94,19 +113,32 @@ export default function Layout() {
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-64 pt-10 border-l border-border bg-card text-card-foreground">
-                  <div className="flex items-center gap-2 mb-6 px-4">
+                <SheetContent
+                  side="right"
+                  className="w-72 pt-10 border-l border-border"
+                  style={{
+                    backgroundColor: dark ? "hsl(220, 16%, 12%)" : "hsl(220, 14%, 98%)",
+                    color: dark ? "hsl(220, 10%, 92%)" : "hsl(220, 15%, 12%)",
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-8 px-4">
                     <BookOpen className="h-5 w-5 text-primary" />
-                    <span className="font-display text-lg text-card-foreground">Menú</span>
+                    <span className="font-display text-lg font-semibold">Menú</span>
                   </div>
-                  <nav className="flex flex-col gap-1">
+                  <nav className="flex flex-col gap-1 px-2">
                     {navLinks.map((link) => (
                       <SheetClose asChild key={link.to}>
                         <NavLink
                           to={link.to}
                           end={link.end}
                           className={({ isActive }) =>
-                            `block px-4 py-3 rounded-lg text-sm font-body transition-all ${isActive ? "bg-primary text-primary-foreground warm-shadow" : "text-card-foreground hover:bg-secondary/80"}`
+                            `block px-4 py-3 rounded-lg text-base font-body font-medium transition-all ${
+                              isActive
+                                ? "bg-primary text-primary-foreground warm-shadow"
+                                : dark
+                                ? "text-slate-200 hover:bg-white/10"
+                                : "text-slate-800 hover:bg-black/5"
+                            }`
                           }
                         >
                           {link.label}
@@ -119,15 +151,20 @@ export default function Layout() {
             </div>
           </div>
         </header>
+
         <main className="container py-4 md:py-8 space-y-0 page-transition">
           <Outlet />
         </main>
+
         {searchEditBook && (
           <EditBookDialog
             book={searchEditBook}
             open={!!searchEditBook}
             onOpenChange={(open) => { if (!open) setSearchEditBook(null); }}
-            onSave={(id, data) => { updateBook(id, data); setSearchEditBook(null); }}
+            onSave={(id, data) => {
+              updateBook(id, data);
+              setSearchEditBook(null);
+            }}
           />
         )}
       </div>
