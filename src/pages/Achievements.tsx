@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useBooksContext } from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,7 +27,7 @@ function loadHabits(): Record<string, string[]> {
 
 const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-type AchievementCategory = "constancia" | "volumen" | "exploración";
+type AchievementCategory = "constancia" | "volumen" | "exploraciÃ³n";
 
 interface Achievement {
   id: string;
@@ -43,7 +43,7 @@ interface Achievement {
 const CATEGORY_META: Record<AchievementCategory, { label: string; icon: React.ReactNode; gradient: string }> = {
   constancia: { label: "Constancia", icon: <Flame className="h-5 w-5" />, gradient: "from-orange-500/15 via-amber-500/5 to-transparent" },
   volumen: { label: "Volumen", icon: <TrendingUp className="h-5 w-5" />, gradient: "from-blue-500/15 via-indigo-500/5 to-transparent" },
-  exploración: { label: "Exploración", icon: <Compass className="h-5 w-5" />, gradient: "from-emerald-500/15 via-teal-500/5 to-transparent" },
+  exploraciÃ³n: { label: "ExploraciÃ³n", icon: <Compass className="h-5 w-5" />, gradient: "from-emerald-500/15 via-teal-500/5 to-transparent" },
 };
 
 // --- Achievement Card ---
@@ -154,7 +154,8 @@ export default function Achievements() {
     });
   }, [finishedBooks, selectedYear]);
 
-  const habits = useMemo(() => loadHabits(), []);
+  const [habits, setHabits] = useState<Record<string, string[]>>(loadHabits);
+  useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
   const yearDays = useMemo(() => habits[String(selectedYear)] || [], [habits, selectedYear]);
 
   const maxStreak = useMemo(() => {
@@ -180,34 +181,34 @@ export default function Achievements() {
   const formatsUsed = useMemo(() => new Set(yearFinished.filter(b => b.format).map(b => b.format)).size, [yearFinished]);
 
   const achievements: Achievement[] = useMemo(() => [
-    // ── CONSTANCIA ──
-    { id: "streak_3", icon: <Flame className="h-6 w-6" />, title: "Chispa", description: "3 días seguidos leyendo", unlocked: maxStreak >= 3, progress: { current: Math.min(maxStreak, 3), target: 3 }, color: "hsl(25, 80%, 55%)", category: "constancia" as const },
-    { id: "streak_7", icon: <Flame className="h-6 w-6" />, title: "Semana en Llamas", description: "7 días seguidos leyendo", unlocked: maxStreak >= 7, progress: { current: Math.min(maxStreak, 7), target: 7 }, color: "hsl(15, 85%, 50%)", category: "constancia" as const },
-    { id: "streak_14", icon: <Zap className="h-6 w-6" />, title: "Quincena de Fuego", description: "14 días seguidos leyendo", unlocked: maxStreak >= 14, progress: { current: Math.min(maxStreak, 14), target: 14 }, color: "hsl(40, 90%, 50%)", category: "constancia" as const },
-    { id: "streak_30", icon: <Crown className="h-6 w-6" />, title: "Imparable", description: "30 días seguidos leyendo", unlocked: maxStreak >= 30, progress: { current: Math.min(maxStreak, 30), target: 30 }, color: "hsl(50, 95%, 50%)", category: "constancia" as const },
-    { id: "50_days", icon: <Calendar className="h-6 w-6" />, title: "Medio Centenar", description: `50 días de lectura en ${selectedYear}`, unlocked: totalReadDays >= 50, progress: { current: Math.min(totalReadDays, 50), target: 50 }, color: "hsl(30, 70%, 50%)", category: "constancia" as const },
-    { id: "100_days", icon: <Calendar className="h-6 w-6" />, title: "Centenario", description: `100 días de lectura en ${selectedYear}`, unlocked: totalReadDays >= 100, progress: { current: Math.min(totalReadDays, 100), target: 100 }, color: "hsl(20, 75%, 45%)", category: "constancia" as const },
-    { id: "200_days", icon: <Sparkles className="h-6 w-6" />, title: "Leyenda", description: `200 días de lectura en ${selectedYear}`, unlocked: totalReadDays >= 200, progress: { current: Math.min(totalReadDays, 200), target: 200 }, color: "hsl(10, 80%, 40%)", category: "constancia" as const },
+    // ââ CONSTANCIA ââ
+    { id: "streak_3", icon: <Flame className="h-6 w-6" />, title: "Chispa", description: "3 dÃ­as seguidos leyendo", unlocked: maxStreak >= 3, progress: { current: Math.min(maxStreak, 3), target: 3 }, color: "hsl(25, 80%, 55%)", category: "constancia" as const },
+    { id: "streak_7", icon: <Flame className="h-6 w-6" />, title: "Semana en Llamas", description: "7 dÃ­as seguidos leyendo", unlocked: maxStreak >= 7, progress: { current: Math.min(maxStreak, 7), target: 7 }, color: "hsl(15, 85%, 50%)", category: "constancia" as const },
+    { id: "streak_14", icon: <Zap className="h-6 w-6" />, title: "Quincena de Fuego", description: "14 dÃ­as seguidos leyendo", unlocked: maxStreak >= 14, progress: { current: Math.min(maxStreak, 14), target: 14 }, color: "hsl(40, 90%, 50%)", category: "constancia" as const },
+    { id: "streak_30", icon: <Crown className="h-6 w-6" />, title: "Imparable", description: "30 dÃ­as seguidos leyendo", unlocked: maxStreak >= 30, progress: { current: Math.min(maxStreak, 30), target: 30 }, color: "hsl(50, 95%, 50%)", category: "constancia" as const },
+    { id: "50_days", icon: <Calendar className="h-6 w-6" />, title: "Medio Centenar", description: `50 dÃ­as de lectura en ${selectedYear}`, unlocked: totalReadDays >= 50, progress: { current: Math.min(totalReadDays, 50), target: 50 }, color: "hsl(30, 70%, 50%)", category: "constancia" as const },
+    { id: "100_days", icon: <Calendar className="h-6 w-6" />, title: "Centenario", description: `100 dÃ­as de lectura en ${selectedYear}`, unlocked: totalReadDays >= 100, progress: { current: Math.min(totalReadDays, 100), target: 100 }, color: "hsl(20, 75%, 45%)", category: "constancia" as const },
+    { id: "200_days", icon: <Sparkles className="h-6 w-6" />, title: "Leyenda", description: `200 dÃ­as de lectura en ${selectedYear}`, unlocked: totalReadDays >= 200, progress: { current: Math.min(totalReadDays, 200), target: 200 }, color: "hsl(10, 80%, 40%)", category: "constancia" as const },
 
-    // ── VOLUMEN ──
+    // ââ VOLUMEN ââ
     { id: "first_book", icon: <BookOpen className="h-6 w-6" />, title: "Primer Libro", description: `Termina tu primer libro en ${selectedYear}`, unlocked: yearFinished.length >= 1, progress: { current: Math.min(yearFinished.length, 1), target: 1 }, color: "hsl(210, 70%, 55%)", category: "volumen" as const },
     { id: "five_books", icon: <BookMarked className="h-6 w-6" />, title: "Lector Novato", description: `Termina 5 libros en ${selectedYear}`, unlocked: yearFinished.length >= 5, progress: { current: Math.min(yearFinished.length, 5), target: 5 }, color: "hsl(220, 65%, 50%)", category: "volumen" as const },
     { id: "ten_books", icon: <Library className="h-6 w-6" />, title: "Lector Dedicado", description: `Termina 10 libros en ${selectedYear}`, unlocked: yearFinished.length >= 10, progress: { current: Math.min(yearFinished.length, 10), target: 10 }, color: "hsl(240, 55%, 55%)", category: "volumen" as const },
-    { id: "25_books", icon: <Trophy className="h-6 w-6" />, title: "Bibliófilo", description: `Termina 25 libros en ${selectedYear}`, unlocked: yearFinished.length >= 25, progress: { current: Math.min(yearFinished.length, 25), target: 25 }, color: "hsl(260, 50%, 55%)", category: "volumen" as const },
+    { id: "25_books", icon: <Trophy className="h-6 w-6" />, title: "BibliÃ³filo", description: `Termina 25 libros en ${selectedYear}`, unlocked: yearFinished.length >= 25, progress: { current: Math.min(yearFinished.length, 25), target: 25 }, color: "hsl(260, 50%, 55%)", category: "volumen" as const },
     { id: "50_books", icon: <Crown className="h-6 w-6" />, title: "Devoralibros", description: `Termina 50 libros en ${selectedYear}`, unlocked: yearFinished.length >= 50, progress: { current: Math.min(yearFinished.length, 50), target: 50 }, color: "hsl(280, 55%, 50%)", category: "volumen" as const },
-    { id: "1000_pages", icon: <Target className="h-6 w-6" />, title: "Mil Páginas", description: `Lee 1.000 páginas en ${selectedYear}`, unlocked: totalPages >= 1000, progress: { current: Math.min(totalPages, 1000), target: 1000 }, color: "hsl(200, 60%, 50%)", category: "volumen" as const },
-    { id: "5000_pages", icon: <Target className="h-6 w-6" />, title: "Maratonista", description: `Lee 5.000 páginas en ${selectedYear}`, unlocked: totalPages >= 5000, progress: { current: Math.min(totalPages, 5000), target: 5000 }, color: "hsl(230, 60%, 50%)", category: "volumen" as const },
-    { id: "10000_pages", icon: <Sparkles className="h-6 w-6" />, title: "Ultra Lector", description: `Lee 10.000 páginas en ${selectedYear}`, unlocked: totalPages >= 10000, progress: { current: Math.min(totalPages, 10000), target: 10000 }, color: "hsl(270, 60%, 50%)", category: "volumen" as const },
+    { id: "1000_pages", icon: <Target className="h-6 w-6" />, title: "Mil PÃ¡ginas", description: `Lee 1.000 pÃ¡ginas en ${selectedYear}`, unlocked: totalPages >= 1000, progress: { current: Math.min(totalPages, 1000), target: 1000 }, color: "hsl(200, 60%, 50%)", category: "volumen" as const },
+    { id: "5000_pages", icon: <Target className="h-6 w-6" />, title: "Maratonista", description: `Lee 5.000 pÃ¡ginas en ${selectedYear}`, unlocked: totalPages >= 5000, progress: { current: Math.min(totalPages, 5000), target: 5000 }, color: "hsl(230, 60%, 50%)", category: "volumen" as const },
+    { id: "10000_pages", icon: <Sparkles className="h-6 w-6" />, title: "Ultra Lector", description: `Lee 10.000 pÃ¡ginas en ${selectedYear}`, unlocked: totalPages >= 10000, progress: { current: Math.min(totalPages, 10000), target: 10000 }, color: "hsl(270, 60%, 50%)", category: "volumen" as const },
 
-    // ── EXPLORACIÓN ──
-    { id: "3_genres", icon: <Globe className="h-6 w-6" />, title: "Curioso", description: "Lee 3 géneros diferentes", unlocked: uniqueGenres >= 3, progress: { current: Math.min(uniqueGenres, 3), target: 3 }, color: "hsl(150, 55%, 45%)", category: "exploración" as const },
-    { id: "5_genres", icon: <Medal className="h-6 w-6" />, title: "Ecléctico", description: "Lee 5 géneros diferentes", unlocked: uniqueGenres >= 5, progress: { current: Math.min(uniqueGenres, 5), target: 5 }, color: "hsl(160, 50%, 42%)", category: "exploración" as const },
-    { id: "3_authors", icon: <Compass className="h-6 w-6" />, title: "Descubridor", description: "Lee a 3 autores diferentes", unlocked: uniqueAuthors >= 3, progress: { current: Math.min(uniqueAuthors, 3), target: 3 }, color: "hsl(170, 50%, 40%)", category: "exploración" as const },
-    { id: "5_authors", icon: <Compass className="h-6 w-6" />, title: "Explorador", description: "Lee a 5 autores diferentes", unlocked: uniqueAuthors >= 5, progress: { current: Math.min(uniqueAuthors, 5), target: 5 }, color: "hsl(180, 50%, 38%)", category: "exploración" as const },
-    { id: "10_authors", icon: <Sparkles className="h-6 w-6" />, title: "Coleccionista", description: "Lee a 10 autores diferentes", unlocked: uniqueAuthors >= 10, progress: { current: Math.min(uniqueAuthors, 10), target: 10 }, color: "hsl(140, 45%, 40%)", category: "exploración" as const },
-    { id: "five_star", icon: <Star className="h-6 w-6" />, title: "Exigente", description: "Da 5★ a 3 libros", unlocked: fiveStarBooks >= 3, progress: { current: Math.min(fiveStarBooks, 3), target: 3 }, color: "hsl(45, 100%, 50%)", category: "exploración" as const },
-    { id: "saga_lover", icon: <Heart className="h-6 w-6" />, title: "Saga Lover", description: "Lee libros de 3 sagas diferentes", unlocked: uniqueSagas >= 3, progress: { current: Math.min(uniqueSagas, 3), target: 3 }, color: "hsl(340, 60%, 50%)", category: "exploración" as const },
-    { id: "multi_format", icon: <BookOpen className="h-6 w-6" />, title: "Multiformato", description: "Lee en 2 formatos (físico + digital)", unlocked: formatsUsed >= 2, progress: { current: Math.min(formatsUsed, 2), target: 2 }, color: "hsl(190, 55%, 42%)", category: "exploración" as const },
+    // ââ EXPLORACIÃN ââ
+    { id: "3_genres", icon: <Globe className="h-6 w-6" />, title: "Curioso", description: "Lee 3 gÃ©neros diferentes", unlocked: uniqueGenres >= 3, progress: { current: Math.min(uniqueGenres, 3), target: 3 }, color: "hsl(150, 55%, 45%)", category: "exploraciÃ³n" as const },
+    { id: "5_genres", icon: <Medal className="h-6 w-6" />, title: "EclÃ©ctico", description: "Lee 5 gÃ©neros diferentes", unlocked: uniqueGenres >= 5, progress: { current: Math.min(uniqueGenres, 5), target: 5 }, color: "hsl(160, 50%, 42%)", category: "exploraciÃ³n" as const },
+    { id: "3_authors", icon: <Compass className="h-6 w-6" />, title: "Descubridor", description: "Lee a 3 autores diferentes", unlocked: uniqueAuthors >= 3, progress: { current: Math.min(uniqueAuthors, 3), target: 3 }, color: "hsl(170, 50%, 40%)", category: "exploraciÃ³n" as const },
+    { id: "5_authors", icon: <Compass className="h-6 w-6" />, title: "Explorador", description: "Lee a 5 autores diferentes", unlocked: uniqueAuthors >= 5, progress: { current: Math.min(uniqueAuthors, 5), target: 5 }, color: "hsl(180, 50%, 38%)", category: "exploraciÃ³n" as const },
+    { id: "10_authors", icon: <Sparkles className="h-6 w-6" />, title: "Coleccionista", description: "Lee a 10 autores diferentes", unlocked: uniqueAuthors >= 10, progress: { current: Math.min(uniqueAuthors, 10), target: 10 }, color: "hsl(140, 45%, 40%)", category: "exploraciÃ³n" as const },
+    { id: "five_star", icon: <Star className="h-6 w-6" />, title: "Exigente", description: "Da 5â a 3 libros", unlocked: fiveStarBooks >= 3, progress: { current: Math.min(fiveStarBooks, 3), target: 3 }, color: "hsl(45, 100%, 50%)", category: "exploraciÃ³n" as const },
+    { id: "saga_lover", icon: <Heart className="h-6 w-6" />, title: "Saga Lover", description: "Lee libros de 3 sagas diferentes", unlocked: uniqueSagas >= 3, progress: { current: Math.min(uniqueSagas, 3), target: 3 }, color: "hsl(340, 60%, 50%)", category: "exploraciÃ³n" as const },
+    { id: "multi_format", icon: <BookOpen className="h-6 w-6" />, title: "Multiformato", description: "Lee en 2 formatos (fÃ­sico + digital)", unlocked: formatsUsed >= 2, progress: { current: Math.min(formatsUsed, 2), target: 2 }, color: "hsl(190, 55%, 42%)", category: "exploraciÃ³n" as const },
   ], [yearFinished, maxStreak, fiveStarBooks, uniqueAuthors, uniqueGenres, totalReadDays, totalPages, uniqueSagas, formatsUsed, selectedYear]);
 
   const unlockedCount = achievements.filter(a => a.unlocked).length;
@@ -229,12 +230,12 @@ export default function Achievements() {
   const categoryCounts = {
     constancia: achievements.filter(a => a.category === "constancia" && a.unlocked).length,
     volumen: achievements.filter(a => a.category === "volumen" && a.unlocked).length,
-    exploración: achievements.filter(a => a.category === "exploración" && a.unlocked).length,
+    exploraciÃ³n: achievements.filter(a => a.category === "exploraciÃ³n" && a.unlocked).length,
   };
   const categoryTotals = {
     constancia: achievements.filter(a => a.category === "constancia").length,
     volumen: achievements.filter(a => a.category === "volumen").length,
-    exploración: achievements.filter(a => a.category === "exploración").length,
+    exploraciÃ³n: achievements.filter(a => a.category === "exploraciÃ³n").length,
   };
 
   const monthlyData = useMemo(() => {
@@ -270,7 +271,7 @@ export default function Achievements() {
     <div className="space-y-10">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-2xl font-bold font-display">🎯 Logros y Retos</h2>
+        <h2 className="text-2xl font-bold font-display">ð¯ Logros y Retos</h2>
         <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
           <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -279,7 +280,7 @@ export default function Achievements() {
         </Select>
       </div>
 
-      {/* ═══ SUMMARY + CATEGORY STATS ═══ */}
+      {/* âââ SUMMARY + CATEGORY STATS âââ */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         {/* Total */}
         <Card className="border-none bg-gradient-to-br from-amber-500/15 via-amber-400/5 to-transparent sm:col-span-1">
@@ -328,7 +329,7 @@ export default function Achievements() {
         ))}
       </div>
 
-      {/* ═══ ACHIEVEMENTS GRID ═══ */}
+      {/* âââ ACHIEVEMENTS GRID âââ */}
       <div className="space-y-4">
         {categoryFilter !== "all" && (
           <div className="flex items-center justify-between">
@@ -336,7 +337,7 @@ export default function Achievements() {
               Mostrando: <span className="font-semibold text-foreground">{CATEGORY_META[categoryFilter].label}</span>
             </p>
             <Button variant="ghost" size="sm" className="text-xs" onClick={() => setCategoryFilter("all")}>
-              Ver todos ✕
+              Ver todos â
             </Button>
           </div>
         )}
@@ -348,9 +349,9 @@ export default function Achievements() {
         </div>
       </div>
 
-      {/* ═══ MONTHLY CHALLENGES ═══ */}
+      {/* âââ MONTHLY CHALLENGES âââ */}
       <div className="space-y-6">
-        <h3 className="text-xl font-bold font-display">📅 Retos Mensuales {selectedYear}</h3>
+        <h3 className="text-xl font-bold font-display">ð Retos Mensuales {selectedYear}</h3>
 
         {yearGoalTotal > 0 && (
           <Card className="border-border/30">
@@ -391,7 +392,7 @@ export default function Achievements() {
                   </div>
 
                   <div className="flex items-center gap-2 text-sm font-body">
-                    <span className="text-muted-foreground">Leídos:</span>
+                    <span className="text-muted-foreground">LeÃ­dos:</span>
                     <span className="font-bold text-foreground">{m.read}</span>
                     {m.goal > 0 && (
                       <>
