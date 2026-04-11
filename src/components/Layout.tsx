@@ -136,8 +136,7 @@ export default function Layout() {
                               isActive
                                 ? "bg-primary text-primary-foreground warm-shadow"
                                 : dark
-                                ? "text-slate-200 hover:bg-white/10"
-                                : "text-slate-800 hover:bg-black/5"
+                                : "text-foreground hover:bg-secondary/80"
                             }`
                           }
                         >
