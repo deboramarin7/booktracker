@@ -621,11 +621,11 @@ export default function Wrapped() {
   );
 
   const handleDownload = async () => {
-    const el = slideRef.current;
-    if (!el) return;
+    const slideEl = slideRef.current?.querySelector("[data-slide-inner]") as HTMLElement
+      || slideRef.current;
+    if (!slideEl) return;
     setIsDownloading(true);
     try {
-      // Load html2canvas from CDN if not already loaded
       if (!(window as any).html2canvas) {
         await new Promise<void>((resolve, reject) => {
           const script = document.createElement("script");
@@ -635,23 +635,34 @@ export default function Wrapped() {
           document.head.appendChild(script);
         });
       }
-      const html2canvas = (window as any).html2canvas;
-      const canvas = await html2canvas(el, {
+      const h2c = (window as any).html2canvas;
+      const raw = await h2c(slideEl, {
         useCORS: true,
         allowTaint: true,
         backgroundColor: null,
-        scale: 2,
+        scale: 3,
         logging: false,
+        ignoreElements: (el: Element) => el.classList.contains("slide-nav"),
       });
+      // Crop to 9:16 portrait (stories format)
+      const targetRatio = 9 / 16;
+      const srcW = raw.width;
+      const srcH = raw.height;
+      const out = document.createElement("canvas");
+      let cropX = 0, cropY = 0, cropW = srcW, cropH = srcH;
+      if (srcW / srcH > targetRatio) {
+        cropW = Math.round(srcH * targetRatio);
+        cropX = Math.round((srcW - cropW) / 2);
+      }
+      out.width = cropW;
+      out.height = cropH;
+      out.getContext("2d")!.drawImage(raw, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
       const link = document.createElement("a");
-      link.download = `booktracker-wrapped-${selectedYear}-slide${currentSlide + 1}.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.download = `wrapped-${selectedYear}-slide${currentSlide + 1}.png`;
+      link.href = out.toDataURL("image/png");
       link.click();
-    } catch (err) {
-      console.error("Error capturing slide:", err);
-    } finally {
-      setIsDownloading(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setIsDownloading(false); }
   };
 
   return (
