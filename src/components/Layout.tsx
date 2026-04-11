@@ -100,31 +100,36 @@ export default function Layout() {
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-64 pt-10 bg-white dark:bg-zinc-900 border-l border-border">
-                  <div className="flex items-center gap-2 mb-6 px-4">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                    <span className="font-display text-lg">Menú</span>
-                  </div>
-                  <nav className="flex flex-col gap-1">
-                    {navLinks.map((link) => (
-                      <SheetClose asChild key={link.to}>
-                        <NavLink
-                          to={link.to}
-                          end={link.end}
-                          className={({ isActive }) =>
-                             `block px-4 py-3 rounded-lg text-sm font-body transition-all ${
-                              isActive
-                                ? "bg-primary text-primary-foreground warm-shadow"
-                                : "text-zinc-800 dark:text-zinc-100 hover:bg-secondary/80"
-                            }`
-                          }
-                        >
-                          {link.label}
-                        </NavLink>
-                      </SheetClose>
-                    ))}
-                  </nav>
-                </SheetContent>
+              <SheetContent 
+                side="right" 
+                className="w-64 pt-10"
+                style={{ backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--card-foreground))' }}
+              >
+               <div className="flex items-center gap-2 mb-6 px-4">
+                <BookOpen className="h-5 w-5 text-primary" />
+                <span className="font-display text-lg" style={{ color: 'hsl(var(--card-foreground))' }}>Menú</span>
+              </div>
+              <nav className="flex flex-col gap-1">
+                {navLinks.map((link) => (
+                   <SheetClose asChild key={link.to}>
+                    <NavLink
+                      to={link.to}
+                      end={link.end}
+                      className={({ isActive }) =>
+                        `block px-4 py-3 rounded-lg text-sm font-body transition-all ${
+                          isActive
+                            ? "bg-primary text-primary-foreground warm-shadow"
+                            : "hover:bg-secondary/80"
+                       }`
+                     }
+                     style={({ isActive }) => isActive ? {} : { color: 'hsl(var(--card-foreground))' }}
+                   >
+                     {link.label}
+                  </NavLink>
+               </SheetClose>
+             ))}
+          </nav>
+        </SheetContent>
               </Sheet>
             </div>
           </div>
