@@ -621,9 +621,9 @@ export default function Wrapped() {
   );
 
   const handleDownload = async () => {
-    const slideEl = slideRef.current?.querySelector("[data-slide-inner]") as HTMLElement
-      || slideRef.current;
-    if (!slideEl) return;
+    // Get the outer slide container (rounded-2xl div)
+    const container = slideRef.current?.querySelector(".rounded-2xl") as HTMLElement;
+    if (!container) return;
     setIsDownloading(true);
     try {
       if (!(window as any).html2canvas) {
@@ -636,32 +636,58 @@ export default function Wrapped() {
         });
       }
       const h2c = (window as any).html2canvas;
-      const raw = await h2c(slideEl, {
+
+      // Hide nav dots + arrows before capture
+      const navEl = container.querySelector(".slide-nav") as HTMLElement | null;
+      if (navEl) navEl.style.visibility = "hidden";
+
+      const raw = await h2c(container, {
         useCORS: true,
         allowTaint: true,
         backgroundColor: null,
         scale: 3,
         logging: false,
-        ignoreElements: (el: Element) => el.classList.contains("slide-nav"),
+        onclone: (doc: Document) => {
+          // In the cloned doc, hide all inactive slides and nav
+          const clonedContainer = doc.querySelector(".rounded-2xl");
+          if (!clonedContainer) return;
+          // Hide nav
+          const nav = clonedContainer.querySelector(".slide-nav") as HTMLElement | null;
+          if (nav) nav.style.display = "none";
+          // Hide inactive slides (opacity-0 ones)
+          const slides = clonedContainer.querySelectorAll(".absolute.inset-0");
+          slides.forEach((s) => {
+            const el = s as HTMLElement;
+            const style = window.getComputedStyle(s);
+            if (style.opacity === "0" || parseFloat(style.opacity) < 0.5) {
+              el.style.display = "none";
+            }
+          });
+        },
       });
-      // Crop to 9:16 portrait (stories format)
+
+      // Restore nav
+      if (navEl) navEl.style.visibility = "";
+
+      // Output as 9:16 portrait — crop width if needed
       const targetRatio = 9 / 16;
       const srcW = raw.width;
       const srcH = raw.height;
       const out = document.createElement("canvas");
-      let cropX = 0, cropY = 0, cropW = srcW, cropH = srcH;
+      let cropX = 0, cropW = srcW, cropH = srcH;
       if (srcW / srcH > targetRatio) {
         cropW = Math.round(srcH * targetRatio);
         cropX = Math.round((srcW - cropW) / 2);
       }
       out.width = cropW;
       out.height = cropH;
-      out.getContext("2d")!.drawImage(raw, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+      out.getContext("2d")!.drawImage(raw, cropX, 0, cropW, cropH, 0, 0, cropW, cropH);
+
       const link = document.createElement("a");
       link.download = `wrapped-${selectedYear}-slide${currentSlide + 1}.png`;
       link.href = out.toDataURL("image/png");
       link.click();
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error(err); setIsDownloading(false); }
     finally { setIsDownloading(false); }
   };
 
