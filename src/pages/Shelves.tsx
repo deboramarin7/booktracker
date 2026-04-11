@@ -81,17 +81,14 @@ function SortableBook({ book, onClick }: { book: Book; onClick: () => void }) {
           }`}
           {...attributes}
           {...listeners}
-          onDoubleClick={(e) => { e.stopPropagation(); onClick(); }}
-          onTouchEnd={(e) => {
-            // Long press handled via touchstart/touchend timing
-          }}
+
         >
           {book.coverUrl && !coverFailed ? (
             <div className="relative">
               <img
                 src={book.coverUrl}
                 alt={book.title}
-                className="w-[36px] sm:w-[45px] md:w-[55px] h-[54px] sm:h-[68px] md:h-[82px] object-cover rounded-[2px]"
+                className="w-[46px] sm:w-[58px] md:w-[70px] h-[69px] sm:h-[87px] md:h-[105px] object-cover rounded-[2px]"
                 draggable={false}
                 style={{ boxShadow: "3px 3px 8px rgba(0,0,0,0.5), inset -2px 0 4px rgba(0,0,0,0.2), inset 1px 0 1px rgba(255,255,255,0.15)" }}
                 onError={() => setCoverFailed(true)}
@@ -101,7 +98,7 @@ function SortableBook({ book, onClick }: { book: Book; onClick: () => void }) {
             </div>
           ) : (
             <div
-              className="w-[36px] sm:w-[45px] md:w-[55px] h-[54px] sm:h-[68px] md:h-[82px] rounded-[2px] flex items-center justify-center relative overflow-hidden"
+              className="w-[46px] sm:w-[58px] md:w-[70px] h-[69px] sm:h-[87px] md:h-[105px] rounded-[2px] flex items-center justify-center relative overflow-hidden"
               style={{
                 backgroundColor: spineColor,
                 boxShadow: "3px 3px 8px rgba(0,0,0,0.5), inset -2px 0 4px rgba(0,0,0,0.2), inset 1px 0 1px rgba(255,255,255,0.2)",
@@ -125,7 +122,7 @@ function SortableBook({ book, onClick }: { book: Book; onClick: () => void }) {
         <p className="text-xs font-semibold">{book.title}</p>
         <p className="text-[10px] text-muted-foreground">{book.author}</p>
         {book.rating > 0 && <p className="text-amber-400 text-[10px] mt-0.5">{"★".repeat(book.rating)}{"☆".repeat(5 - book.rating)}</p>}
-        <p className="text-[9px] text-muted-foreground/60 mt-1 italic">Toca para editar</p>
+
       </TooltipContent>
     </Tooltip>
   );
@@ -135,6 +132,7 @@ export default function Shelves() {
   const { books, updateBook } = useBooksContext();
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [booksPerShelf, setBooksPerShelf] = useState(getBooksPerShelf);
+  const [groupBySaga, setGroupBySaga] = useState(false);
 
   // Update booksPerShelf on resize
   useEffect(() => {
@@ -159,8 +157,21 @@ export default function Shelves() {
 
   const orderedBooks = useMemo(() => {
     const bookMap = new Map(finishedBooks.map((b) => [b.id, b]));
-    return orderedIds.map((id) => bookMap.get(id)).filter(Boolean) as Book[];
-  }, [orderedIds, finishedBooks]);
+    const ordered = orderedIds.map((id) => bookMap.get(id)).filter(Boolean) as Book[];
+    if (!groupBySaga) return ordered;
+    // Group by saga: books with same saga go together, individuals at end
+    const sagaGroups = new Map<string, Book[]>();
+    const individuals: Book[] = [];
+    ordered.forEach((book) => {
+      if (book.hasSaga && book.saga) {
+        if (!sagaGroups.has(book.saga)) sagaGroups.set(book.saga, []);
+        sagaGroups.get(book.saga)!.push(book);
+      } else {
+        individuals.push(book);
+      }
+    });
+    return [...Array.from(sagaGroups.values()).flat(), ...individuals];
+  }, [orderedIds, finishedBooks, groupBySaga]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -197,12 +208,24 @@ export default function Shelves() {
           <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
             <span className="font-semibold text-foreground">{finishedBooks.length}</span> libro{finishedBooks.length !== 1 ? "s" : ""} leído{finishedBooks.length !== 1 ? "s" : ""}
             <span className="mx-2 opacity-30">·</span>
-            <span className="opacity-60 hidden sm:inline">arrastra para reorganizar · doble clic para editar</span>
-            <span className="opacity-60 sm:hidden">mantén pulsado para mover · toca para editar</span>
+            <span className="opacity-60 hidden sm:inline">arrastra para reorganizar</span>
+            <span className="opacity-60 sm:hidden">mantén pulsado para mover</span>
           </p>
         </div>
-        <div className="text-right text-xs text-muted-foreground/50 hidden sm:block">
-          <p>{shelves.length} estante{shelves.length !== 1 ? "s" : ""}</p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setGroupBySaga(!groupBySaga)}
+            className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+              groupBySaga
+                ? "bg-primary/15 text-primary border-primary/30"
+                : "text-muted-foreground border-border/40 hover:text-foreground hover:border-border"
+            }`}
+          >
+            {groupBySaga ? "📚 Agrupado por saga" : "📚 Agrupar por saga"}
+          </button>
+          <span className="text-right text-xs text-muted-foreground/50 hidden sm:block">
+            {shelves.length} estante{shelves.length !== 1 ? "s" : ""}
+          </span>
         </div>
       </div>
 
