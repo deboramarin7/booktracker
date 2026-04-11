@@ -42,7 +42,6 @@ export default function Layout() {
 
   const menuBg = dark ? "hsl(220, 16%, 12%)" : "hsl(220, 14%, 98%)";
   const menuText = dark ? "hsl(220, 10%, 92%)" : "hsl(220, 15%, 12%)";
-  const menuHoverBg = dark ? "hsl(220, 12%, 20%)" : "hsl(220, 10%, 91%)";
 
   const navLinks = [
     { to: "/", label: "Mi Biblioteca", end: true },
