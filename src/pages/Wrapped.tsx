@@ -85,7 +85,7 @@ function WrappedSlide({
       }`}
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
-      <div className="relative z-10 w-full max-w-lg mx-auto px-8 text-center">
+      <div className={`relative z-10 w-full mx-auto text-center ${isExporting ? "max-w-none px-24" : "max-w-lg px-8"}`}>
         {children}
       </div>
     </div>
@@ -123,8 +123,9 @@ export default function Wrapped() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const slideRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const years = useMemo(() => {
@@ -281,14 +282,22 @@ export default function Wrapped() {
     <div
       ref={containerRef}
       className={`relative overflow-hidden select-none ${
-        isFullscreen ? "fixed inset-0 z-50" : "rounded-2xl"
+        isExporting
+          ? ""
+          : isFullscreen
+          ? "fixed inset-0 z-50"
+          : "rounded-2xl"
       }`}
-      style={{ minHeight: isFullscreen ? "100vh" : "80vh" }}
+      style={
+        isExporting
+          ? { width: "1080px", height: "1920px", minHeight: "1920px" }
+          : { minHeight: isFullscreen ? "100vh" : "80vh" }
+      }
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
       {/* --- SLIDE 0: Intro / Total Books --- */}
-      <WrappedSlide index={0} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/50 to-gray-950">
+      <WrappedSlide isExporting={isExporting} index={0} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/50 to-gray-950">
         <GlowOrb color="emerald" size="lg" position="center" />
         <div className="space-y-8">
           <p className="text-emerald-400/80 text-sm uppercase tracking-[0.4em] font-medium">
@@ -322,7 +331,7 @@ export default function Wrapped() {
       </WrappedSlide>
 
       {/* --- SLIDE 1: Total Pages --- */}
-      <WrappedSlide index={1} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/40 to-gray-950">
+      <WrappedSlide isExporting={isExporting} index={1} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/40 to-gray-950">
         <GlowOrb color="emerald" size="md" position="top-right" />
         <div className="space-y-8">
           <div className="inline-flex p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
@@ -343,7 +352,7 @@ export default function Wrapped() {
       </WrappedSlide>
 
       {/* --- SLIDE 2: Best Month --- */}
-      <WrappedSlide index={2} currentSlide={currentSlide} gradient="from-gray-950 via-purple-950/30 to-gray-950">
+      <WrappedSlide isExporting={isExporting} index={2} currentSlide={currentSlide} gradient="from-gray-950 via-purple-950/30 to-gray-950">
         <GlowOrb color="purple" size="lg" position="bottom-left" />
         <div className="space-y-8">
           <div className="inline-flex p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20">
@@ -381,7 +390,7 @@ export default function Wrapped() {
       </WrappedSlide>
 
       {/* --- SLIDE 3: Favorite Genre --- */}
-      <WrappedSlide index={3} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/30 to-gray-950">
+      <WrappedSlide isExporting={isExporting} index={3} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/30 to-gray-950">
         <GlowOrb color="emerald" size="md" position="top-left" />
         <div className="space-y-8">
           <div className="inline-flex p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
@@ -427,7 +436,7 @@ export default function Wrapped() {
       </WrappedSlide>
 
       {/* --- SLIDE 4: Top Author --- */}
-      <WrappedSlide index={4} currentSlide={currentSlide} gradient="from-gray-950 via-amber-950/20 to-gray-950">
+      <WrappedSlide isExporting={isExporting} index={4} currentSlide={currentSlide} gradient="from-gray-950 via-amber-950/20 to-gray-950">
         <GlowOrb color="amber" size="lg" position="bottom-right" />
         <div className="space-y-8">
           <div className="inline-flex p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
@@ -467,7 +476,7 @@ export default function Wrapped() {
       </WrappedSlide>
 
       {/* --- SLIDE 5: Book of the Year --- */}
-      <WrappedSlide index={5} currentSlide={currentSlide} gradient="from-gray-950 via-amber-950/30 to-gray-950">
+      <WrappedSlide isExporting={isExporting} index={5} currentSlide={currentSlide} gradient="from-gray-950 via-amber-950/30 to-gray-950">
         <GlowOrb color="amber" size="lg" position="center" />
         <div className="space-y-6">
           <div className="inline-flex p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
@@ -500,7 +509,7 @@ export default function Wrapped() {
       </WrappedSlide>
 
       {/* --- SLIDE 6: Reading Streak / Speed --- */}
-      <WrappedSlide index={6} currentSlide={currentSlide} gradient="from-gray-950 via-rose-950/20 to-gray-950">
+      <WrappedSlide isExporting={isExporting} index={6} currentSlide={currentSlide} gradient="from-gray-950 via-rose-950/20 to-gray-950">
         <GlowOrb color="rose" size="md" position="top-right" />
         <div className="space-y-8">
           <div className="inline-flex p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20">
@@ -537,7 +546,7 @@ export default function Wrapped() {
       </WrappedSlide>
 
       {/* --- SLIDE 7: Final Summary --- */}
-      <WrappedSlide index={7} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/40 to-gray-950">
+      <WrappedSlide isExporting={isExporting} index={7} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/40 to-gray-950">
         <GlowOrb color="emerald" size="lg" position="center" />
         <div className="space-y-8">
           <div className="inline-flex p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
@@ -607,7 +616,7 @@ export default function Wrapped() {
       </div>
 
       {/* Fullscreen toggle */}
-      {isFullscreen && (
+      {isFullscreen && !isExporting && (
         <Button
           variant="ghost"
           size="icon"
@@ -621,9 +630,12 @@ export default function Wrapped() {
   );
 
   const handleDownload = async () => {
-    const container = slideRef.current?.querySelector(".rounded-2xl") as HTMLElement;
+    const container = exportRef.current;
     if (!container) return;
     setIsDownloading(true);
+    setIsExporting(true);
+    // Wait for React to re-render with export mode styles
+    await new Promise(r => setTimeout(r, 150));
     try {
       if (!(window as any).html2canvas) {
         await new Promise<void>((resolve, reject) => {
@@ -635,66 +647,24 @@ export default function Wrapped() {
         });
       }
       const h2c = (window as any).html2canvas;
-
-      // Freeze all CSS animations and transitions before capture
-      const styleTag = document.createElement("style");
-      styleTag.id = "__capture_freeze__";
-      styleTag.textContent = `
-        * { animation-play-state: paused !important; transition: none !important; }
-      `;
-      document.head.appendChild(styleTag);
-
-      // Small delay to let the freeze apply
-      await new Promise(r => setTimeout(r, 50));
-
-      const raw = await h2c(container, {
+      const canvas = await h2c(container, {
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         backgroundColor: null,
-        scale: 3,
+        scale: 1,
         logging: false,
-        onclone: (_doc: Document, el: HTMLElement) => {
-          // In the clone: hide nav and all inactive slides
-          el.querySelector(".slide-nav")?.remove();
-          el.querySelectorAll(".absolute.inset-0").forEach((s) => {
-            const style = window.getComputedStyle(s);
-            if (parseFloat(style.opacity) < 0.5) (s as HTMLElement).style.display = "none";
-          });
-          // Remove the freeze style so positions are correct
-          el.querySelectorAll("#__capture_freeze__").forEach(e => e.remove());
-          // Force all elements to their final animation state
-          el.querySelectorAll("*").forEach((s) => {
-            (s as HTMLElement).style.animationPlayState = "paused";
-            (s as HTMLElement).style.animationDelay = "0s";
-          });
-        },
+        width: 1080,
+        height: 1920,
+        windowWidth: 1080,
+        windowHeight: 1920,
       });
-
-      // Restore animations
-      document.getElementById("__capture_freeze__")?.remove();
-
-      // Crop to 9:16 portrait for stories
-      const targetRatio = 9 / 16;
-      const srcW = raw.width;
-      const srcH = raw.height;
-      const out = document.createElement("canvas");
-      let cropX = 0, cropW = srcW, cropH = srcH;
-      if (srcW / srcH > targetRatio) {
-        cropW = Math.round(srcH * targetRatio);
-        cropX = Math.round((srcW - cropW) / 2);
-      }
-      out.width = cropW;
-      out.height = cropH;
-      out.getContext("2d")!.drawImage(raw, cropX, 0, cropW, cropH, 0, 0, cropW, cropH);
-
       const link = document.createElement("a");
       link.download = `wrapped-${selectedYear}-slide${currentSlide + 1}.png`;
-      link.href = out.toDataURL("image/png");
+      link.href = canvas.toDataURL("image/png");
       link.click();
-    } catch (err) {
-      console.error(err);
-      document.getElementById("__capture_freeze__")?.remove();
-    } finally {
+    } catch (err) { console.error(err); }
+    finally {
+      setIsExporting(false);
       setIsDownloading(false);
     }
   };
@@ -726,7 +696,12 @@ export default function Wrapped() {
         </Button>
       </div>
 
-      <div ref={slideRef}>{wrappedContent}</div>
+      <div
+        ref={exportRef}
+        style={isExporting ? { width: "1080px", height: "1920px", position: "fixed", top: "-9999px", left: "-9999px", zIndex: -1 } : undefined}
+      >
+        {wrappedContent}
+      </div>
 
       {currentSlide < totalSlides - 1 && (
         <p className="text-center text-xs text-muted-foreground/40 font-body">
