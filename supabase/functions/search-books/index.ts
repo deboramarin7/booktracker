@@ -37,6 +37,68 @@ function lastNameOnly(author: string): string {
   return parts[parts.length - 1]
 }
 
+
+// ─── Google Books (fallback) ────────────────────────────────────────────────────
+
+async function googleBooksSearch(query, author) {
+  try {
+    let q = encodeURIComponent(query)
+    if (author) q += `+inauthor:${encodeURIComponent(author)}`
+    const [resEs, resAll] = await Promise.all([
+      fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&langRestrict=es&maxResults=10&printType=books`),
+      fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=10&printType=books`),
+    ])
+    const [dataEs, dataAll] = await Promise.all([
+      resEs.ok ? resEs.json() : { items: [] },
+      resAll.ok ? resAll.json() : { items: [] },
+    ])
+    const seen = new Set()
+    return [...(dataEs.items || []), ...(dataAll.items || [])].filter(item => {
+      if (seen.has(item.id)) return false
+      seen.add(item.id)
+      return true
+    })
+  } catch { return [] }
+}
+
+function googleBookToResult(item) {
+  const info = item.volumeInfo || {}
+  const isbn = (info.industryIdentifiers || []).find(i => i.type === 'ISBN_13')?.identifier
+    || (info.industryIdentifiers || []).find(i => i.type === 'ISBN_10')?.identifier
+    || null
+  let coverUrl = info.imageLinks?.extraLarge || info.imageLinks?.large || info.imageLinks?.medium || info.imageLinks?.thumbnail || null
+  if (coverUrl) coverUrl = coverUrl.replace('http://', 'https://').replace('zoom=1', 'zoom=3').replace('&edge=curl', '')
+  const seriesMatch = (info.title || '').match(/^(.+?)\s*[,#:]\s*(?:book|tome|vol\.?|#)?\s*(\d+\.?\d*)\s*$/i)
+  return {
+    title: info.title || '',
+    author: (info.authors || []).join(', '),
+    coverUrl,
+    totalPages: info.pageCount || 0,
+    genre: (info.categories || [])[0] || null,
+    language: info.language || null,
+    isbn,
+    sagaName: seriesMatch ? seriesMatch[1].trim() : '',
+    sagaOrder: seriesMatch ? seriesMatch[2].trim() : '',
+    _source: 'google',
+  }
+}
+
+function deduplicateBooks(books) {
+  const seen = new Map()
+  for (const book of books) {
+    const key = normalize(book.title + ' ' + book.author).replace(/\s/g, '')
+    if (!seen.has(key)) {
+      seen.set(key, book)
+    } else {
+      const existing = seen.get(key)
+      const existingScore = (existing.coverUrl ? 2 : 0) + (existing.totalPages > 0 ? 1 : 0)
+      const newScore = (book.coverUrl ? 2 : 0) + (book.totalPages > 0 ? 1 : 0)
+      if (newScore > existingScore) seen.set(key, book)
+    }
+  }
+  return Array.from(seen.values())
+}
+
 // ─── Open Library: búsqueda ────────────────────────────────────────────────────
 
 async function olSearch(query: string, author?: string): Promise<any[]> {
@@ -106,6 +168,7 @@ async function olDocToBook(doc: any) {
     sagaOrder,
     _isSpanish: isSpanish,
     _coverId: coverId || null,
+    _source: 'openlibrary',
   }
 }
 
