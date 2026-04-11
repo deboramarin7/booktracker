@@ -100,11 +100,12 @@ export default function Layout() {
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
-              <SheetContent 
-                side="right" 
-                className="w-64 pt-10"
-                style={{ backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--card-foreground))' }}
-              >
+              <SheetContent side="right" className="w-64 pt-10 border-l border-border"
+  style={{
+    backgroundColor: dark ? '#1a1f2e' : '#ffffff',
+    color: dark ? '#e8eaf0' : '#1a1e2a'
+  }}
+>
                <div className="flex items-center gap-2 mb-6 px-4">
                 <BookOpen className="h-5 w-5 text-primary" />
                 <span className="font-display text-lg" style={{ color: 'hsl(var(--card-foreground))' }}>Menú</span>
