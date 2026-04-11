@@ -23,7 +23,6 @@ import type { Book } from "@/hooks/useBooks";
 
 const SHELF_ORDER_KEY = "book-tracker-shelf-order";
 
-// Responsive books per shelf
 function getBooksPerShelf() {
   const w = window.innerWidth;
   if (w < 480) return 7;
@@ -56,7 +55,7 @@ function getSpineTextColor(title: string): string {
   return colors[idx];
 }
 
-function SortableBook({ book, onClick }: { book: Book; onClick: () => void }) {
+function SortableBook({ book }: { book: Book }) {
   const [coverFailed, setCoverFailed] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: book.id });
 
@@ -81,7 +80,6 @@ function SortableBook({ book, onClick }: { book: Book; onClick: () => void }) {
           }`}
           {...attributes}
           {...listeners}
-
         >
           {book.coverUrl && !coverFailed ? (
             <div className="relative">
@@ -122,7 +120,7 @@ function SortableBook({ book, onClick }: { book: Book; onClick: () => void }) {
         <p className="text-xs font-semibold">{book.title}</p>
         <p className="text-[10px] text-muted-foreground">{book.author}</p>
         {book.rating > 0 && <p className="text-amber-400 text-[10px] mt-0.5">{"★".repeat(book.rating)}{"☆".repeat(5 - book.rating)}</p>}
-
+        {book.hasSaga && book.saga && <p className="text-[9px] text-muted-foreground/60 mt-0.5 italic">{book.saga}{book.sagaOrder ? ` #${book.sagaOrder}` : ""}</p>}
       </TooltipContent>
     </Tooltip>
   );
@@ -134,7 +132,6 @@ export default function Shelves() {
   const [booksPerShelf, setBooksPerShelf] = useState(getBooksPerShelf);
   const [groupBySaga, setGroupBySaga] = useState(false);
 
-  // Update booksPerShelf on resize
   useEffect(() => {
     const handleResize = () => setBooksPerShelf(getBooksPerShelf());
     window.addEventListener("resize", handleResize);
@@ -159,7 +156,7 @@ export default function Shelves() {
     const bookMap = new Map(finishedBooks.map((b) => [b.id, b]));
     const ordered = orderedIds.map((id) => bookMap.get(id)).filter(Boolean) as Book[];
     if (!groupBySaga) return ordered;
-    // Group by saga: books with same saga go together, individuals at end
+    // Group by saga and sort each group by sagaOrder ascending (1, 2, 3...)
     const sagaGroups = new Map<string, Book[]>();
     const individuals: Book[] = [];
     ordered.forEach((book) => {
@@ -169,6 +166,13 @@ export default function Shelves() {
       } else {
         individuals.push(book);
       }
+    });
+    sagaGroups.forEach((books, saga) => {
+      sagaGroups.set(saga, [...books].sort((a, b) => {
+        const aOrder = parseFloat(a.sagaOrder || "9999") || 9999;
+        const bOrder = parseFloat(b.sagaOrder || "9999") || 9999;
+        return aOrder - bOrder;
+      }));
     });
     return [...Array.from(sagaGroups.values()).flat(), ...individuals];
   }, [orderedIds, finishedBooks, groupBySaga]);
@@ -247,27 +251,16 @@ export default function Shelves() {
                 border: "1px solid rgba(146, 64, 14, 0.3)",
               }}
             >
-              {/* Top rail */}
               <div className="absolute top-0 left-0 right-0 h-3 rounded-t-xl" style={{ background: "linear-gradient(to bottom, #92400e, #78350f)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.4)" }} />
-              {/* Side rails */}
               <div className="absolute top-3 bottom-0 left-0 w-3 sm:w-4" style={{ background: "linear-gradient(to right, #78350f, #92400e 50%, #6b2d0c)" }} />
               <div className="absolute top-3 bottom-0 right-0 w-3 sm:w-4" style={{ background: "linear-gradient(to left, #78350f, #92400e 50%, #6b2d0c)" }} />
-
-              {/* Book area */}
               <div className="relative mt-3 rounded-sm overflow-hidden" style={{ background: "linear-gradient(to bottom, #0f0704 0%, #130a05 50%, #0f0704 100%)" }}>
                 <div className="space-y-0 py-1 px-1 sm:px-1">
                   {shelves.map((row, rowIndex) => (
-                    <ShelfRow
-                      key={rowIndex}
-                      row={row}
-                      rowIndex={rowIndex}
-                      onBookClick={(book) => setEditingBook(book)}
-                    />
+                    <ShelfRow key={rowIndex} row={row} rowIndex={rowIndex} />
                   ))}
                 </div>
               </div>
-
-              {/* Bottom rail */}
               <div className="absolute bottom-0 left-0 right-0 h-4 rounded-b-xl" style={{ background: "linear-gradient(to top, #6b2d0c, #92400e)", boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.1)" }} />
             </div>
           </SortableContext>
@@ -286,21 +279,18 @@ export default function Shelves() {
   );
 }
 
-function ShelfRow({ row, rowIndex, onBookClick }: { row: Book[]; rowIndex: number; onBookClick: (book: Book) => void }) {
+function ShelfRow({ row, rowIndex }: { row: Book[]; rowIndex: number }) {
   return (
     <div className="relative">
-      {/* Books row — horizontal scroll on mobile */}
       <div
-        className="flex items-end gap-[2px] sm:gap-[3px] px-3 sm:px-5 pt-4 pb-0 min-h-[70px] sm:min-h-[90px] relative overflow-x-auto"
+        className="flex items-end gap-[2px] sm:gap-[3px] px-3 sm:px-5 pt-4 pb-0 min-h-[80px] sm:min-h-[100px] relative overflow-x-auto"
         style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.0), rgba(0,0,0,0.1))", scrollbarWidth: "none" }}
       >
         <style>{`div::-webkit-scrollbar { display: none; }`}</style>
         {row.map((book) => (
-          <SortableBook key={book.id} book={book} onClick={() => onBookClick(book)} />
+          <SortableBook key={book.id} book={book} />
         ))}
       </div>
-
-      {/* Shelf plank */}
       <div
         className="h-[10px] sm:h-[14px]"
         style={{
