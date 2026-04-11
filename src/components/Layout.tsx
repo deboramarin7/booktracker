@@ -47,7 +47,7 @@ export default function Layout() {
     { to: "/", label: "Mi Biblioteca", end: true },
     { to: "/autores-sagas", label: "Autores y Sagas" },
     { to: "/wishlist", label: "Wish List" },
-    { to: "/estanterias", label: "Estanterías" },
+    { to: "/estanterias", label: "Estantería" },
     { to: "/reading-habits", label: "Hábitos" },
     { to: "/logros", label: "Logros" },
     { to: "/dashboard", label: "Dashboard" },
