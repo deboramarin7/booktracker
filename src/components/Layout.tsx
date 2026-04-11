@@ -61,11 +61,10 @@ export default function Layout() {
           <div className="container flex items-center justify-between py-3">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <div className="relative">
-                <BookOpen className="h-7 w-7 text-primary" />
-                <Sparkles className="h-3 w-3 text-warm-gold absolute -top-1 -right-1.5" />
+              <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary/15 shrink-0">
+                <BookOpen className="h-5 w-5 text-primary" />
               </div>
-              <h1 className="text-2xl font-bold tracking-tight font-display text-foreground">
+              <h1 className="text-xl font-display font-semibold tracking-tight text-foreground leading-tight">
                 Book Tracker
               </h1>
             </div>
@@ -78,10 +77,10 @@ export default function Layout() {
                   to={link.to}
                   end={link.end}
                   className={({ isActive }) =>
-                    `px-3 py-2 rounded-lg text-sm font-body transition-all duration-200 ${
+                    `px-3 py-1.5 rounded-lg text-sm font-display transition-all duration-200 ${
                       isActive
-                        ? "bg-primary text-primary-foreground warm-shadow"
-                        : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
+                        ? "bg-primary/15 text-primary font-semibold"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     }`
                   }
                 >
@@ -121,9 +120,11 @@ export default function Layout() {
                   className="w-72 pt-10 border-l border-border"
                   style={{ backgroundColor: menuBg, color: menuText }}
                 >
-                  <div className="flex items-center gap-2 mb-8 px-4">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                    <span className="font-display text-lg font-semibold" style={{ color: menuText }}>Menú</span>
+                  <div className="flex items-center gap-3 mb-8 px-4">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/15">
+                      <BookOpen className="h-4 w-4 text-primary" />
+                    </div>
+                    <span className="font-display text-lg font-semibold" style={{ color: menuText }}>Book Tracker</span>
                   </div>
                   <nav className="flex flex-col gap-1 px-2">
                     {navLinks.map((link) => (
@@ -131,7 +132,7 @@ export default function Layout() {
                         <NavLink
                           to={link.to}
                           end={link.end}
-                          className="block px-4 py-3 rounded-lg text-base font-body font-medium transition-all"
+                          className="block px-4 py-3 rounded-lg text-base font-display font-medium transition-all"
                           style={({ isActive }) => ({
                             backgroundColor: isActive ? "hsl(var(--primary))" : "transparent",
                             color: isActive ? "hsl(var(--primary-foreground))" : menuText,
