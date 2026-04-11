@@ -187,13 +187,13 @@ export function BookCard({ book, onUpdate, onDelete, onMoveToWishlist, index }: 
             )}
 
             {/* Dates */}
-            {(book.startDate || book.endDate) && (
-              <p className="mt-1.5 text-[10px] text-muted-foreground/70">
-                {book.startDate && `📅 ${book.startDate}`}
-                {book.startDate && book.endDate && " → "}
-                {book.endDate && `${book.endDate}`}
-              </p>
-            )}
+           {(book.startDate || book.endDate) && (
+  <p className="mt-1.5 text-[10px] text-muted-foreground/70">
+    {book.startDate && `📅 ${new Date(book.startDate + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}`}
+    {book.startDate && book.endDate && " → "}
+    {book.endDate && `${new Date(book.endDate + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}`}
+  </p>
+)}
 
             {/* Notes toggle */}
             {book.notes && (
