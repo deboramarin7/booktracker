@@ -23,6 +23,7 @@ interface BookCardProps {
 export function BookCard({ book, onUpdate, onDelete, onMoveToWishlist, index }: BookCardProps) {
   const [editing, setEditing] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
   const [pagesPopover, setPagesPopover] = useState(false);
   const [tempPages, setTempPages] = useState(String(book.pagesRead));
   const pagesInputRef = useRef<HTMLInputElement>(null);
@@ -46,7 +47,8 @@ export function BookCard({ book, onUpdate, onDelete, onMoveToWishlist, index }: 
   return (
     <>
       <div
-        className="group relative rounded-xl border border-border/40 bg-card overflow-hidden card-interactive hover:border-primary/30 animate-fade-in"
+        className="group relative rounded-xl border border-border/40 bg-card overflow-hidden card-interactive hover:border-primary/30 animate-fade-in cursor-pointer"
+        onClick={() => setShowDetail(!showDetail)}
         style={{ animationDelay: `${index * 30}ms` }}
       >
         {/* Status indicator bar */}
@@ -208,27 +210,68 @@ export function BookCard({ book, onUpdate, onDelete, onMoveToWishlist, index }: 
           </div>
         </div>
 
-        {/* Format & extra tags - bottom strip */}
-        <div className="px-4 pb-3 flex flex-wrap gap-1">
-          <span className={cn(
-            "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
-            FORMAT_COLORS[book.format] || "bg-muted text-muted-foreground"
-          )}>
-            {book.format}
-          </span>
-          {book.tags?.map((tag) => (
-            <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0 border-border/50">
-              {tag}
-            </Badge>
-          ))}
+        {/* Bottom strip — format + toggle */}
+        <div className="px-4 pb-3 flex items-center justify-between gap-1">
+          <div className="flex flex-wrap gap-1">
+            <span className={cn(
+              "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
+              FORMAT_COLORS[book.format] || "bg-muted text-muted-foreground"
+            )}>
+              {book.format}
+            </span>
+            {book.tags?.map((tag) => (
+              <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0 border-border/50">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowDetail(!showDetail); }}
+            className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors shrink-0"
+          >
+            {showDetail ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            <span>{showDetail ? "Ocultar" : "Ver más"}</span>
+          </button>
         </div>
 
-        {/* Expandable notes */}
-        {showNotes && book.notes && (
-          <div className="px-4 pb-3 border-t border-border/30 bg-muted/20">
-            <div className="pt-3">
-              <RichNotesDisplay text={book.notes} />
+        {/* Detail panel */}
+        {showDetail && (
+          <div
+            className="border-t border-border/20 bg-muted/10 px-4 py-3 space-y-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+              {book.price && (
+                <>
+                  <span className="text-muted-foreground">Precio</span>
+                  <span className="text-foreground font-medium">{book.price} €</span>
+                </>
+              )}
+              {book.source && (
+                <>
+                  <span className="text-muted-foreground">Procedencia</span>
+                  <span className="text-foreground font-medium">{book.source}</span>
+                </>
+              )}
+              {book.totalPages > 0 && (
+                <>
+                  <span className="text-muted-foreground">Páginas</span>
+                  <span className="text-foreground font-medium">{book.totalPages}</span>
+                </>
+              )}
+              {book.hasSaga && book.saga && (
+                <>
+                  <span className="text-muted-foreground">Saga</span>
+                  <span className="text-foreground font-medium">{book.saga}{book.sagaOrder ? ` #${book.sagaOrder}` : ""}</span>
+                </>
+              )}
             </div>
+            {book.notes && (
+              <div className="border-t border-border/20 pt-2">
+                <p className="text-[11px] text-muted-foreground mb-1">Notas</p>
+                <RichNotesDisplay text={book.notes} />
+              </div>
+            )}
           </div>
         )}
       </div>
