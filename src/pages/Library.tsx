@@ -33,3 +33,391 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "added-desc", label: "Añadidos recientemente" },
   { value: "added-asc", label: "Añadidos antes" },
   { value: "title-asc", label: "Título A-Z" },
+  { value: "title-desc", label: "Título Z-A" },
+  { value: "rating-desc", label: "Mejor valorados" },
+  { value: "author-asc", label: "Autor A-Z" },
+];
+
+const STATUS_LABELS: Record<string, string> = {
+  "want-to-read": "Quiero leer",
+  reading: "Leyendo",
+  finished: "Terminado",
+};
+
+export default function Library() {
+  const { books, loading, addBook, addBooksInBatch, updateBook, deleteBook } = useBooks();
+  const { addItem } = useWishlist();
+
+  const currentYear = new Date().getFullYear();
+  const [yearFilter, setYearFilter] = useState<string>(String(currentYear));
+  const [genreFilter, setGenreFilter] = useState<string>("all");
+  const [formatFilter, setFormatFilter] = useState<string>("all");
+  const [sort, setSort] = useState<SortOption>("read-desc");
+
+  const [goals, setGoals] = useState<Record<number, number>>(loadGoals);
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalInput, setGoalInput] = useState("");
+  const goalInputRef = useRef<HTMLInputElement>(null);
+
+  const availableYears = useMemo(() => {
+    const yearSet = new Set<number>();
+    yearSet.add(currentYear);
+    books.forEach((b) => yearSet.add(getBookYear(b)));
+    return Array.from(yearSet).sort((a, b) => b - a);
+  }, [books, currentYear]);
+
+  const selectedYear = yearFilter === "all" ? null : Number(yearFilter);
+  const currentGoal = selectedYear ? (goals[selectedYear] ?? 0) : 0;
+
+  const handleGoalSave = () => {
+    const val = parseInt(goalInput, 10);
+    if (!isNaN(val) && val >= 0 && selectedYear) {
+      const updated = { ...goals, [selectedYear]: val };
+      setGoals(updated);
+      saveGoals(updated);
+    }
+    setEditingGoal(false);
+  };
+
+  const handleGoalEdit = () => {
+    setGoalInput(String(currentGoal || ""));
+    setEditingGoal(true);
+    setTimeout(() => goalInputRef.current?.focus(), 0);
+  };
+
+  const handleImportWishlist = async (items: { title: string; author: string; coverUrl?: string; totalPages: number }[]) => {
+    for (const item of items) {
+      await addItem({
+        title: item.title,
+        author: item.author,
+        coverUrl: item.coverUrl,
+        hasSaga: false,
+        genre: "",
+        priority: 3,
+        status: "Buscar",
+        totalPages: item.totalPages,
+      });
+    }
+  };
+
+  const handleMoveToWishlist = async (book: Book) => {
+    const wishItem: Omit<WishItem, "id"> = {
+      title: book.title,
+      author: book.author,
+      coverUrl: book.coverUrl,
+      hasSaga: book.hasSaga,
+      saga: book.saga,
+      sagaOrder: book.sagaOrder,
+      genre: book.genre,
+      priority: 3,
+      status: "Buscar",
+      totalPages: book.totalPages,
+    };
+    await addItem(wishItem);
+    await deleteBook(book.id);
+  };
+
+  const yearBooks = useMemo(() => {
+    if (!selectedYear) return books;
+    return books.filter((b) => getBookYear(b) === selectedYear);
+  }, [books, selectedYear]);
+
+  const finishedYearBooks = useMemo(
+    () => yearBooks.filter((b) => b.status === "finished"),
+    [yearBooks]
+  );
+
+  const totalPages = useMemo(() => finishedYearBooks.reduce((s, b) => s + b.totalPages, 0), [finishedYearBooks]);
+
+  const totalSpent = useMemo(() => {
+    return finishedYearBooks.reduce((s, b) => {
+      const p = parseFloat(b.price || "0");
+      return s + (isNaN(p) ? 0 : p);
+    }, 0);
+  }, [finishedYearBooks]);
+
+  const physicalCount = useMemo(() => finishedYearBooks.filter((b) => b.format === "Físico").length, [finishedYearBooks]);
+  const digitalCount = useMemo(() => finishedYearBooks.filter((b) => b.format === "Digital").length, [finishedYearBooks]);
+
+  const filtered = useMemo(() => {
+    let result = [...yearBooks];
+
+    if (genreFilter !== "all") {
+      result = result.filter((b) => b.genre === genreFilter);
+    }
+    if (formatFilter !== "all") {
+      result = result.filter((b) => b.format === formatFilter);
+    }
+
+    result.sort((a, b) => {
+      switch (sort) {
+        case "read-desc": {
+          const aDate = a.endDate || a.startDate || a.addedAt;
+          const bDate = b.endDate || b.startDate || b.addedAt;
+          return new Date(bDate).getTime() - new Date(aDate).getTime();
+        }
+        case "read-asc": {
+          const aDate = a.endDate || a.startDate || a.addedAt;
+          const bDate = b.endDate || b.startDate || b.addedAt;
+          return new Date(aDate).getTime() - new Date(bDate).getTime();
+        }
+        case "added-desc":
+          return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
+        case "added-asc":
+          return new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime();
+        case "title-asc":
+          return a.title.localeCompare(b.title);
+        case "title-desc":
+          return b.title.localeCompare(a.title);
+        case "rating-desc":
+          return b.rating - a.rating;
+        case "author-asc":
+          return a.author.localeCompare(b.author);
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [yearBooks, genreFilter, formatFilter, sort]);
+
+  const groupedByStatus = useMemo(() => {
+    const groups: { status: ReadingStatus; label: string; books: Book[] }[] = [];
+    const statuses: ReadingStatus[] = ["finished", "reading", "want-to-read"];
+    for (const s of statuses) {
+      const booksInGroup = filtered.filter((b) => b.status === s);
+      if (booksInGroup.length > 0) {
+        groups.push({ status: s, label: STATUS_LABELS[s] ?? s, books: booksInGroup });
+      }
+    }
+    return groups;
+  }, [filtered]);
+
+  const goalPercent = currentGoal > 0 ? Math.min(100, Math.round((finishedYearBooks.length / currentGoal) * 100)) : 0;
+
+  return (
+    <div className="space-y-6">
+      {/* ── HEADER ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-display font-semibold">Mi Biblioteca</h1>
+          <Select value={yearFilter} onValueChange={setYearFilter}>
+            <SelectTrigger className="h-8 w-24 text-sm font-medium border-border/50">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              {availableYears.map((y) => (
+                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          <ImportBooksDialog onImport={addBooksInBatch} onImportWishlist={handleImportWishlist} />
+          <AddBookDialog onAdd={addBook} />
+        </div>
+      </div>
+
+      {/* ── STATS RÁPIDAS ── */}
+      {!loading && yearBooks.length > 0 && (
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+          <span>
+            <span className="font-semibold text-foreground">{finishedYearBooks.length}</span> libros leídos
+          </span>
+          <span>·</span>
+          <span>
+            <span className="font-semibold text-foreground">{totalPages.toLocaleString()}</span> páginas
+          </span>
+          {totalSpent > 0 && (
+            <>
+              <span>·</span>
+              <span>
+                <span className="font-semibold text-foreground">{totalSpent.toFixed(2)}€</span> gastos
+              </span>
+            </>
+          )}
+          {physicalCount > 0 && (
+            <>
+              <span>·</span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-base leading-none">📕</span>
+                <span className="font-semibold text-foreground">{physicalCount}</span>
+                <span>físico</span>
+              </span>
+            </>
+          )}
+          {digitalCount > 0 && (
+            <>
+              <span>·</span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-base leading-none">📱</span>
+                <span className="font-semibold text-foreground">{digitalCount}</span>
+                <span>digital</span>
+              </span>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── OBJETIVO ANUAL ── */}
+      {selectedYear && (
+        <div className="rounded-xl border border-border/40 bg-card p-4">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+              <span className="text-sm font-semibold">Objetivo Anual {selectedYear}</span>
+            </div>
+            {editingGoal ? (
+              <div className="flex items-center gap-2">
+                <input
+                  ref={goalInputRef}
+                  type="number"
+                  min={0}
+                  value={goalInput}
+                  onChange={(e) => setGoalInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleGoalSave();
+                    if (e.key === "Escape") setEditingGoal(false);
+                  }}
+                  className="w-20 h-7 text-sm px-2 rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  placeholder="0"
+                />
+                <button
+                  onClick={handleGoalSave}
+                  className="h-7 px-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleGoalEdit}
+                className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs border border-border hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+              >
+                <Pencil className="h-3 w-3" />
+                {currentGoal > 0 ? "Editar" : "Fijar objetivo"}
+              </button>
+            )}
+          </div>
+
+          {currentGoal > 0 ? (
+            <>
+              <div className="flex items-end gap-6 mb-3">
+                <div>
+                  <p className="text-3xl font-bold font-display text-foreground">{finishedYearBooks.length}</p>
+                  <p className="text-xs text-muted-foreground">Libros leídos</p>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold font-display text-muted-foreground">{currentGoal}</p>
+                  <p className="text-xs text-muted-foreground">Objetivo</p>
+                </div>
+                <div className="ml-auto text-right">
+                  <p className="text-2xl font-bold font-display text-emerald-500">{goalPercent}%</p>
+                  {finishedYearBooks.length >= currentGoal && (
+                    <p className="text-xs text-emerald-500 font-medium">Completado!</p>
+                  )}
+                </div>
+              </div>
+              <div className="h-2.5 rounded-full bg-muted/60 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-700"
+                  style={{ width: `${goalPercent}%` }}
+                />
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Sin objetivo definido. Haz clic en "Fijar objetivo" para establecer cuántos libros quieres leer este año.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* ── FILTROS ── */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <Select value={genreFilter} onValueChange={setGenreFilter}>
+          <SelectTrigger className="w-[150px] h-8 text-sm">
+            <SelectValue placeholder="Género" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los géneros</SelectItem>
+            {GENRES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        <Select value={formatFilter} onValueChange={setFormatFilter}>
+          <SelectTrigger className="w-[130px] h-8 text-sm">
+            <SelectValue placeholder="Formato" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los formatos</SelectItem>
+            {FORMATS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
+          <SelectTrigger className="w-[190px] h-8 text-sm">
+            <SelectValue placeholder="Ordenar por" />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+
+        {(genreFilter !== "all" || formatFilter !== "all") && (
+          <button
+            onClick={() => { setGenreFilter("all"); setFormatFilter("all"); }}
+            className="text-xs text-muted-foreground hover:text-foreground underline"
+          >
+            Limpiar filtros
+          </button>
+        )}
+      </div>
+
+      {/* ── CONTENIDO ── */}
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-48 rounded-xl" />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <BookOpen className="h-12 w-12 text-muted-foreground/40 mb-4" />
+          <p className="text-lg font-medium text-muted-foreground">
+            {books.length === 0 ? "Tu biblioteca está vacía" : "No hay libros con estos filtros"}
+          </p>
+          <p className="text-sm text-muted-foreground/60 mt-1">
+            {books.length === 0 ? "Añade tu primer libro para empezar" : "Prueba a cambiar los filtros"}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {groupedByStatus.map(({ status, label, books: groupBooks }) => (
+            <div key={status}>
+              <div className="flex items-center gap-2 mb-4">
+                <h2 className="text-sm font-semibold text-foreground">{label}</h2>
+                <span className="text-xs text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-full">
+                  {groupBooks.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {groupBooks.map((book, index) => (
+                  <BookCard
+                    key={book.id}
+                    book={book}
+                    index={index}
+                    onUpdate={updateBook}
+                    onDelete={deleteBook}
+                    onMoveToWishlist={handleMoveToWishlist}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
