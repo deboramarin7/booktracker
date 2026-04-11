@@ -85,7 +85,7 @@ function WrappedSlide({
       }`}
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
-      <div className={`relative z-10 w-full mx-auto text-center ${isExporting ? "max-w-none px-24" : "max-w-lg px-8"}`}>
+      <div className="relative z-10 w-full max-w-lg mx-auto px-8 text-center">
         {children}
       </div>
     </div>
@@ -282,22 +282,14 @@ export default function Wrapped() {
     <div
       ref={containerRef}
       className={`relative overflow-hidden select-none ${
-        isExporting
-          ? ""
-          : isFullscreen
-          ? "fixed inset-0 z-50"
-          : "rounded-2xl"
+        isExporting ? "" : isFullscreen ? "fixed inset-0 z-50" : "rounded-2xl"
       }`}
-      style={
-        isExporting
-          ? { width: "1080px", height: "1920px", minHeight: "1920px" }
-          : { minHeight: isFullscreen ? "100vh" : "80vh" }
-      }
+      style={isExporting ? { width: "1080px", height: "1920px" } : { minHeight: isFullscreen ? "100vh" : "80vh" }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
       {/* --- SLIDE 0: Intro / Total Books --- */}
-      <WrappedSlide isExporting={isExporting} index={0} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/50 to-gray-950">
+      <WrappedSlide index={0} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/50 to-gray-950">
         <GlowOrb color="emerald" size="lg" position="center" />
         <div className="space-y-8">
           <p className="text-emerald-400/80 text-sm uppercase tracking-[0.4em] font-medium">
@@ -331,7 +323,7 @@ export default function Wrapped() {
       </WrappedSlide>
 
       {/* --- SLIDE 1: Total Pages --- */}
-      <WrappedSlide isExporting={isExporting} index={1} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/40 to-gray-950">
+      <WrappedSlide index={1} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/40 to-gray-950">
         <GlowOrb color="emerald" size="md" position="top-right" />
         <div className="space-y-8">
           <div className="inline-flex p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
@@ -352,7 +344,7 @@ export default function Wrapped() {
       </WrappedSlide>
 
       {/* --- SLIDE 2: Best Month --- */}
-      <WrappedSlide isExporting={isExporting} index={2} currentSlide={currentSlide} gradient="from-gray-950 via-purple-950/30 to-gray-950">
+      <WrappedSlide index={2} currentSlide={currentSlide} gradient="from-gray-950 via-purple-950/30 to-gray-950">
         <GlowOrb color="purple" size="lg" position="bottom-left" />
         <div className="space-y-8">
           <div className="inline-flex p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20">
@@ -390,7 +382,7 @@ export default function Wrapped() {
       </WrappedSlide>
 
       {/* --- SLIDE 3: Favorite Genre --- */}
-      <WrappedSlide isExporting={isExporting} index={3} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/30 to-gray-950">
+      <WrappedSlide index={3} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/30 to-gray-950">
         <GlowOrb color="emerald" size="md" position="top-left" />
         <div className="space-y-8">
           <div className="inline-flex p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
@@ -436,7 +428,7 @@ export default function Wrapped() {
       </WrappedSlide>
 
       {/* --- SLIDE 4: Top Author --- */}
-      <WrappedSlide isExporting={isExporting} index={4} currentSlide={currentSlide} gradient="from-gray-950 via-amber-950/20 to-gray-950">
+      <WrappedSlide index={4} currentSlide={currentSlide} gradient="from-gray-950 via-amber-950/20 to-gray-950">
         <GlowOrb color="amber" size="lg" position="bottom-right" />
         <div className="space-y-8">
           <div className="inline-flex p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
@@ -476,7 +468,7 @@ export default function Wrapped() {
       </WrappedSlide>
 
       {/* --- SLIDE 5: Book of the Year --- */}
-      <WrappedSlide isExporting={isExporting} index={5} currentSlide={currentSlide} gradient="from-gray-950 via-amber-950/30 to-gray-950">
+      <WrappedSlide index={5} currentSlide={currentSlide} gradient="from-gray-950 via-amber-950/30 to-gray-950">
         <GlowOrb color="amber" size="lg" position="center" />
         <div className="space-y-6">
           <div className="inline-flex p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
@@ -509,7 +501,7 @@ export default function Wrapped() {
       </WrappedSlide>
 
       {/* --- SLIDE 6: Reading Streak / Speed --- */}
-      <WrappedSlide isExporting={isExporting} index={6} currentSlide={currentSlide} gradient="from-gray-950 via-rose-950/20 to-gray-950">
+      <WrappedSlide index={6} currentSlide={currentSlide} gradient="from-gray-950 via-rose-950/20 to-gray-950">
         <GlowOrb color="rose" size="md" position="top-right" />
         <div className="space-y-8">
           <div className="inline-flex p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20">
@@ -546,7 +538,7 @@ export default function Wrapped() {
       </WrappedSlide>
 
       {/* --- SLIDE 7: Final Summary --- */}
-      <WrappedSlide isExporting={isExporting} index={7} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/40 to-gray-950">
+      <WrappedSlide index={7} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/40 to-gray-950">
         <GlowOrb color="emerald" size="lg" position="center" />
         <div className="space-y-8">
           <div className="inline-flex p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
@@ -634,8 +626,7 @@ export default function Wrapped() {
     if (!container) return;
     setIsDownloading(true);
     setIsExporting(true);
-    // Wait for React to re-render with export mode styles
-    await new Promise(r => setTimeout(r, 150));
+    await new Promise(r => setTimeout(r, 200));
     try {
       if (!(window as any).html2canvas) {
         await new Promise<void>((resolve, reject) => {
@@ -663,10 +654,7 @@ export default function Wrapped() {
       link.href = canvas.toDataURL("image/png");
       link.click();
     } catch (err) { console.error(err); }
-    finally {
-      setIsExporting(false);
-      setIsDownloading(false);
-    }
+    finally { setIsExporting(false); setIsDownloading(false); }
   };
 
   return (
@@ -698,7 +686,7 @@ export default function Wrapped() {
 
       <div
         ref={exportRef}
-        style={isExporting ? { width: "1080px", height: "1920px", position: "fixed", top: "-9999px", left: "-9999px", zIndex: -1 } : undefined}
+        style={isExporting ? { position: "fixed", top: "-9999px", left: "-9999px", width: "1080px", height: "1920px", zIndex: -1 } : undefined}
       >
         {wrappedContent}
       </div>
