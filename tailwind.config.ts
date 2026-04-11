@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
-        body: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        display: ['"Instrument Serif"', 'Georgia', 'serif'],
+        body: ['"Instrument Serif"', 'Georgia', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",
