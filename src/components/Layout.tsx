@@ -100,7 +100,7 @@ export default function Layout() {
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-64 pt-10 bg-card text-card-foreground">
+               <SheetContent side="right" className="w-64 pt-10">
                   <div className="flex items-center gap-2 mb-6 px-4">
                     <BookOpen className="h-5 w-5 text-primary" />
                     <span className="font-display text-lg">Menú</span>
@@ -115,7 +115,7 @@ export default function Layout() {
                              `block px-4 py-3 rounded-lg text-sm font-body transition-all ${
                               isActive
                                 ? "bg-primary text-primary-foreground warm-shadow"
-                                : "text-gray-800 dark:text-gray-100 hover:bg-secondary/80"
+                                : "text-foreground hover:bg-accent hover:text-accent-foreground"
                             }`
                           }
                         >
