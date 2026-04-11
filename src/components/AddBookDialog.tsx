@@ -212,13 +212,13 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
               {(status === "reading" || status === "finished") && (
                 <div className="space-y-1.5 animate-fade-in">
                   <Label className="font-body text-sm">Fecha inicio</Label>
-                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="[color-scheme:light] dark:[color-scheme:dark]" />
                 </div>
               )}
               {status === "finished" && (
                 <div className="space-y-1.5 animate-fade-in">
                   <Label className="font-body text-sm">Fecha fin</Label>
-                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="[color-scheme:light] dark:[color-scheme:dark]" />
                 </div>
               )}
             </div>
