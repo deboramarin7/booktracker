@@ -85,66 +85,68 @@ function YearHeatmap({ year, habits }: { year: number; habits: Record<string, st
   });
 
   return (
-    <div className="space-y-2">
-      {/* Month labels */}
-      <div className="flex text-[9px] text-muted-foreground ml-7" style={{ gap: "3px" }}>
-        {weeks.map((_, wi) => {
-          const label = monthLabels.find(m => m.weekIndex === wi);
-          return (
-            <div key={wi} className="w-[11px] text-center flex-shrink-0">
-              {label ? label.label : ""}
-            </div>
-          );
-        })}
-      </div>
-      <div className="flex gap-0">
-        {/* Day labels */}
-        <div className="flex flex-col gap-[3px] mr-1 text-[9px] text-muted-foreground pt-0">
-          {["", "Mar", "", "Jue", "", "Sáb", ""].map((d, i) => (
-            <div key={i} className="h-[11px] flex items-center justify-end pr-0.5 w-6">{d}</div>
-          ))}
+  <div className="space-y-2">
+    {/* Un solo contenedor con scroll — labels y grid juntos */}
+    <div className="overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+      <div style={{ minWidth: `${weeks.length * 14 + 28}px` }}>
+        {/* Month labels */}
+        <div className="flex text-[9px] text-muted-foreground ml-7" style={{ gap: "3px" }}>
+          {weeks.map((_, wi) => {
+            const label = monthLabels.find(m => m.weekIndex === wi);
+            return (
+              <div key={wi} className="w-[11px] text-center flex-shrink-0">
+                {label ? label.label : ""}
+              </div>
+            );
+          })}
         </div>
-        {/* Grid */}
-        <div className="flex gap-[3px] overflow-x-auto">
-          {weeks.map((week, wi) => (
-            <div key={wi} className="flex flex-col gap-[3px]">
-              {week.map((day) => (
-                <Tooltip key={day.key}>
-                  <TooltipTrigger asChild>
-                    <div
-                      className={cn(
-                        "w-[11px] h-[11px] rounded-[2px] transition-colors",
-                        day.isPad
-                          ? "bg-transparent"
-                          : day.isRead
-                          ? "bg-emerald-500 dark:bg-emerald-400"
-                          : "bg-muted/60 dark:bg-muted/30"
-                      )}
-                    />
-                  </TooltipTrigger>
-                  {!day.isPad && (
-                    <TooltipContent side="top" className="text-xs py-1 px-2">
-                      {day.date.toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" })}
-                      {day.isRead ? " — ✅ Leíste" : " — No leíste"}
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              ))}
-            </div>
-          ))}
+        {/* Day labels + grid */}
+        <div className="flex gap-0">
+          <div className="flex flex-col gap-[3px] mr-1 text-[9px] text-muted-foreground pt-0">
+            {["", "Mar", "", "Jue", "", "Sáb", ""].map((d, i) => (
+              <div key={i} className="h-[11px] flex items-center justify-end pr-0.5 w-6">{d}</div>
+            ))}
+          </div>
+          <div className="flex gap-[3px]">
+            {weeks.map((week, wi) => (
+              <div key={wi} className="flex flex-col gap-[3px]">
+                {week.map((day) => (
+                  <Tooltip key={day.key}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className={cn(
+                          "w-[11px] h-[11px] rounded-[2px] transition-colors",
+                          day.isPad
+                            ? "bg-transparent"
+                            : day.isRead
+                            ? "bg-emerald-500 dark:bg-emerald-400"
+                            : "bg-muted/60 dark:bg-muted/30"
+                        )}
+                      />
+                    </TooltipTrigger>
+                    {!day.isPad && (
+                      <TooltipContent side="top" className="text-xs py-1 px-2">
+                        {day.date.toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" })}
+                        {day.isRead ? " — ✅ Leíste" : " — No leíste"}
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-      {/* Legend */}
-      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-1">
-        <span>Menos</span>
-        <div className="w-[11px] h-[11px] rounded-[2px] bg-muted/60 dark:bg-muted/30" />
-        <div className="w-[11px] h-[11px] rounded-[2px] bg-emerald-500/30 dark:bg-emerald-400/30" />
-        <div className="w-[11px] h-[11px] rounded-[2px] bg-emerald-500/60 dark:bg-emerald-400/60" />
-        <div className="w-[11px] h-[11px] rounded-[2px] bg-emerald-500 dark:bg-emerald-400" />
-        <span>Más</span>
       </div>
     </div>
-  );
+    {/* Legend — simplificada (solo 2 niveles reales) */}
+    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-1">
+      <span>Menos</span>
+      <div className="w-[11px] h-[11px] rounded-[2px] bg-muted/60 dark:bg-muted/30" />
+      <div className="w-[11px] h-[11px] rounded-[2px] bg-emerald-500 dark:bg-emerald-400" />
+      <span>Más</span>
+    </div>
+  </div>
+);
 }
 
 // ═══════════════════════════════════════════
