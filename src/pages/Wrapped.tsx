@@ -669,19 +669,32 @@ export default function Wrapped() {
       // Restore nav
       if (navEl) navEl.style.visibility = "";
 
-      // Output as 9:16 portrait — crop width if needed
-      const targetRatio = 9 / 16;
+      // Output exactly 1080×1920 (Instagram/WhatsApp Stories standard)
+      const STORY_W = 1080;
+      const STORY_H = 1920;
       const srcW = raw.width;
       const srcH = raw.height;
+      const srcRatio = srcW / srcH;
+      const storyRatio = STORY_W / STORY_H;
       const out = document.createElement("canvas");
-      let cropX = 0, cropW = srcW, cropH = srcH;
-      if (srcW / srcH > targetRatio) {
-        cropW = Math.round(srcH * targetRatio);
-        cropX = Math.round((srcW - cropW) / 2);
+      out.width = STORY_W;
+      out.height = STORY_H;
+      const ctx2d = out.getContext("2d")!;
+      ctx2d.fillStyle = "#000000";
+      ctx2d.fillRect(0, 0, STORY_W, STORY_H);
+      let drawW, drawH, drawX, drawY;
+      if (srcRatio > storyRatio) {
+        drawH = STORY_H;
+        drawW = Math.round(srcRatio * STORY_H);
+        drawX = Math.round((STORY_W - drawW) / 2);
+        drawY = 0;
+      } else {
+        drawW = STORY_W;
+        drawH = Math.round(STORY_W / srcRatio);
+        drawX = 0;
+        drawY = Math.round((STORY_H - drawH) / 2);
       }
-      out.width = cropW;
-      out.height = cropH;
-      out.getContext("2d")!.drawImage(raw, cropX, 0, cropW, cropH, 0, 0, cropW, cropH);
+      ctx2d.drawImage(raw, drawX, drawY, drawW, drawH);
 
       const link = document.createElement("a");
       link.download = `wrapped-${selectedYear}-slide${currentSlide + 1}.png`;
