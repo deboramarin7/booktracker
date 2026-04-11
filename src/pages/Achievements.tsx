@@ -155,7 +155,7 @@ export default function Achievements() {
   }, [finishedBooks, selectedYear]);
 
   const [habits, setHabits] = useState<Record<string, string[]>>(loadHabits);
-  useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
+useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
   const yearDays = useMemo(() => habits[String(selectedYear)] || [], [habits, selectedYear]);
 
   const maxStreak = useMemo(() => {
