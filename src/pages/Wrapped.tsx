@@ -635,28 +635,45 @@ export default function Wrapped() {
         });
       }
       const h2c = (window as any).html2canvas;
-      const navEl = container.querySelector(".slide-nav") as HTMLElement | null;
-      if (navEl) navEl.style.visibility = "hidden";
+
+      // Freeze all CSS animations and transitions before capture
+      const styleTag = document.createElement("style");
+      styleTag.id = "__capture_freeze__";
+      styleTag.textContent = `
+        * { animation-play-state: paused !important; transition: none !important; }
+      `;
+      document.head.appendChild(styleTag);
+
+      // Small delay to let the freeze apply
+      await new Promise(r => setTimeout(r, 50));
+
       const raw = await h2c(container, {
         useCORS: true,
         allowTaint: true,
         backgroundColor: null,
         scale: 3,
         logging: false,
-        onclone: (doc: Document) => {
-          const clonedContainer = doc.querySelector(".rounded-2xl");
-          if (!clonedContainer) return;
-          const nav = clonedContainer.querySelector(".slide-nav") as HTMLElement | null;
-          if (nav) nav.style.display = "none";
-          const slides = clonedContainer.querySelectorAll(".absolute.inset-0");
-          slides.forEach((s) => {
-            const el = s as HTMLElement;
+        onclone: (_doc: Document, el: HTMLElement) => {
+          // In the clone: hide nav and all inactive slides
+          el.querySelector(".slide-nav")?.remove();
+          el.querySelectorAll(".absolute.inset-0").forEach((s) => {
             const style = window.getComputedStyle(s);
-            if (parseFloat(style.opacity) < 0.5) el.style.display = "none";
+            if (parseFloat(style.opacity) < 0.5) (s as HTMLElement).style.display = "none";
+          });
+          // Remove the freeze style so positions are correct
+          el.querySelectorAll("#__capture_freeze__").forEach(e => e.remove());
+          // Force all elements to their final animation state
+          el.querySelectorAll("*").forEach((s) => {
+            (s as HTMLElement).style.animationPlayState = "paused";
+            (s as HTMLElement).style.animationDelay = "0s";
           });
         },
       });
-      if (navEl) navEl.style.visibility = "";
+
+      // Restore animations
+      document.getElementById("__capture_freeze__")?.remove();
+
+      // Crop to 9:16 portrait for stories
       const targetRatio = 9 / 16;
       const srcW = raw.width;
       const srcH = raw.height;
@@ -669,12 +686,17 @@ export default function Wrapped() {
       out.width = cropW;
       out.height = cropH;
       out.getContext("2d")!.drawImage(raw, cropX, 0, cropW, cropH, 0, 0, cropW, cropH);
+
       const link = document.createElement("a");
       link.download = `wrapped-${selectedYear}-slide${currentSlide + 1}.png`;
       link.href = out.toDataURL("image/png");
       link.click();
-    } catch (err) { console.error(err); }
-    finally { setIsDownloading(false); }
+    } catch (err) {
+      console.error(err);
+      document.getElementById("__capture_freeze__")?.remove();
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
