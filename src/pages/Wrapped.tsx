@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useBooksContext } from "@/components/Layout";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, Star, Clock, Trophy, ChevronLeft, ChevronRight, Sparkles, TrendingUp, Layers, Heart, Flame, X } from "lucide-react";
+import { BookOpen, Star, Clock, Trophy, ChevronLeft, ChevronRight, Sparkles, TrendingUp, Layers, Heart, Flame, X, ImageDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 function getYearFromBook(book: { endDate?: string; startDate?: string; addedAt: string }): number {
@@ -122,7 +122,9 @@ export default function Wrapped() {
   const { books } = useBooksContext();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const slideRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const years = useMemo(() => {
@@ -618,6 +620,40 @@ export default function Wrapped() {
     </div>
   );
 
+  const handleDownload = async () => {
+    const el = slideRef.current;
+    if (!el) return;
+    setIsDownloading(true);
+    try {
+      // Load html2canvas from CDN if not already loaded
+      if (!(window as any).html2canvas) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+          script.onload = () => resolve();
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      const html2canvas = (window as any).html2canvas;
+      const canvas = await html2canvas(el, {
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+        scale: 2,
+        logging: false,
+      });
+      const link = document.createElement("a");
+      link.download = `booktracker-wrapped-${selectedYear}-slide${currentSlide + 1}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (err) {
+      console.error("Error capturing slide:", err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -636,15 +672,16 @@ export default function Wrapped() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setIsFullscreen(true)}
+          onClick={handleDownload}
+          disabled={isDownloading}
           className="gap-2"
         >
-          <Sparkles className="h-4 w-4" />
-          Pantalla completa
+          <ImageDown className="h-4 w-4" />
+          {isDownloading ? "Guardando..." : "Guardar imagen"}
         </Button>
       </div>
 
-      {wrappedContent}
+      <div ref={slideRef}>{wrappedContent}</div>
 
       {currentSlide < totalSlides - 1 && (
         <p className="text-center text-xs text-muted-foreground/40 font-body">
