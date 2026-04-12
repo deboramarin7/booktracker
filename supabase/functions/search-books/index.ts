@@ -69,6 +69,8 @@ function googleBookToResult(item) {
   let coverUrl = info.imageLinks?.extraLarge || info.imageLinks?.large || info.imageLinks?.medium || info.imageLinks?.thumbnail || null
   if (coverUrl) coverUrl = coverUrl.replace('http://', 'https://').replace('zoom=1', 'zoom=3').replace('&edge=curl', '')
   const seriesMatch = (info.title || '').match(/^(.+?)\s*[,#:]\s*(?:book|tome|vol\.?|#)?\s*(\d+\.?\d*)\s*$/i)
+    || (info.title || '').match(/\(([^)]+?)\s+(\d+\.?\d*)\s*\)/)
+    || (info.subtitle || '').match(/^(?:book|tome|vol\.?|#)?\s*(\d+\.?\d*)\s*(?:of|de)\s*(.+)$/i)
   return {
     title: info.title || '',
     author: (info.authors || []).join(', '),
