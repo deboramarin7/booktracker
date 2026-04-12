@@ -1,9 +1,8 @@
 import { useState } from "react";
 import {
-  BookOpen, Plus, Search, Heart, BookMarked, BarChart3,
+  BookOpen, Search, BookMarked, BarChart3,
   Sparkles, HelpCircle, ChevronDown, ChevronUp,
-  Star, Download, Upload, Library, Target, Flame,
-  BookHeart, Calendar, Trophy, LayoutGrid
+  Star, Upload, Calendar, Trophy, LayoutGrid, Heart
 } from "lucide-react";
 
 interface Section {
@@ -18,7 +17,7 @@ interface Section {
 const sections: Section[] = [
   {
     id: "biblioteca",
-    icon: <Library className="h-5 w-5" />,
+    icon: <BookOpen className="h-5 w-5" />,
     title: "Mi Biblioteca",
     description: "El corazón de la app. Aquí viven todos tus libros leídos, en progreso y pendientes.",
     steps: [
@@ -51,7 +50,7 @@ const sections: Section[] = [
   },
   {
     id: "wishlist",
-    icon: <BookHeart className="h-5 w-5" />,
+    icon: <Heart className="h-5 w-5" />,
     title: "Wish List",
     description: "Tu lista de libros que quieres leer. Se agrupan automáticamente por sagas.",
     steps: [
