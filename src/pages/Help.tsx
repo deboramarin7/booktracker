@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  BookOpen, Search, BookMarked, BarChart3,
+  BookOpen, Search, BookMarked, TrendingUp,
   Sparkles, Info, ChevronDown, ChevronUp,
   Star, Upload, Calendar, Trophy, LayoutGrid, Heart
 } from "lucide-react";
@@ -165,7 +165,7 @@ const sections: Section[] = [
   },
   {
     id: "dashboard",
-    icon: <BarChart3 className="h-5 w-5" />,
+    icon: <TrendingUp className="h-5 w-5" />,
     title: "Dashboard",
     description: "Estadísticas detalladas de tus hábitos lectores: géneros, páginas, valoraciones y más.",
     steps: [
@@ -324,7 +324,7 @@ export default function Help() {
         {[
           { icon: <BookOpen className="h-4 w-4" />, label: "Registra libros", desc: "Leídos, leyendo o pendientes" },
           { icon: <Star className="h-4 w-4" />, label: "Valora y reseña", desc: "Guarda tus opiniones" },
-          { icon: <BarChart3 className="h-4 w-4" />, label: "Estadísticas", desc: "Ve tu evolución lectora" },
+          { icon: <TrendingUp className="h-4 w-4" />, label: "Estadísticas", desc: "Ve tu evolución lectora" },
           { icon: <Sparkles className="h-4 w-4" />, label: "Wrapped anual", desc: "Tu resumen del año" },
         ].map((item, i) => (
           <div key={i} className="rounded-xl border border-border/30 bg-muted/20 p-3 flex flex-col gap-1.5">
