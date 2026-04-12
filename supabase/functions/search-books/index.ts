@@ -14,10 +14,6 @@ function normalize(str: string): string {
   return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim()
 }
 
-function removeDiacritics(str: string): string {
-  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()
-}
-
 function cleanTitle(title: string): string {
   return title
     .replace(/\s*[:(–—-]\s*.+$/, '')
@@ -32,28 +28,27 @@ function cleanAuthor(author: string): string {
   return author.replace(/\b[A-Z]\.\s*/g, '').replace(/\s+/g, ' ').trim()
 }
 
-function lastNameOnly(author: string): string {
-  const parts = cleanAuthor(author).split(' ')
-  return parts[parts.length - 1]
-}
+// ─── Google Books ──────────────────────────────────────────────────────────────
 
-
-// ─── Google Books (fallback) ────────────────────────────────────────────────────
-
-async function googleBooksSearch(query, author) {
+async function googleBooksSearch(query: string, author?: string): Promise<any[]> {
   try {
     let q = encodeURIComponent(query)
     if (author) q += `+inauthor:${encodeURIComponent(author)}`
+
+    // Search in Spanish first, then general
     const [resEs, resAll] = await Promise.all([
       fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&langRestrict=es&maxResults=10&printType=books`),
       fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=10&printType=books`),
     ])
+
     const [dataEs, dataAll] = await Promise.all([
       resEs.ok ? resEs.json() : { items: [] },
       resAll.ok ? resAll.json() : { items: [] },
     ])
-    const seen = new Set()
-    return [...(dataEs.items || []), ...(dataAll.items || [])].filter(item => {
+
+    const seen = new Set<string>()
+    const items = [...(dataEs.items || []), ...(dataAll.items || [])]
+    return items.filter((item: any) => {
       if (seen.has(item.id)) return false
       seen.add(item.id)
       return true
@@ -61,16 +56,25 @@ async function googleBooksSearch(query, author) {
   } catch { return [] }
 }
 
-function googleBookToResult(item) {
+function googleBookToResult(item: any) {
   const info = item.volumeInfo || {}
-  const isbn = (info.industryIdentifiers || []).find(i => i.type === 'ISBN_13')?.identifier
-    || (info.industryIdentifiers || []).find(i => i.type === 'ISBN_10')?.identifier
+  const isbn = (info.industryIdentifiers || []).find((i: any) => i.type === 'ISBN_13')?.identifier
+    || (info.industryIdentifiers || []).find((i: any) => i.type === 'ISBN_10')?.identifier
     || null
-  let coverUrl = info.imageLinks?.extraLarge || info.imageLinks?.large || info.imageLinks?.medium || info.imageLinks?.thumbnail || null
-  if (coverUrl) coverUrl = coverUrl.replace('http://', 'https://').replace('zoom=1', 'zoom=3').replace('&edge=curl', '')
+
+  // Get best cover — replace zoom=1 with zoom=3 for higher res
+  let coverUrl = info.imageLinks?.extraLarge
+    || info.imageLinks?.large
+    || info.imageLinks?.medium
+    || info.imageLinks?.thumbnail
+    || null
+  if (coverUrl) {
+    coverUrl = coverUrl.replace('http://', 'https://').replace('zoom=1', 'zoom=3').replace('&edge=curl', '')
+  }
+
   const seriesMatch = (info.title || '').match(/^(.+?)\s*[,#:]\s*(?:book|tome|vol\.?|#)?\s*(\d+\.?\d*)\s*$/i)
-    || (info.title || '').match(/\(([^)]+?)\s+(\d+\.?\d*)\s*\)/)
     || (info.subtitle || '').match(/^(?:book|tome|vol\.?|#)?\s*(\d+\.?\d*)\s*(?:of|de)\s*(.+)$/i)
+
   return {
     title: info.title || '',
     author: (info.authors || []).join(', '),
@@ -79,29 +83,13 @@ function googleBookToResult(item) {
     genre: (info.categories || [])[0] || null,
     language: info.language || null,
     isbn,
-    sagaName: seriesMatch ? seriesMatch[1].trim() : '',
-    sagaOrder: seriesMatch ? seriesMatch[2].trim() : '',
+    sagaName: seriesMatch ? (seriesMatch[1] || seriesMatch[2] || '').trim() : '',
+    sagaOrder: seriesMatch ? (seriesMatch[2] || seriesMatch[1] || '').trim() : '',
     _source: 'google',
   }
 }
 
-function deduplicateBooks(books) {
-  const seen = new Map()
-  for (const book of books) {
-    const key = normalize(book.title + ' ' + book.author).replace(/\s/g, '')
-    if (!seen.has(key)) {
-      seen.set(key, book)
-    } else {
-      const existing = seen.get(key)
-      const existingScore = (existing.coverUrl ? 2 : 0) + (existing.totalPages > 0 ? 1 : 0)
-      const newScore = (book.coverUrl ? 2 : 0) + (book.totalPages > 0 ? 1 : 0)
-      if (newScore > existingScore) seen.set(key, book)
-    }
-  }
-  return Array.from(seen.values())
-}
-
-// ─── Open Library: búsqueda ────────────────────────────────────────────────────
+// ─── Open Library ──────────────────────────────────────────────────────────────
 
 async function olSearch(query: string, author?: string): Promise<any[]> {
   try {
@@ -130,7 +118,7 @@ async function olSearch(query: string, author?: string): Promise<any[]> {
   } catch { return [] }
 }
 
-async function olDocToBook(doc: any) {
+function olDocToBook(doc: any) {
   const spanishEd = doc.editions?.docs?.find((e: any) =>
     (e.language || []).some((l: string) => ['spa', 'es'].includes(l.toLowerCase()))
   )
@@ -144,15 +132,6 @@ async function olDocToBook(doc: any) {
     ? `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`
     : null
   const seriesRaw: string[] = spanishEd?.series || doc.series || []
-  if (seriesRaw.length === 0 && spanishEd?.key) {
-    try {
-      const edRes = await fetch(`https://openlibrary.org${spanishEd.key}.json`, { headers: OL_HEADERS })
-      if (edRes.ok) {
-        const edData = await edRes.json()
-        if (edData.series?.length > 0) seriesRaw.push(...edData.series)
-      }
-    } catch { }
-  }
   const seriesText = (seriesRaw[0] || '').trim()
   const seriesMatch = seriesText.match(/^(.+?)[\s,]+(?:vol\.?\s*|book\s*|tome\s*|#)?(\d+\.?\d*)\s*$/i)
   const sagaName = seriesMatch ? seriesMatch[1].trim() : seriesText
@@ -163,7 +142,6 @@ async function olDocToBook(doc: any) {
     coverUrl,
     totalPages: spanishEd?.number_of_pages || doc.number_of_pages_median || 0,
     genre: (doc.subject || [])[0] || null,
-    description: null,
     language: isSpanish ? 'es' : (langs[0] || null),
     isbn,
     sagaName,
@@ -174,7 +152,6 @@ async function olDocToBook(doc: any) {
   }
 }
 
-// Búsqueda por ISBN en Open Library
 async function olByISBN(isbn: string): Promise<any | null> {
   try {
     const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`, { headers: OL_HEADERS })
@@ -185,30 +162,15 @@ async function olByISBN(isbn: string): Promise<any | null> {
     return {
       title: book.title || '',
       author: (book.authors || []).map((a: any) => a.name).join(', '),
-      coverUrl: book.cover?.large || book.cover?.medium || book.cover?.small || null,
+      coverUrl: book.cover?.large || book.cover?.medium || null,
       totalPages: book.number_of_pages || 0,
       genre: (book.subjects || [])[0]?.name || null,
-      description: book.excerpts?.[0]?.text || null,
-      language: null,
       isbn,
+      _source: 'openlibrary',
     }
   } catch { return null }
 }
 
-// Portada directa por ISBN de Open Library
-async function olCoverByISBN(isbn: string): Promise<string | null> {
-  try {
-    const url = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`
-    const res = await fetch(url, { method: 'HEAD', headers: OL_HEADERS })
-    if (res.ok && res.headers.get('content-type')?.startsWith('image/jpeg')) {
-      const size = parseInt(res.headers.get('content-length') || '0')
-      if (size > 2000) return url // Evitar placeholders pequeños
-    }
-  } catch { }
-  return null
-}
-
-// Amazon como fallback de portadas
 async function amazonCover(isbn: string): Promise<string | null> {
   function to10(isbn13: string): string | null {
     if (isbn13.length !== 13 || !isbn13.startsWith('978')) return null
@@ -229,13 +191,15 @@ async function amazonCover(isbn: string): Promise<string | null> {
   return null
 }
 
-// Puntuación para ordenar resultados (español y con portada primero)
+// ─── Scoring ──────────────────────────────────────────────────────────────────
+
 function scoreBook(book: any, normQuery: string): number {
   const t = normalize(book.title || '')
   const qWords = normQuery.split(' ').filter((w: string) => w.length > 2)
-  const isSpanish = book._isSpanish || book.language === 'es' ? 30 : 0
+  const isSpanish = (book._isSpanish || book.language === 'es') ? 30 : 0
   const hasCover = book.coverUrl ? 20 : 0
   const hasPages = book.totalPages > 0 ? 5 : 0
+  const isGoogle = book._source === 'google' ? 5 : 0  // slight boost for Google (better covers)
 
   let titleScore = 0
   if (t === normQuery) titleScore = 100
@@ -245,7 +209,26 @@ function scoreBook(book: any, normQuery: string): number {
     titleScore = (matched / qWords.length) * 50
   }
 
-  return titleScore + isSpanish + hasCover + hasPages
+  return titleScore + isSpanish + hasCover + hasPages + isGoogle
+}
+
+// ─── Deduplication ────────────────────────────────────────────────────────────
+
+function deduplicateBooks(books: any[]): any[] {
+  const seen = new Map<string, any>()
+  for (const book of books) {
+    const key = normalize(book.title + ' ' + book.author).replace(/\s/g, '')
+    if (!seen.has(key)) {
+      seen.set(key, book)
+    } else {
+      // Keep the one with more info (cover + pages)
+      const existing = seen.get(key)!
+      const existingScore = (existing.coverUrl ? 2 : 0) + (existing.totalPages > 0 ? 1 : 0)
+      const newScore = (book.coverUrl ? 2 : 0) + (book.totalPages > 0 ? 1 : 0)
+      if (newScore > existingScore) seen.set(key, book)
+    }
+  }
+  return Array.from(seen.values())
 }
 
 // ─── Handler principal ────────────────────────────────────────────────────────
@@ -263,7 +246,7 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    // ── Modo coversOnly: múltiples opciones para CoverSearch ──
+    // ── Modo coversOnly ──
     if (coversOnly && title) {
       const covers: { url: string; source: string }[] = []
       const seen = new Set<string>()
@@ -273,17 +256,22 @@ Deno.serve(async (req: Request) => {
 
       const ct = cleanTitle(title)
       const ca = author ? cleanAuthor(author) : ''
-      const docs = await olSearch(ct, ca || undefined)
+      const [olDocs, gbItems] = await Promise.all([
+        olSearch(ct, ca || undefined),
+        googleBooksSearch(ct, ca || undefined),
+      ])
 
-      for (const doc of docs) {
+      for (const doc of olDocs) {
         const book = olDocToBook(doc)
         if (book.coverUrl) add(book.coverUrl, 'Open Library')
+        if (covers.length >= 4) break
+      }
+      for (const item of gbItems) {
+        const book = googleBookToResult(item)
+        if (book.coverUrl) add(book.coverUrl, 'Google Books')
         if (covers.length >= 8) break
       }
-
       if (isbn) {
-        const cover = await olCoverByISBN(isbn)
-        if (cover) add(cover, 'Open Library (ISBN)')
         const amz = await amazonCover(isbn)
         if (amz) add(amz, 'Amazon')
       }
@@ -293,37 +281,40 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    // ── Modo búsqueda por ISBN ──
-    if (isbn && !title) {
-      const book = await olByISBN(isbn)
-      if (book) {
-        return new Response(JSON.stringify({ books: [book] }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
-      }
-    }
-
-    // ── Modo búsqueda libre o por título+autor ──
-    const searchTerm = title ? cleanTitle(title) : query
-    const searchAuthor = author ? cleanAuthor(author) : undefined
-
-    // Detectar ISBN en query
+    // ── Modo ISBN ──
     const isISBN = /^(97[89])?\d{9}[\dX]$/i.test((query || '').replace(/-/g, ''))
-    if (isISBN) {
-      const cleanIsbn = (query || '').replace(/-/g, '')
+    if (isISBN || (isbn && !title)) {
+      const cleanIsbn = (isbn || query || '').replace(/-/g, '')
       const book = await olByISBN(cleanIsbn)
       if (book) {
         return new Response(JSON.stringify({ books: [book] }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+      // Fallback to Google Books for ISBN
+      const gbItems = await googleBooksSearch(cleanIsbn)
+      if (gbItems.length > 0) {
+        return new Response(JSON.stringify({ books: [googleBookToResult(gbItems[0])] }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
     }
 
-    const docs = await olSearch(searchTerm, searchAuthor)
-    let books = docs.map(olDocToBook)
+    // ── Búsqueda libre: Open Library + Google Books en paralelo ──
+    const searchTerm = title ? cleanTitle(title) : query
+    const searchAuthor = author ? cleanAuthor(author) : undefined
 
-    // Enriquecer portadas faltantes con Amazon
-    books = await Promise.all(books.map(async (book) => {
+    const [olDocs, gbItems] = await Promise.all([
+      olSearch(searchTerm, searchAuthor),
+      googleBooksSearch(searchTerm, searchAuthor),
+    ])
+
+    // Convert to unified format
+    let olBooks = olDocs.map(olDocToBook)
+    let gbBooks = gbItems.map(googleBookToResult)
+
+    // Enrich OL books missing covers with Amazon
+    olBooks = await Promise.all(olBooks.map(async (book) => {
       if (book.coverUrl) return book
       if (book.isbn) {
         const amz = await amazonCover(book.isbn)
@@ -332,12 +323,29 @@ Deno.serve(async (req: Request) => {
       return book
     }))
 
-    // Ordenar: español con portada primero
-    const normQ = normalize(searchTerm)
-    books.sort((a, b) => scoreBook(b, normQ) - scoreBook(a, normQ))
+    // Enrich OL books missing saga with Google Books data
+    olBooks = olBooks.map((olBook: any) => {
+      if (olBook.sagaName) return olBook; // already has saga
+      // Find matching GB book that has saga info in title like "(Empireo 1)"
+      const normOlTitle = normalize(olBook.title);
+      const gbMatch = gbBooks.find((gb: any) => {
+        if (!gb.sagaName) return false;
+        const gbTitleClean = normalize(gb.title.replace(/\(.*?\)/g, '').trim());
+        return gbTitleClean.includes(normOlTitle) || normOlTitle.includes(gbTitleClean);
+      });
+      if (gbMatch?.sagaName) {
+        return { ...olBook, sagaName: gbMatch.sagaName, sagaOrder: gbMatch.sagaOrder };
+      }
+      return olBook;
+    });
 
-    // Limpiar campos internos
-    const result = books.map(({ _isSpanish, _coverId, ...b }: any) => b)
+    // Combine, deduplicate and sort
+    const combined = deduplicateBooks([...olBooks, ...gbBooks])
+    const normQ = normalize(searchTerm)
+    combined.sort((a, b) => scoreBook(b, normQ) - scoreBook(a, normQ))
+
+    // Clean internal fields
+    const result = combined.map(({ _isSpanish, _coverId, _source, ...b }: any) => b)
 
     return new Response(JSON.stringify({ books: result.slice(0, 15) }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
