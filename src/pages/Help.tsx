@@ -295,6 +295,32 @@ function SectionCard({ section }: { section: Section }) {
 
 export default function Help() {
   const [search, setSearch] = useState("");
+  const [formType, setFormType] = useState("libro");
+  const [formName, setFormName] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formMessage, setFormMessage] = useState("");
+  const [formSent, setFormSent] = useState(false);
+  const [formSending, setFormSending] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormSending(true);
+    try {
+      await fetch("https://formspree.io/f/mwvaewlr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tipo: formType === "libro" ? "Libro no encontrado" : formType === "pregunta" ? "Pregunta" : "Sugerencia",
+          nombre: formName,
+          email: formEmail,
+          mensaje: formMessage,
+        }),
+      });
+      setFormSent(true);
+      setFormName(""); setFormEmail(""); setFormMessage("");
+    } catch { }
+    setFormSending(false);
+  };
 
   const filtered = search.trim()
     ? sections.filter(s =>
@@ -360,11 +386,84 @@ export default function Help() {
         )}
       </div>
 
-      {/* Footer note */}
-      <div className="rounded-xl border border-border/20 bg-muted/10 p-4 text-center">
-        <p className="text-xs text-muted-foreground font-display">
-          ¿Tienes alguna duda que no está aquí? La app está en constante mejora. 📚
-        </p>
+      {/* Contact form */}
+      <div className="rounded-2xl border border-border/30 bg-card p-5 space-y-4">
+        <div>
+          <h3 className="font-display font-semibold text-base text-foreground">¿Necesitas ayuda? ✉️</h3>
+          <p className="text-sm text-muted-foreground font-display mt-0.5">
+            ¿No encuentras un libro en el buscador? ¿Tienes alguna sugerencia? Escríbenos.
+          </p>
+        </div>
+
+        {formSent ? (
+          <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-4 text-center">
+            <p className="text-sm font-semibold text-emerald-500 font-display">¡Mensaje enviado! ✅</p>
+            <p className="text-xs text-muted-foreground font-display mt-1">Te responderemos lo antes posible.</p>
+            <button onClick={() => setFormSent(false)} className="mt-2 text-xs text-muted-foreground hover:text-foreground underline font-display">Enviar otro mensaje</button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-3">
+            {/* Tipo */}
+            <div className="flex gap-2">
+              {[
+                { value: "libro", label: "📚 Libro no encontrado" },
+                { value: "pregunta", label: "❓ Pregunta" },
+                { value: "sugerencia", label: "💡 Sugerencia" },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setFormType(opt.value)}
+                  className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-display border transition-colors ${
+                    formType === opt.value
+                      ? "bg-primary/15 text-primary border-primary/30"
+                      : "text-muted-foreground border-border/40 hover:border-border"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Nombre + Email */}
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="text"
+                placeholder="Tu nombre"
+                value={formName}
+                onChange={e => setFormName(e.target.value)}
+                required
+                className="px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm font-display text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <input
+                type="email"
+                placeholder="Tu email"
+                value={formEmail}
+                onChange={e => setFormEmail(e.target.value)}
+                required
+                className="px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm font-display text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+
+            {/* Mensaje */}
+            <textarea
+              placeholder={formType === "libro" ? "Título del libro, autor y editorial si lo sabes..." : "Escribe tu mensaje..."}
+              value={formMessage}
+              onChange={e => setFormMessage(e.target.value)}
+              required
+              rows={3}
+              className="w-full px-3 py-2 rounded-xl border border-border/40 bg-muted/20 text-sm font-display text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+            />
+
+            <button
+              type="submit"
+              disabled={formSending}
+              className="w-full py-2 rounded-xl bg-primary text-primary-foreground text-sm font-display font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              {formSending ? "Enviando..." : "Enviar mensaje"}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );
