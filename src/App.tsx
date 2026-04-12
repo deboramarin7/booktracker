@@ -14,6 +14,7 @@ import Achievements from "./pages/Achievements";
 import Wrapped from "./pages/Wrapped";
 import Shelves from "./pages/Shelves";
 import NotFound from "./pages/NotFound";
+import Help from "./pages/Help";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/wrapped" element={<Wrapped />} />
               <Route path="/estanterias" element={<Shelves />} />
             </Route>
+            <Route path="/ayuda" element={<Help />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
