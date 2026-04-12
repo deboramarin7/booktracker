@@ -1,19 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useBooksContext } from "@/components/Layout";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  BookOpen,
-  Star,
-  Trophy,
-  ChevronLeft,
-  ChevronRight,
-  Sparkles,
-  Layers,
-  Heart,
-  Flame,
-  X,
-  ImageDown,
-} from "lucide-react";
+import { BookOpen, Star, Clock, Trophy, ChevronLeft, ChevronRight, Sparkles, TrendingUp, Layers, Heart, Flame, X, ImageDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 function getYearFromBook(book: { endDate?: string; startDate?: string; addedAt: string }): number {
@@ -25,38 +13,20 @@ function getYearFromBook(book: { endDate?: string; startDate?: string; addedAt: 
 
 const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-function AnimatedNumber({
-  value,
-  suffix = "",
-  delay = 0,
-  forceFinal = false,
-}: {
-  value: number;
-  suffix?: string;
-  delay?: number;
-  forceFinal?: boolean;
-}) {
-  const [display, setDisplay] = useState(forceFinal ? value : 0);
-  const [started, setStarted] = useState(forceFinal);
+// --- Animated number counter ---
+function AnimatedNumber({ value, suffix = "", delay = 0 }: { value: number; suffix?: string; delay?: number }) {
+  const [display, setDisplay] = useState(0);
+  const [started, setStarted] = useState(false);
 
   useEffect(() => {
-    if (forceFinal) {
-      setDisplay(value);
-      setStarted(true);
-      return;
-    }
     const t = setTimeout(() => setStarted(true), delay);
     return () => clearTimeout(t);
-  }, [delay, forceFinal, value]);
+  }, [delay]);
 
   useEffect(() => {
-    if (!started || forceFinal) {
-      if (forceFinal) setDisplay(value);
-      return;
-    }
+    if (!started) return;
     const duration = 1800;
     const startTime = Date.now();
-
     const animate = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
@@ -64,22 +34,17 @@ function AnimatedNumber({
       setDisplay(Math.round(value * eased));
       if (progress < 1) requestAnimationFrame(animate);
     };
-
     animate();
-  }, [value, started, forceFinal]);
+  }, [value, started]);
 
-  return (
-    <span>
-      {display.toLocaleString()}
-      {suffix}
-    </span>
-  );
+  return <span>{display.toLocaleString()}{suffix}</span>;
 }
 
+// --- Star rating display ---
 function StarRating({ rating }: { rating: number }) {
   return (
     <div className="flex gap-1 justify-center">
-      {[1, 2, 3, 4, 5].map((i) => (
+      {[1, 2, 3, 4, 5].map(i => (
         <Star
           key={i}
           className={`h-6 w-6 transition-all duration-500 ${
@@ -92,32 +57,27 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
+// --- Fullscreen slide wrapper ---
 function WrappedSlide({
   children,
   index,
   currentSlide,
   gradient = "from-emerald-950 via-gray-950 to-gray-950",
-  isExporting = false,
 }: {
   children: React.ReactNode;
   index: number;
   currentSlide: number;
   gradient?: string;
-  isExporting?: boolean;
 }) {
   const isActive = index === currentSlide;
   const isPast = index < currentSlide;
 
-  if (!isExporting && Math.abs(index - currentSlide) > 1) return null;
+  if (Math.abs(index - currentSlide) > 1) return null;
 
   return (
     <div
       className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-        isExporting
-          ? isActive
-            ? "opacity-100 translate-y-0 scale-100"
-            : "opacity-0 pointer-events-none"
-          : isActive
+        isActive
           ? "opacity-100 translate-y-0 scale-100"
           : isPast
           ? "opacity-0 -translate-y-8 scale-[0.97] pointer-events-none"
@@ -125,22 +85,15 @@ function WrappedSlide({
       }`}
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
-      <div
-        className={`relative z-10 w-full mx-auto text-center ${
-          isExporting ? "max-w-none px-20" : "max-w-lg px-8"
-        }`}
-      >
+      <div className="relative z-10 w-full max-w-lg mx-auto px-8 text-center">
         {children}
       </div>
     </div>
   );
 }
 
-function GlowOrb({
-  color = "emerald",
-  size = "lg",
-  position = "top-left",
-}: {
+// --- Glow orb decoration ---
+function GlowOrb({ color = "emerald", size = "lg", position = "top-left" }: {
   color?: string;
   size?: "sm" | "md" | "lg";
   position?: string;
@@ -151,7 +104,7 @@ function GlowOrb({
     "top-right": "top-0 right-0 translate-x-1/3 -translate-y-1/3",
     "bottom-left": "bottom-0 left-0 -translate-x-1/3 translate-y-1/3",
     "bottom-right": "bottom-0 right-0 translate-x-1/3 translate-y-1/3",
-    center: "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+    "center": "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
   };
   const colors: Record<string, string> = {
     emerald: "bg-emerald-500/15",
@@ -161,11 +114,7 @@ function GlowOrb({
   };
 
   return (
-    <div
-      className={`absolute ${positions[position] || positions.center} ${sizes[size]} ${
-        colors[color] || colors.emerald
-      } rounded-full blur-3xl pointer-events-none`}
-    />
+    <div className={`absolute ${positions[position] || positions["center"]} ${sizes[size]} ${colors[color] || colors.emerald} rounded-full blur-3xl pointer-events-none`} />
   );
 }
 
@@ -175,58 +124,53 @@ export default function Wrapped() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-
   const containerRef = useRef<HTMLDivElement>(null);
-  const exportRef = useRef<HTMLDivElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const years = useMemo(() => {
     const s = new Set<number>();
     s.add(new Date().getFullYear());
-    books.forEach((b) => s.add(getYearFromBook(b)));
+    books.forEach(b => s.add(getYearFromBook(b)));
     return Array.from(s).sort((a, b) => b - a);
   }, [books]);
 
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
   const yearBooks = useMemo(
-    () => books.filter((b) => b.status === "finished" && getYearFromBook(b) === selectedYear),
+    () => books.filter(b => b.status === "finished" && getYearFromBook(b) === selectedYear),
     [books, selectedYear]
   );
 
+  // Stats
   const totalPages = useMemo(() => yearBooks.reduce((s, b) => s + b.totalPages, 0), [yearBooks]);
-  const uniqueAuthors = useMemo(() => new Set(yearBooks.map((b) => b.author)).size, [yearBooks]);
-  const uniqueGenres = useMemo(() => new Set(yearBooks.filter((b) => b.genre).map((b) => b.genre)).size, [yearBooks]);
+  const uniqueAuthors = useMemo(() => new Set(yearBooks.map(b => b.author)).size, [yearBooks]);
+  const uniqueGenres = useMemo(() => new Set(yearBooks.filter(b => b.genre).map(b => b.genre)).size, [yearBooks]);
 
   const topAuthor = useMemo(() => {
     const map: Record<string, number> = {};
-    yearBooks.forEach((b) => {
-      map[b.author] = (map[b.author] || 0) + 1;
-    });
+    yearBooks.forEach(b => { map[b.author] = (map[b.author] || 0) + 1; });
     return Object.entries(map).sort((a, b) => b[1] - a[1])[0] || null;
   }, [yearBooks]);
 
   const topGenre = useMemo(() => {
     const map: Record<string, number> = {};
-    yearBooks.forEach((b) => {
-      if (b.genre) map[b.genre] = (map[b.genre] || 0) + 1;
-    });
+    yearBooks.forEach(b => { if (b.genre) map[b.genre] = (map[b.genre] || 0) + 1; });
     return Object.entries(map).sort((a, b) => b[1] - a[1])[0] || null;
   }, [yearBooks]);
 
   const avgRating = useMemo(() => {
-    const rated = yearBooks.filter((b) => b.rating > 0);
+    const rated = yearBooks.filter(b => b.rating > 0);
     return rated.length > 0 ? rated.reduce((s, b) => s + b.rating, 0) / rated.length : 0;
   }, [yearBooks]);
 
   const topRatedBook = useMemo(() => {
-    const rated = yearBooks.filter((b) => b.rating > 0).sort((a, b) => b.rating - a.rating);
+    const rated = yearBooks.filter(b => b.rating > 0).sort((a, b) => b.rating - a.rating);
     return rated[0] || null;
   }, [yearBooks]);
 
   const bestMonth = useMemo(() => {
     const map: Record<number, number> = {};
-    yearBooks.forEach((b) => {
+    yearBooks.forEach(b => {
       const d = new Date(b.endDate || b.startDate || b.addedAt);
       map[d.getMonth()] = (map[d.getMonth()] || 0) + 1;
     });
@@ -235,150 +179,77 @@ export default function Wrapped() {
   }, [yearBooks]);
 
   const readingTimeStats = useMemo(() => {
-    const withDates = yearBooks.filter((b) => b.startDate && b.endDate);
+    const withDates = yearBooks.filter(b => b.startDate && b.endDate);
     if (!withDates.length) return null;
-    const times = withDates.map((b) => {
-      const days = Math.max(
-        1,
-        Math.ceil((new Date(b.endDate!).getTime() - new Date(b.startDate!).getTime()) / 86400000)
-      );
+    const times = withDates.map(b => {
+      const days = Math.max(1, Math.ceil((new Date(b.endDate!).getTime() - new Date(b.startDate!).getTime()) / 86400000));
       return { book: b, days };
     });
     const avg = times.reduce((s, t) => s + t.days, 0) / times.length;
-    const fastest = times.reduce((min, t) => (t.days < min.days ? t : min), times[0]);
+    const fastest = times.reduce((min, t) => t.days < min.days ? t : min, times[0]);
     return { avg: Math.round(avg), fastest };
   }, [yearBooks]);
 
   const monthlyData = useMemo(() => {
-    return MONTH_NAMES.map(
-      (_, i) => yearBooks.filter((b) => new Date(b.endDate || b.startDate || b.addedAt).getMonth() === i).length
+    return MONTH_NAMES.map((_, i) =>
+      yearBooks.filter(b => new Date(b.endDate || b.startDate || b.addedAt).getMonth() === i).length
     );
   }, [yearBooks]);
 
   const maxMonthly = Math.max(...monthlyData, 1);
 
+  // Reading streak
   const maxStreak = useMemo(() => {
     const dates = yearBooks
-      .map((b) => b.endDate || b.startDate)
+      .map(b => b.endDate || b.startDate)
       .filter(Boolean)
-      .map((d) => new Date(d!).toISOString().split("T")[0])
+      .map(d => new Date(d!).toISOString().split("T")[0])
       .sort();
-
     if (!dates.length) return 0;
-
     const unique = [...new Set(dates)];
-    let max = 1;
-    let current = 1;
-
+    let max = 1, current = 1;
     for (let i = 1; i < unique.length; i++) {
       const prev = new Date(unique[i - 1]);
       const curr = new Date(unique[i]);
       const diff = (curr.getTime() - prev.getTime()) / 86400000;
-
-      if (diff <= 30) {
-        current++;
-        max = Math.max(max, current);
-      } else {
-        current = 1;
-      }
+      if (diff <= 30) { current++; max = Math.max(max, current); }
+      else { current = 1; }
     }
-
     return max;
   }, [yearBooks]);
 
   const totalSlides = yearBooks.length > 0 ? 8 : 1;
 
-  const next = useCallback(() => setCurrentSlide((s) => Math.min(s + 1, totalSlides - 1)), [totalSlides]);
-  const prev = useCallback(() => setCurrentSlide((s) => Math.max(s - 1, 0)), []);
+  const next = useCallback(() => setCurrentSlide(s => Math.min(s + 1, totalSlides - 1)), [totalSlides]);
+  const prev = useCallback(() => setCurrentSlide(s => Math.max(s - 1, 0)), []);
 
+  useEffect(() => { setCurrentSlide(0); }, [selectedYear]);
+
+  // Keyboard nav
   useEffect(() => {
-    setCurrentSlide(0);
-  }, [selectedYear]);
-
-  useEffect(() => {
-    if (isExporting) return;
-
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " ") {
-        e.preventDefault();
-        next();
-      }
-      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-        e.preventDefault();
-        prev();
-      }
+      if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " ") { e.preventDefault(); next(); }
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); prev(); }
       if (e.key === "Escape") setIsFullscreen(false);
     };
-
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [next, prev, isExporting]);
+  }, [next, prev]);
 
+  // Touch/swipe
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (isExporting) return;
     touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   };
-
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (isExporting || !touchStartRef.current) return;
+    if (!touchStartRef.current) return;
     const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
     const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
-
     if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 50) {
-      if (dy < 0) next();
-      else prev();
+      if (dy < 0) next(); else prev();
     } else if (Math.abs(dx) > 50) {
-      if (dx < 0) next();
-      else prev();
+      if (dx < 0) next(); else prev();
     }
-
     touchStartRef.current = null;
-  };
-
-  const handleDownload = async () => {
-    const container = exportRef.current;
-    if (!container) return;
-
-    setIsDownloading(true);
-    setIsExporting(true);
-
-    try {
-      if (!(window as any).html2canvas) {
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement("script");
-          script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-          script.onload = () => resolve();
-          script.onerror = reject;
-          document.head.appendChild(script);
-        });
-      }
-
-      await new Promise((r) => setTimeout(r, 180));
-
-      const h2c = (window as any).html2canvas;
-
-      const canvas = await h2c(container, {
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: null,
-        scale: 1,
-        logging: false,
-        width: 1080,
-        height: 1920,
-        windowWidth: 1080,
-        windowHeight: 1920,
-      });
-
-      const link = document.createElement("a");
-      link.download = `wrapped-${selectedYear}-slide${currentSlide + 1}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsExporting(false);
-      setIsDownloading(false);
-    }
   };
 
   if (yearBooks.length === 0) {
@@ -388,20 +259,13 @@ export default function Wrapped() {
           <h2 className="text-2xl font-bold font-display flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-accent" /> Tu Wrapped
           </h2>
-          <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-            <SelectTrigger className="w-28">
-              <SelectValue />
-            </SelectTrigger>
+          <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
+            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {years.map((y) => (
-                <SelectItem key={y} value={String(y)}>
-                  {y}
-                </SelectItem>
-              ))}
+              {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mb-6">
             <BookOpen className="h-10 w-10 text-emerald-500/40" />
@@ -416,207 +280,127 @@ export default function Wrapped() {
   const wrappedContent = (
     <div
       ref={containerRef}
-      className={`relative overflow-hidden select-none bg-[#03141a] ${
-        isExporting ? "" : isFullscreen ? "fixed inset-0 z-50" : "rounded-2xl"
+      className={`relative overflow-hidden select-none ${
+        isExporting ? "fixed inset-0 z-[9999]" : isFullscreen ? "fixed inset-0 z-50" : "rounded-2xl"
       }`}
-      style={
-        isExporting
-          ? {
-              width: "1080px",
-              height: "1920px",
-              minHeight: "1920px",
-            }
-          : {
-              minHeight: isFullscreen ? "100vh" : "80vh",
-            }
+      style={isExporting
+        ? { width: "1080px", height: "1920px", top: 0, left: 0, margin: 0 }
+        : { minHeight: isFullscreen ? "100vh" : "80vh" }
       }
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      <WrappedSlide
-        index={0}
-        currentSlide={currentSlide}
-        gradient="from-gray-950 via-emerald-950/50 to-gray-950"
-        isExporting={isExporting}
-      >
+      {/* --- SLIDE 0: Intro / Total Books --- */}
+      <WrappedSlide index={0} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/50 to-gray-950">
         <GlowOrb color="emerald" size="lg" position="center" />
-        <div className={`${isExporting ? "space-y-14 pt-6" : "space-y-8"}`}>
-          <p
-            className={`text-emerald-400/80 uppercase font-medium ${
-              isExporting ? "text-[32px] tracking-[0.45em]" : "text-sm tracking-[0.4em]"
-            }`}
-          >
+        <div className="space-y-8">
+          <p className="text-emerald-400/80 text-sm uppercase tracking-[0.4em] font-medium">
             Tu año lector · {selectedYear}
           </p>
-
-          <div className="space-y-3">
-            <h2
-              className={`font-bold text-white leading-none font-display ${
-                isExporting ? "text-[240px]" : "text-8xl sm:text-9xl"
-              }`}
-            >
-              <AnimatedNumber value={yearBooks.length} forceFinal={isExporting} />
+          <div className="space-y-2">
+            <h2 className="text-8xl sm:text-9xl font-bold text-white leading-none font-display">
+              <AnimatedNumber value={yearBooks.length} />
             </h2>
-            <p className={`${isExporting ? "text-[58px] text-white/70" : "text-xl text-white/60"}`}>
-              libros terminados
-            </p>
+            <p className="text-xl text-white/60">libros terminados</p>
           </div>
-
-          <div className={`flex justify-center ${isExporting ? "gap-3 pt-6" : "gap-1"}`}>
-            {yearBooks.slice(0, isExporting ? 6 : 8).map((b) => (
-              <div
-                key={b.id}
-                className={`overflow-hidden opacity-80 transition-opacity ${
-                  isExporting ? "w-24 h-36 rounded-xl" : "w-8 h-12 rounded-sm hover:opacity-100"
-                }`}
-              >
+          <div className="flex justify-center gap-1">
+            {yearBooks.slice(0, 8).map((b, i) => (
+              <div key={b.id} className="w-8 h-12 rounded-sm overflow-hidden opacity-60 hover:opacity-100 transition-opacity" style={{ animationDelay: `${i * 100}ms` }}>
                 {b.coverUrl ? (
                   <img src={b.coverUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-emerald-800/40 flex items-center justify-center">
-                    <BookOpen className={isExporting ? "h-8 w-8 text-emerald-400/40" : "h-3 w-3 text-emerald-400/40"} />
+                    <BookOpen className="h-3 w-3 text-emerald-400/40" />
                   </div>
                 )}
               </div>
             ))}
-
-            {yearBooks.length > (isExporting ? 6 : 8) && (
-              <div
-                className={`flex items-center justify-center text-white/50 ${
-                  isExporting ? "w-24 h-36 rounded-xl bg-white/8 text-3xl" : "w-8 h-12 rounded-sm bg-white/5 text-xs"
-                }`}
-              >
-                +{yearBooks.length - (isExporting ? 6 : 8)}
+            {yearBooks.length > 8 && (
+              <div className="w-8 h-12 rounded-sm bg-white/5 flex items-center justify-center text-white/40 text-xs">
+                +{yearBooks.length - 8}
               </div>
             )}
           </div>
         </div>
       </WrappedSlide>
 
-      <WrappedSlide
-        index={1}
-        currentSlide={currentSlide}
-        gradient="from-gray-950 via-emerald-950/40 to-gray-950"
-        isExporting={isExporting}
-      >
+      {/* --- SLIDE 1: Total Pages --- */}
+      <WrappedSlide index={1} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/40 to-gray-950">
         <GlowOrb color="emerald" size="md" position="top-right" />
-        <div className={`${isExporting ? "space-y-14" : "space-y-8"}`}>
-          <div
-            className={`inline-flex rounded-2xl bg-emerald-500/10 border border-emerald-500/20 ${
-              isExporting ? "p-8" : "p-4"
-            }`}
-          >
-            <BookOpen className={isExporting ? "h-16 w-16 text-emerald-400" : "h-8 w-8 text-emerald-400"} />
+        <div className="space-y-8">
+          <div className="inline-flex p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+            <BookOpen className="h-8 w-8 text-emerald-400" />
           </div>
-
-          <div className="space-y-3">
-            <h2
-              className={`font-bold text-white leading-none font-display ${
-                isExporting ? "text-[180px]" : "text-7xl sm:text-8xl"
-              }`}
-            >
-              <AnimatedNumber value={totalPages} forceFinal={isExporting} />
+          <div className="space-y-2">
+            <h2 className="text-7xl sm:text-8xl font-bold text-white leading-none font-display">
+              <AnimatedNumber value={totalPages} />
             </h2>
-            <p className={`${isExporting ? "text-[52px] text-white/70" : "text-xl text-white/60"}`}>
-              páginas leídas
-            </p>
+            <p className="text-xl text-white/60">páginas leídas</p>
           </div>
-
           <div className="pt-4 space-y-3">
-            <div className={`${isExporting ? "text-2xl" : "text-sm"} flex items-center justify-center gap-3 text-white/40`}>
+            <div className="flex items-center justify-center gap-3 text-white/40 text-sm">
               <span>≈ {Math.round(totalPages / 250)} novelas estándar</span>
             </div>
           </div>
         </div>
       </WrappedSlide>
 
-      <WrappedSlide
-        index={2}
-        currentSlide={currentSlide}
-        gradient="from-gray-950 via-purple-950/30 to-gray-950"
-        isExporting={isExporting}
-      >
+      {/* --- SLIDE 2: Best Month --- */}
+      <WrappedSlide index={2} currentSlide={currentSlide} gradient="from-gray-950 via-purple-950/30 to-gray-950">
         <GlowOrb color="purple" size="lg" position="bottom-left" />
-        <div className={`${isExporting ? "space-y-14" : "space-y-8"}`}>
-          <div
-            className={`inline-flex rounded-2xl bg-purple-500/10 border border-purple-500/20 ${
-              isExporting ? "p-8" : "p-4"
-            }`}
-          >
-            <Trophy className={isExporting ? "h-16 w-16 text-purple-400" : "h-8 w-8 text-purple-400"} />
+        <div className="space-y-8">
+          <div className="inline-flex p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20">
+            <Trophy className="h-8 w-8 text-purple-400" />
           </div>
-
-          <p className={`${isExporting ? "text-[28px] tracking-[0.35em]" : "text-sm tracking-[0.3em]"} text-purple-300/80 uppercase`}>
-            Tu mejor mes
-          </p>
-
+          <p className="text-purple-300/80 text-sm uppercase tracking-[0.3em]">Tu mejor mes</p>
           {bestMonth ? (
-            <div className="space-y-4">
-              <h2 className={`${isExporting ? "text-[110px]" : "text-5xl sm:text-6xl"} font-bold text-white leading-none font-display`}>
+            <div className="space-y-3">
+              <h2 className="text-5xl sm:text-6xl font-bold text-white leading-none font-display">
                 {bestMonth.month}
               </h2>
-              <p className={`${isExporting ? "text-[46px]" : "text-2xl"} text-purple-300 font-semibold`}>
+              <p className="text-2xl text-purple-300 font-semibold">
                 {bestMonth.count} {bestMonth.count === 1 ? "libro" : "libros"}
               </p>
             </div>
           ) : (
             <p className="text-white/40">Sin datos suficientes</p>
           )}
-
-          <div className={`flex items-end justify-center ${isExporting ? "gap-3 h-56 pt-8" : "gap-1 h-20 pt-4"}`}>
+          {/* Mini bar chart */}
+          <div className="flex items-end justify-center gap-1 h-20 pt-4">
             {monthlyData.map((count, i) => (
-              <div
-                key={i}
-                className={`flex flex-col items-center gap-2 ${isExporting ? "flex-1 max-w-[58px]" : "flex-1 max-w-[24px]"}`}
-              >
+              <div key={i} className="flex flex-col items-center gap-1 flex-1 max-w-[24px]">
                 <div
                   className="w-full rounded-t transition-all duration-700 bg-gradient-to-t from-purple-500/60 to-purple-400/80"
                   style={{
-                    height: isExporting
-                      ? `${Math.max(count > 0 ? 20 : 8, (count / maxMonthly) * 180)}px`
-                      : `${Math.max(count > 0 ? 6 : 2, (count / maxMonthly) * 60)}px`,
+                    height: `${Math.max(count > 0 ? 6 : 2, (count / maxMonthly) * 60)}px`,
                     transitionDelay: `${i * 50}ms`,
                   }}
                 />
-                <span className={`${isExporting ? "text-sm" : "text-[7px]"} text-white/30`}>
-                  {MONTH_NAMES[i].slice(0, 1)}
-                </span>
+                <span className="text-[7px] text-white/30">{MONTH_NAMES[i].slice(0, 1)}</span>
               </div>
             ))}
           </div>
         </div>
       </WrappedSlide>
 
-      <WrappedSlide
-        index={3}
-        currentSlide={currentSlide}
-        gradient="from-gray-950 via-emerald-950/30 to-gray-950"
-        isExporting={isExporting}
-      >
+      {/* --- SLIDE 3: Favorite Genre --- */}
+      <WrappedSlide index={3} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/30 to-gray-950">
         <GlowOrb color="emerald" size="md" position="top-left" />
-        <div className={`${isExporting ? "space-y-14" : "space-y-8"}`}>
-          <div
-            className={`inline-flex rounded-2xl bg-emerald-500/10 border border-emerald-500/20 ${
-              isExporting ? "p-8" : "p-4"
-            }`}
-          >
-            <Layers className={isExporting ? "h-16 w-16 text-emerald-400" : "h-8 w-8 text-emerald-400"} />
+        <div className="space-y-8">
+          <div className="inline-flex p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+            <Layers className="h-8 w-8 text-emerald-400" />
           </div>
-
-          <p className={`${isExporting ? "text-[28px] tracking-[0.35em]" : "text-sm tracking-[0.3em]"} text-emerald-300/80 uppercase`}>
-            Género favorito
-          </p>
-
+          <p className="text-emerald-300/80 text-sm uppercase tracking-[0.3em]">Género favorito</p>
           {topGenre ? (
-            <div className="space-y-6">
-              <h2 className={`${isExporting ? "text-[80px]" : "text-4xl sm:text-5xl"} font-bold text-white leading-tight font-display`}>
+            <div className="space-y-4">
+              <h2 className="text-4xl sm:text-5xl font-bold text-white leading-tight font-display">
                 {topGenre[0]}
               </h2>
-              <p className={`${isExporting ? "text-[38px]" : "text-lg"} text-emerald-300`}>
+              <p className="text-lg text-emerald-300">
                 {topGenre[1]} {topGenre[1] === 1 ? "libro" : "libros"} leídos
               </p>
-
-              <div className={`${isExporting ? "space-y-4 pt-6 max-w-2xl" : "space-y-2 pt-2 max-w-xs"} mx-auto`}>
+              {/* Genre breakdown */}
+              <div className="space-y-2 pt-2 max-w-xs mx-auto">
                 {Object.entries(
                   yearBooks.reduce<Record<string, number>>((acc, b) => {
                     if (b.genre) acc[b.genre] = (acc[b.genre] || 0) + 1;
@@ -626,17 +410,15 @@ export default function Wrapped() {
                   .sort((a, b) => b[1] - a[1])
                   .slice(0, 4)
                   .map(([genre, count]) => (
-                    <div key={genre} className={`flex items-center ${isExporting ? "gap-5" : "gap-3"}`}>
-                      <div className={`flex-1 rounded-full bg-white/5 overflow-hidden ${isExporting ? "h-3" : "h-1.5"}`}>
+                    <div key={genre} className="flex items-center gap-3">
+                      <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
                         <div
                           className="h-full rounded-full bg-emerald-400/60 transition-all duration-1000"
                           style={{ width: `${(count / yearBooks.length) * 100}%` }}
                         />
                       </div>
-                      <span className={`${isExporting ? "text-2xl w-48" : "text-xs w-20"} text-white/50 text-left`}>
-                        {genre}
-                      </span>
-                      <span className={`${isExporting ? "text-2xl" : "text-xs"} text-white/30`}>{count}</span>
+                      <span className="text-xs text-white/50 w-20 text-left">{genre}</span>
+                      <span className="text-xs text-white/30">{count}</span>
                     </div>
                   ))}
               </div>
@@ -647,51 +429,34 @@ export default function Wrapped() {
         </div>
       </WrappedSlide>
 
-      <WrappedSlide
-        index={4}
-        currentSlide={currentSlide}
-        gradient="from-gray-950 via-amber-950/20 to-gray-950"
-        isExporting={isExporting}
-      >
+      {/* --- SLIDE 4: Top Author --- */}
+      <WrappedSlide index={4} currentSlide={currentSlide} gradient="from-gray-950 via-amber-950/20 to-gray-950">
         <GlowOrb color="amber" size="lg" position="bottom-right" />
-        <div className={`${isExporting ? "space-y-14" : "space-y-8"}`}>
-          <div
-            className={`inline-flex rounded-2xl bg-amber-500/10 border border-amber-500/20 ${
-              isExporting ? "p-8" : "p-4"
-            }`}
-          >
-            <Sparkles className={isExporting ? "h-16 w-16 text-amber-400" : "h-8 w-8 text-amber-400"} />
+        <div className="space-y-8">
+          <div className="inline-flex p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+            <Sparkles className="h-8 w-8 text-amber-400" />
           </div>
-
-          <p className={`${isExporting ? "text-[28px] tracking-[0.35em]" : "text-sm tracking-[0.3em]"} text-amber-300/80 uppercase`}>
-            Autor más leído
-          </p>
-
+          <p className="text-amber-300/80 text-sm uppercase tracking-[0.3em]">Autor más leído</p>
           {topAuthor ? (
-            <div className="space-y-6">
-              <h2 className={`${isExporting ? "text-[72px]" : "text-3xl sm:text-4xl"} font-bold text-white leading-tight font-display`}>
+            <div className="space-y-4">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight font-display">
                 {topAuthor[0]}
               </h2>
-              <p className={`${isExporting ? "text-[38px]" : "text-lg"} text-amber-300`}>
+              <p className="text-lg text-amber-300">
                 {topAuthor[1]} {topAuthor[1] === 1 ? "libro" : "libros"}
               </p>
-
-              <div className={`flex justify-center ${isExporting ? "gap-4 pt-6" : "gap-2 pt-2"}`}>
+              {/* Author's books */}
+              <div className="flex justify-center gap-2 pt-2">
                 {yearBooks
-                  .filter((b) => b.author === topAuthor[0])
+                  .filter(b => b.author === topAuthor[0])
                   .slice(0, 5)
-                  .map((b) => (
-                    <div
-                      key={b.id}
-                      className={`overflow-hidden ring-1 ring-white/10 ${
-                        isExporting ? "w-28 h-40 rounded-xl" : "w-12 h-[72px] rounded"
-                      }`}
-                    >
+                  .map(b => (
+                    <div key={b.id} className="w-12 h-[72px] rounded overflow-hidden ring-1 ring-white/10">
                       {b.coverUrl ? (
                         <img src={b.coverUrl} alt="" className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full bg-amber-900/30 flex items-center justify-center">
-                          <BookOpen className={isExporting ? "h-8 w-8 text-amber-400/30" : "h-4 w-4 text-amber-400/30"} />
+                          <BookOpen className="h-4 w-4 text-amber-400/30" />
                         </div>
                       )}
                     </div>
@@ -704,56 +469,31 @@ export default function Wrapped() {
         </div>
       </WrappedSlide>
 
-      <WrappedSlide
-        index={5}
-        currentSlide={currentSlide}
-        gradient="from-gray-950 via-amber-950/30 to-gray-950"
-        isExporting={isExporting}
-      >
+      {/* --- SLIDE 5: Book of the Year --- */}
+      <WrappedSlide index={5} currentSlide={currentSlide} gradient="from-gray-950 via-amber-950/30 to-gray-950">
         <GlowOrb color="amber" size="lg" position="center" />
-        <div className={`${isExporting ? "space-y-12" : "space-y-6"}`}>
-          <div
-            className={`inline-flex rounded-2xl bg-amber-500/10 border border-amber-500/20 ${
-              isExporting ? "p-8" : "p-4"
-            }`}
-          >
-            <Star className={isExporting ? "h-16 w-16 text-amber-400 fill-amber-400" : "h-8 w-8 text-amber-400 fill-amber-400"} />
+        <div className="space-y-6">
+          <div className="inline-flex p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+            <Star className="h-8 w-8 text-amber-400 fill-amber-400" />
           </div>
-
-          <p className={`${isExporting ? "text-[28px] tracking-[0.35em]" : "text-sm tracking-[0.3em]"} text-amber-300/80 uppercase`}>
-            Libro del año
-          </p>
-
+          <p className="text-amber-300/80 text-sm uppercase tracking-[0.3em]">Libro del año</p>
           {topRatedBook ? (
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="flex justify-center">
                 {topRatedBook.coverUrl ? (
                   <img
                     src={topRatedBook.coverUrl}
                     alt={topRatedBook.title}
-                    className={`object-cover ring-1 ring-white/10 ${
-                      isExporting
-                        ? "w-80 h-[480px] rounded-3xl shadow-2xl shadow-amber-500/20"
-                        : "w-36 h-52 rounded-xl shadow-2xl shadow-amber-500/20"
-                    }`}
+                    className="w-36 h-52 object-cover rounded-xl shadow-2xl shadow-amber-500/20 ring-1 ring-white/10"
                   />
                 ) : (
-                  <div
-                    className={`bg-amber-900/20 flex items-center justify-center ring-1 ring-white/10 ${
-                      isExporting ? "w-80 h-[480px] rounded-3xl" : "w-36 h-52 rounded-xl"
-                    }`}
-                  >
-                    <BookOpen className={isExporting ? "h-20 w-20 text-amber-400/30" : "h-12 w-12 text-amber-400/30"} />
+                  <div className="w-36 h-52 rounded-xl bg-amber-900/20 flex items-center justify-center ring-1 ring-white/10">
+                    <BookOpen className="h-12 w-12 text-amber-400/30" />
                   </div>
                 )}
               </div>
-
-              <h3 className={`${isExporting ? "text-[54px]" : "text-2xl"} font-bold text-white font-display`}>
-                {topRatedBook.title}
-              </h3>
-              <p className={`${isExporting ? "text-[30px]" : "text-base"} text-white/50`}>
-                {topRatedBook.author}
-              </p>
+              <h3 className="text-2xl font-bold text-white font-display">{topRatedBook.title}</h3>
+              <p className="text-white/50">{topRatedBook.author}</p>
               <StarRating rating={topRatedBook.rating} />
             </div>
           ) : (
@@ -762,146 +502,115 @@ export default function Wrapped() {
         </div>
       </WrappedSlide>
 
-      <WrappedSlide
-        index={6}
-        currentSlide={currentSlide}
-        gradient="from-gray-950 via-rose-950/20 to-gray-950"
-        isExporting={isExporting}
-      >
+      {/* --- SLIDE 6: Reading Streak / Speed --- */}
+      <WrappedSlide index={6} currentSlide={currentSlide} gradient="from-gray-950 via-rose-950/20 to-gray-950">
         <GlowOrb color="rose" size="md" position="top-right" />
-        <div className={`${isExporting ? "space-y-14" : "space-y-8"}`}>
-          <div
-            className={`inline-flex rounded-2xl bg-rose-500/10 border border-rose-500/20 ${
-              isExporting ? "p-8" : "p-4"
-            }`}
-          >
-            <Flame className={isExporting ? "h-16 w-16 text-rose-400" : "h-8 w-8 text-rose-400"} />
+        <div className="space-y-8">
+          <div className="inline-flex p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+            <Flame className="h-8 w-8 text-rose-400" />
           </div>
-
-          <p className={`${isExporting ? "text-[28px] tracking-[0.35em]" : "text-sm tracking-[0.3em]"} text-rose-300/80 uppercase`}>
-            Tu ritmo
-          </p>
-
-          <div className="space-y-8">
+          <p className="text-rose-300/80 text-sm uppercase tracking-[0.3em]">Tu ritmo</p>
+          <div className="space-y-6">
             {readingTimeStats && (
-              <div className="space-y-2">
-                <h2 className={`${isExporting ? "text-[150px]" : "text-6xl"} font-bold text-white font-display`}>
-                  <AnimatedNumber value={readingTimeStats.avg} forceFinal={isExporting} />
+              <div className="space-y-1">
+                <h2 className="text-6xl font-bold text-white font-display">
+                  <AnimatedNumber value={readingTimeStats.avg} />
                 </h2>
-                <p className={`${isExporting ? "text-[42px]" : "text-base"} text-white/50`}>
-                  días de media por libro
-                </p>
+                <p className="text-white/50">días de media por libro</p>
                 {readingTimeStats.fastest && (
-                  <p className={`${isExporting ? "text-2xl pt-4" : "text-sm pt-2"} text-rose-300/60`}>
-                    ⚡ Más rápido: <span className="text-white/70">{readingTimeStats.fastest.book.title}</span> en{" "}
-                    {readingTimeStats.fastest.days} días
+                  <p className="text-sm text-rose-300/60 pt-2">
+                    ⚡ Más rápido: <span className="text-white/70">{readingTimeStats.fastest.book.title}</span> en {readingTimeStats.fastest.days} días
                   </p>
                 )}
               </div>
             )}
-
             {maxStreak > 1 && (
-              <div className={`pt-4 border-t border-white/5 space-y-2`}>
-                <p className={`${isExporting ? "text-[72px]" : "text-3xl"} font-bold text-white font-display`}>
-                  <AnimatedNumber value={maxStreak} delay={400} forceFinal={isExporting} /> meses
+              <div className="pt-2 border-t border-white/5 space-y-1">
+                <p className="text-3xl font-bold text-white font-display">
+                  <AnimatedNumber value={maxStreak} delay={400} /> meses
                 </p>
-                <p className={`${isExporting ? "text-2xl" : "text-sm"} text-white/50`}>racha máxima leyendo</p>
+                <p className="text-white/50 text-sm">racha máxima leyendo</p>
               </div>
             )}
-
-            {!readingTimeStats && maxStreak <= 1 && <p className="text-white/40">Añade fechas a tus libros para ver tu ritmo</p>}
+            {!readingTimeStats && maxStreak <= 1 && (
+              <p className="text-white/40">Añade fechas a tus libros para ver tu ritmo</p>
+            )}
           </div>
         </div>
       </WrappedSlide>
 
-      <WrappedSlide
-        index={7}
-        currentSlide={currentSlide}
-        gradient="from-gray-950 via-emerald-950/40 to-gray-950"
-        isExporting={isExporting}
-      >
+      {/* --- SLIDE 7: Final Summary --- */}
+      <WrappedSlide index={7} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/40 to-gray-950">
         <GlowOrb color="emerald" size="lg" position="center" />
-        <div className={`${isExporting ? "space-y-14" : "space-y-8"}`}>
-          <div
-            className={`inline-flex rounded-2xl bg-emerald-500/10 border border-emerald-500/20 ${
-              isExporting ? "p-8" : "p-4"
-            }`}
-          >
-            <Heart className={isExporting ? "h-16 w-16 text-emerald-400 fill-emerald-400" : "h-8 w-8 text-emerald-400 fill-emerald-400"} />
+        <div className="space-y-8">
+          <div className="inline-flex p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+            <Heart className="h-8 w-8 text-emerald-400 fill-emerald-400" />
           </div>
-
-          <h2 className={`${isExporting ? "text-[64px]" : "text-3xl"} font-bold text-white font-display`}>
+          <h2 className="text-3xl font-bold text-white font-display">
             Tu {selectedYear} en libros
           </h2>
-
-          <div className={`grid grid-cols-2 ${isExporting ? "gap-6 max-w-3xl mx-auto" : "gap-3"}`}>
+          <div className="grid grid-cols-2 gap-3">
             {[
-              { value: yearBooks.length, label: "Libros" },
-              { value: totalPages, label: "Páginas" },
-              { value: uniqueAuthors, label: "Autores" },
-              { value: uniqueGenres, label: "Géneros" },
+              { value: yearBooks.length, label: "Libros", color: "emerald" },
+              { value: totalPages, label: "Páginas", color: "emerald" },
+              { value: uniqueAuthors, label: "Autores", color: "emerald" },
+              { value: uniqueGenres, label: "Géneros", color: "emerald" },
             ].map((stat, i) => (
               <div
                 key={stat.label}
-                className={`rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm ${
-                  isExporting ? "p-8" : "p-4"
-                }`}
+                className="p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm"
               >
-                <p className={`${isExporting ? "text-[72px]" : "text-3xl"} font-bold text-emerald-400 font-display`}>
-                  <AnimatedNumber value={stat.value} delay={i * 150} forceFinal={isExporting} />
+                <p className="text-3xl font-bold text-emerald-400 font-display">
+                  <AnimatedNumber value={stat.value} delay={i * 150} />
                 </p>
-                <p className={`${isExporting ? "text-xl" : "text-xs"} text-white/40`}>{stat.label}</p>
+                <p className="text-xs text-white/40">{stat.label}</p>
               </div>
             ))}
           </div>
-
           {avgRating > 0 && (
-            <p className={`${isExporting ? "text-2xl" : "text-sm"} text-white/50`}>
+            <p className="text-white/50 text-sm">
               Valoración media: <span className="text-amber-400 font-semibold">{avgRating.toFixed(1)} ★</span>
             </p>
           )}
-
-          <p className={`${isExporting ? "text-2xl pt-2" : "text-sm pt-2"} text-white/30`}>¡Sigue leyendo! 📚</p>
+          <p className="text-white/30 text-sm pt-2">¡Sigue leyendo! 📚</p>
         </div>
       </WrappedSlide>
 
-      {!isExporting && (
-        <div className="absolute bottom-6 left-0 right-0 z-20 flex items-center justify-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={prev}
-            disabled={currentSlide === 0}
-            className="rounded-full h-10 w-10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-20 border border-white/10"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-
-          <div className="flex gap-1.5">
-            {Array.from({ length: totalSlides }).map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentSlide(i)}
-                className={`h-1.5 rounded-full transition-all duration-500 ${
-                  i === currentSlide ? "w-6 bg-emerald-400" : i < currentSlide ? "w-1.5 bg-white/30" : "w-1.5 bg-white/10"
-                }`}
-              />
-            ))}
-          </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={next}
-            disabled={currentSlide === totalSlides - 1}
-            className="rounded-full h-10 w-10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-20 border border-white/10"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </Button>
+      {/* --- Navigation overlay --- */}
+      <div className="absolute bottom-6 left-0 right-0 z-20 flex items-center justify-center gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={prev}
+          disabled={currentSlide === 0}
+          className="rounded-full h-10 w-10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-20 border border-white/10"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex gap-1.5">
+          {Array.from({ length: totalSlides }).map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentSlide(i)}
+              className={`h-1.5 rounded-full transition-all duration-500 ${
+                i === currentSlide ? "w-6 bg-emerald-400" : i < currentSlide ? "w-1.5 bg-white/30" : "w-1.5 bg-white/10"
+              }`}
+            />
+          ))}
         </div>
-      )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={next}
+          disabled={currentSlide === totalSlides - 1}
+          className="rounded-full h-10 w-10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-20 border border-white/10"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </Button>
+      </div>
 
-      {!isExporting && isFullscreen && (
+      {/* Fullscreen toggle */}
+      {isFullscreen && !isExporting && (
         <Button
           variant="ghost"
           size="icon"
@@ -914,51 +623,79 @@ export default function Wrapped() {
     </div>
   );
 
+  const handleDownload = async () => {
+    if (!containerRef.current) return;
+    setIsDownloading(true);
+    setIsExporting(true);
+    // Wait for React to apply 1080x1920 styles
+    await new Promise(r => setTimeout(r, 300));
+    try {
+      if (!(window as any).html2canvas) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+          script.onload = () => resolve();
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+      const h2c = (window as any).html2canvas;
+      const canvas = await h2c(containerRef.current, {
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: null,
+        scale: 1,
+        logging: false,
+        width: 1080,
+        height: 1920,
+        windowWidth: 1080,
+        windowHeight: 1920,
+        x: 0,
+        y: 0,
+        scrollX: 0,
+        scrollY: 0,
+      });
+      const link = document.createElement("a");
+      link.download = `wrapped-${selectedYear}-slide${currentSlide + 1}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (err) { console.error(err); }
+    finally { setIsExporting(false); setIsDownloading(false); }
+  };
+
   return (
     <div className="space-y-4">
-      {!isExporting && (
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-4">
-            <h2 className="text-2xl font-bold font-display flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-accent" /> Wrapped {selectedYear}
-            </h2>
-
-            <Select
-              value={String(selectedYear)}
-              onValueChange={(v) => {
-                setSelectedYear(Number(v));
-                setCurrentSlide(0);
-              }}
-            >
-              <SelectTrigger className="w-28">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((y) => (
-                  <SelectItem key={y} value={String(y)}>
-                    {y}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Button variant="outline" size="sm" onClick={handleDownload} disabled={isDownloading} className="gap-2">
-            <ImageDown className="h-4 w-4" />
-            {isDownloading ? "Guardando..." : "Guardar imagen"}
-          </Button>
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-4">
+          <h2 className="text-2xl font-bold font-display flex items-center gap-2">
+            <Sparkles className="h-6 w-6 text-accent" /> Wrapped {selectedYear}
+          </h2>
+          <Select value={String(selectedYear)} onValueChange={v => { setSelectedYear(Number(v)); setCurrentSlide(0); }}>
+            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
-      )}
-
-      <div
-        className={isExporting ? "fixed left-[-99999px] top-0 pointer-events-none" : ""}
-        aria-hidden={isExporting ? "true" : undefined}
-      >
-        <div ref={exportRef}>{wrappedContent}</div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDownload}
+          disabled={isDownloading}
+          className="gap-2"
+        >
+          <ImageDown className="h-4 w-4" />
+          {isDownloading ? "Guardando..." : "Guardar imagen"}
+        </Button>
       </div>
 
-      {!isExporting && currentSlide < totalSlides - 1 && (
-        <p className="text-center text-xs text-muted-foreground/40 font-body">Desliza o usa ← → para navegar</p>
+      {wrappedContent}
+
+      {currentSlide < totalSlides - 1 && (
+        <p className="text-center text-xs text-muted-foreground/40 font-body">
+          Desliza o usa ← → para navegar
+        </p>
       )}
     </div>
   );
