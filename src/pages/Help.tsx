@@ -1,8 +1,9 @@
 import { useState } from "react";
 import {
-  BookOpen, Search, BookMarked, BarChart3,
-  Sparkles, HelpCircle, ChevronDown, ChevronUp,
-  Star, Upload, Calendar, Trophy, LayoutGrid, Heart
+  BookOpen, Plus, Search, Heart, BookMarked, BarChart3,
+  Sparkles, Info, ChevronDown, ChevronUp,
+  Star, Download, Upload, Library, Target, Flame,
+  BookHeart, Calendar, Trophy, LayoutGrid
 } from "lucide-react";
 
 interface Section {
@@ -17,7 +18,7 @@ interface Section {
 const sections: Section[] = [
   {
     id: "biblioteca",
-    icon: <BookOpen className="h-5 w-5" />,
+    icon: <Library className="h-5 w-5" />,
     title: "Mi Biblioteca",
     description: "El corazón de la app. Aquí viven todos tus libros leídos, en progreso y pendientes.",
     steps: [
@@ -50,7 +51,7 @@ const sections: Section[] = [
   },
   {
     id: "wishlist",
-    icon: <Heart className="h-5 w-5" />,
+    icon: <BookHeart className="h-5 w-5" />,
     title: "Wish List",
     description: "Tu lista de libros que quieres leer. Se agrupan automáticamente por sagas.",
     steps: [
@@ -310,7 +311,7 @@ export default function Help() {
       <div>
         <div className="flex items-center gap-3 mb-1">
           <div className="p-2 rounded-xl bg-primary/10">
-            <HelpCircle className="h-6 w-6 text-primary" />
+            <Info className="h-6 w-6 text-primary" />
           </div>
           <h2 className="text-2xl font-bold font-display tracking-tight">Guía de uso</h2>
         </div>
