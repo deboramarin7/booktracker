@@ -52,6 +52,7 @@ export default function Layout() {
     { to: "/logros", label: "Logros" },
     { to: "/dashboard", label: "Dashboard" },
     { to: "/wrapped", label: "Wrapped ✨" },
+    { to: "/ayuda", label: "Ayuda" },
   ];
 
   return (
