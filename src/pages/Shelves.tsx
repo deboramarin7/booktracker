@@ -256,12 +256,17 @@ export default function Shelves() {
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={orderedIds} strategy={rectSortingStrategy}>
             <div
-              className="relative"
+              className="relative rounded-xl overflow-hidden"
+              style={{
+                background: "rgba(0, 0, 0, 0.2)",
+                padding: "0",
+                border: "none",
+              }}
             >
               
-              <div className="absolute top-3 bottom-0 left-0 w-3 sm:w-4" style={{ background: "linear-gradient(to right, #78350f, #92400e 50%, #6b2d0c)" }} />
-              <div className="absolute top-3 bottom-0 right-0 w-3 sm:w-4" style={{ background: "linear-gradient(to left, #78350f, #92400e 50%, #6b2d0c)" }} />
-              <div className="relative mt-3 rounded-sm overflow-hidden" style={{ background: "linear-gradient(to bottom, #0f0704 0%, #130a05 50%, #0f0704 100%)" }}>
+              
+              
+              <div className="relative mt-3 rounded-sm overflow-hidden" style={{ background: "transparent" }}>
                 <div className="space-y-0 py-1 px-1 sm:px-1">
                   {shelves.map((row, rowIndex) => (
                     <ShelfRow key={rowIndex} row={row} rowIndex={rowIndex} />
@@ -291,7 +296,7 @@ function ShelfRow({ row, rowIndex }: { row: Book[]; rowIndex: number }) {
     <div className="relative">
       <div
         className="flex items-end gap-[2px] sm:gap-[3px] px-3 sm:px-5 pt-4 pb-0 min-h-[80px] sm:min-h-[100px] relative overflow-x-auto"
-        style={{ background: "transparent", scrollbarWidth: "none" }}
+        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.0), rgba(0,0,0,0.1))", scrollbarWidth: "none" }}
       >
         <style>{`div::-webkit-scrollbar { display: none; }`}</style>
         {row.map((book) => (
@@ -305,7 +310,7 @@ function ShelfRow({ row, rowIndex }: { row: Book[]; rowIndex: number }) {
           boxShadow: "0 5px 15px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,180,80,0.25)",
         }}
       />
-      <div className="h-[4px] sm:h-[6px]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.0) 100%)" }} />
+      <div className="h-[4px] sm:h-[6px]" />
     </div>
   );
 }
