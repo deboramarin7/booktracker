@@ -41,7 +41,7 @@ export default function AuthorsSagas() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-display font-semibold">Autores y Sagas</h2>
+      <h2 className="text-xl font-display font-semibold">✍️ Autores y Sagas</h2>
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Autores */}
