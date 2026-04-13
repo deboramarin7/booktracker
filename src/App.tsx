@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +15,7 @@ import Achievements from "./pages/Achievements";
 import Wrapped from "./pages/Wrapped";
 import Shelves from "./pages/Shelves";
 import NotFound from "./pages/NotFound";
+import Help from "./pages/Help";
 
 const queryClient = new QueryClient();
 
@@ -27,7 +28,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route element={<Layout />}>
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={<Navigate to="/biblioteca" replace />} />
               <Route path="/biblioteca" element={<Library />} />
               <Route path="/autores-sagas" element={<AuthorsSagas />} />
               <Route path="/dashboard" element={<Dashboard />} />
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/logros" element={<Achievements />} />
               <Route path="/wrapped" element={<Wrapped />} />
               <Route path="/estanterias" element={<Shelves />} />
+              <Route path="/ayuda" element={<Help />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
