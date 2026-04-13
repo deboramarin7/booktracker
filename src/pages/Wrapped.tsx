@@ -659,7 +659,6 @@ export default function Wrapped() {
       </div>
 
       {wrappedContent}
-      {wrappedContent}
 
 <div className="flex items-center justify-center gap-4">
   <Button
