@@ -12,7 +12,7 @@
   /* ── Variables por defecto (Night Dark — tema actual de la app) ── */
   :root {
     --background: #05070F;
-    --foreground: #EAEAEA;
+    --foreground: #FFFFFF;
     --primary: #D4AF37;
     --primary-foreground: #05070F;
     --surface: #0C1021;
@@ -39,7 +39,7 @@
 
   .dark {
     --background: #05070F;
-    --foreground: #EAEAEA;
+    --foreground: #FFFFFF;
     --primary: #D4AF37;
     --primary-foreground: #05070F;
     --surface: #0C1021;
