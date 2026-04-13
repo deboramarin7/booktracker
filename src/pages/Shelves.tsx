@@ -234,10 +234,22 @@ export default function Shelves() {
       </div>
 
       {finishedBooks.length === 0 ? (
-        <div className="text-center py-20 rounded-2xl border border-border/40 bg-card/50">
-          <div className="text-5xl mb-4">📚</div>
-          <p className="text-lg font-semibold mb-2">Tu estantería está vacía</p>
-          <p className="text-muted-foreground text-sm">Los libros terminados aparecerán aquí automáticamente</p>
+        <div className="flex flex-col items-center justify-center py-24 text-center space-y-4 rounded-2xl border border-border/30 bg-card/30">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-2xl bg-amber-500/8 border border-amber-500/15 flex items-center justify-center">
+              <span className="text-4xl">📖</span>
+            </div>
+            <div className="absolute -top-1 -right-1 text-xl">✨</div>
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-xl font-semibold font-display text-foreground">Tu estantería te espera</p>
+            <p className="text-sm text-muted-foreground font-display max-w-xs mx-auto">
+              "No hay mejor amigo que un libro, ni mejor compañero que una buena historia."
+            </p>
+          </div>
+          <p className="text-xs text-muted-foreground/60 font-display">
+            Marca libros como <span className="text-emerald-500 font-medium">Terminado</span> y aparecerán aquí automáticamente
+          </p>
         </div>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
