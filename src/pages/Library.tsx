@@ -254,7 +254,7 @@ export default function LibraryPage() {
       return s + (isNaN(p) ? 0 : p);
     }, 0);
   }, [finishedYearBooks]);
-  const physicalCount = useMemo(() => finishedYearBooks.filter((b) => b.format === "Fisico").length, [finishedYearBooks]);
+  const physicalCount = useMemo(() => finishedYearBooks.filter((b) => b.format === "Físico").length, [finishedYearBooks]);
   const digitalCount = useMemo(() => finishedYearBooks.filter((b) => b.format === "Digital").length, [finishedYearBooks]);
 
   const filtered = useMemo(() => {
