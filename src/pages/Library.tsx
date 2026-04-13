@@ -401,14 +401,29 @@ export default function Library() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <BookOpen className="h-12 w-12 text-muted-foreground/40 mb-4" />
-          <p className="text-lg font-medium text-muted-foreground">
-            {books.length === 0 ? "Tu biblioteca está vacía" : "No hay libros con estos filtros"}
-          </p>
-          <p className="text-sm text-muted-foreground/60 mt-1">
-            {books.length === 0 ? "Añade tu primer libro para empezar" : "Prueba a cambiar los filtros"}
-          </p>
+        <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-2xl bg-primary/8 border border-primary/15 flex items-center justify-center">
+              <BookOpen className="h-10 w-10 text-primary/40" />
+            </div>
+            <div className="absolute -top-1 -right-1 text-xl">✨</div>
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-xl font-semibold font-display text-foreground">
+              {books.length === 0 ? "Tu historia empieza aquí" : "Ningún libro coincide"}
+            </p>
+            <p className="text-sm text-muted-foreground font-display max-w-xs mx-auto">
+              {books.length === 0
+                ? "Cada gran biblioteca empezó con un único libro. ¿Cuál será el tuyo?"
+                : "Prueba a cambiar los filtros o el año seleccionado"}
+            </p>
+          </div>
+          {books.length === 0 && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground/60 font-display">
+              <span>💡</span>
+              <span>Puedes importar desde Goodreads o añadir libros uno a uno</span>
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-8">
