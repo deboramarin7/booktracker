@@ -236,16 +236,47 @@ img {
   backdrop-filter: blur(16px);
 }
 
-/* ── Night theme: texto blanco en botones y controles ── */
-[data-theme="night"] button:not([class*="bg-primary"]):not([class*="bg-red"]):not([class*="bg-green"]),
-[data-theme="night"] [role="combobox"],
-[data-theme="night"] input:not([type="checkbox"]):not([type="radio"]),
-[data-theme="night"] textarea,
-[data-theme="night"] select {
-  color: rgba(255, 255, 255, 0.9) !important;
-}
 
 [data-theme="night"] [role="combobox"] span,
 [data-theme="night"] [role="combobox"] > * {
   color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* ── Night theme: botones, selects, inputs ── */
+:root {
+  --night-panel-bg: rgba(7, 15, 26, 0.88);
+  --night-panel-border: rgba(96, 165, 250, 0.18);
+}
+
+[data-theme="night"] [role="combobox"],
+[data-theme="night"] button:not([class*="bg-primary"]):not([class*="bg-red"]):not([class*="rounded-full"][class*="bg-"]):not([class*="w-7"]) {
+  background-color: var(--night-panel-bg) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--night-panel-border) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+[data-theme="night"] input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="night"] textarea {
+  background-color: var(--night-panel-bg) !important;
+  border: 1px solid var(--night-panel-border) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+[data-theme="night"] [role="combobox"] span,
+[data-theme="night"] [role="combobox"] svg {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+[data-theme="night"] [role="dialog"] > div,
+[data-theme="night"] [data-radix-dialog-content] {
+  background-color: rgba(5, 12, 25, 0.97) !important;
+  border: 1px solid var(--night-panel-border) !important;
+  backdrop-filter: blur(24px);
+}
+
+[data-theme="night"] [data-radix-popper-content-wrapper] > div {
+  background-color: rgba(5, 12, 25, 0.97) !important;
+  border: 1px solid var(--night-panel-border) !important;
 }
