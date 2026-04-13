@@ -210,3 +210,53 @@ img {
   background-color: rgba(3, 8, 16, 0.85) !important;
   backdrop-filter: blur(16px);
 }
+
+/* ============================================================
+   BOTONES Y SELECTS CON FONDO VISIBLE (Night theme + todos)
+   ============================================================ */
+
+/* Botones outline con fondo */
+[data-theme="night"] button:not(.bg-primary):not([class*="bg-"]),
+[data-theme="night"] [role="combobox"],
+[data-theme="night"] [data-radix-select-trigger] {
+  background-color: rgba(15, 30, 50, 0.85) !important;
+  border-color: rgba(125, 211, 252, 0.25) !important;
+  backdrop-filter: blur(8px);
+}
+
+/* Selects y triggers de Radix */
+[data-theme="night"] .border-border\/50,
+[data-theme="night"] [class*="SelectTrigger"],
+[data-theme="night"] button[class*="border"] {
+  background-color: rgba(15, 30, 50, 0.85) !important;
+  backdrop-filter: blur(8px);
+}
+
+/* Formulario añadir libro — dialog content */
+[data-theme="night"] [role="dialog"] {
+  background-color: rgba(7, 15, 26, 0.97) !important;
+  border: 1px solid rgba(125, 211, 252, 0.15) !important;
+  backdrop-filter: blur(20px);
+}
+
+/* Inputs dentro del formulario */
+[data-theme="night"] input,
+[data-theme="night"] textarea,
+[data-theme="night"] select {
+  background-color: rgba(15, 30, 50, 0.9) !important;
+  border-color: rgba(125, 211, 252, 0.2) !important;
+}
+
+/* Cards con fondo sólido en night */
+[data-theme="night"] .bg-card {
+  background-color: rgba(7, 15, 26, 0.88) !important;
+  backdrop-filter: blur(12px);
+}
+
+/* Popover y dropdown */
+[data-theme="night"] [data-radix-popper-content-wrapper] > div,
+[data-theme="night"] [role="listbox"] {
+  background-color: rgba(7, 15, 26, 0.97) !important;
+  border: 1px solid rgba(125, 211, 252, 0.15) !important;
+  backdrop-filter: blur(20px);
+}
