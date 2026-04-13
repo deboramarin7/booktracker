@@ -258,9 +258,8 @@ export default function Shelves() {
             <div
               className="relative rounded-xl overflow-hidden"
               style={{
-                background: "linear-gradient(135deg, #1c0f05 0%, #2d1a0e 30%, #1a0d04 70%, #150a03 100%)",
-                boxShadow: "0 20px 60px rgba(0,0,0,0.6), inset 0 0 60px rgba(0,0,0,0.3)",
-                padding: "12px 12px 16px",
+                background: "transparent",
+                padding: "0 0 0",
                 border: "1px solid rgba(146, 64, 14, 0.3)",
               }}
             >
@@ -307,8 +306,8 @@ function ShelfRow({ row, rowIndex }: { row: Book[]; rowIndex: number }) {
       <div
         className="h-[16px] sm:h-[20px]"
         style={{
-          background: "linear-gradient(to bottom, #a16207 0%, #92400e 30%, #78350f 60%, #5c2408 100%)",
-          boxShadow: "0 5px 15px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,180,80,0.25)",
+          background: "linear-gradient(180deg, #263c5e 0%, #1a2d47 50%, #0f1e33 100%)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.7), inset 0 1px 0px rgba(255,255,255,0.08)",
         }}
       />
       <div className="h-[4px] sm:h-[6px]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.0) 100%)" }} />
