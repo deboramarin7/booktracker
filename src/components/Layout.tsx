@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from "react";
-import { Outlet, NavLink } from "react-router-dom";
+import { Outlet, NavLink, Link } from "react-router-dom";
 import { BookOpen, Menu, Moon, Sun, Sparkles } from "lucide-react";
 import { useBooks } from "@/hooks/useBooks";
 import type { Book } from "@/hooks/useBooks";
@@ -42,15 +42,16 @@ export default function Layout() {
 
   const menuBg = dark ? "hsl(220, 16%, 12%)" : "hsl(220, 14%, 98%)";
   const menuText = dark ? "hsl(220, 10%, 92%)" : "hsl(220, 15%, 12%)";
+  const menuHoverBg = dark ? "hsl(220, 12%, 20%)" : "hsl(220, 10%, 91%)";
 
   const navLinks = [
-    { to: "/", label: "Mi Biblioteca", end: true },
-    { to: "/autores-sagas", label: "Autores y Sagas" },
-    { to: "/wishlist", label: "Wish List" },
-    { to: "/estanterias", label: "Estantería" },
-    { to: "/reading-habits", label: "Hábitos" },
-    { to: "/logros", label: "Logros" },
-    { to: "/dashboard", label: "Dashboard" },
+    { to: "/biblioteca", label: "📚 Biblioteca" },
+    { to: "/autores-sagas", label: "✍️ Autores" },
+    { to: "/wishlist", label: "💜 Wish List" },
+    { to: "/estanterias", label: "📖 Estantería" },
+    { to: "/reading-habits", label: "📅 Hábitos" },
+    { to: "/logros", label: "🎯 Logros" },
+    { to: "/dashboard", label: "📊 Dashboard" },
     { to: "/wrapped", label: "Wrapped ✨" },
     { to: "/ayuda", label: "Ayuda" },
   ];
@@ -58,17 +59,19 @@ export default function Layout() {
   return (
     <BooksContext.Provider value={{ books, loading, addBook, addBooksInBatch, updateBook, deleteBook, addWishItem }}>
       <div className="min-h-screen">
-        <header className="border-b border-border/40 bg-card/90 backdrop-blur-xl sticky top-0 z-10">
+        <header className="sticky top-0 z-10 backdrop-blur-xl" style={{ background: "linear-gradient(180deg, hsl(var(--card)/0.97) 0%, hsl(var(--card)/0.92) 100%)", borderBottom: "1px solid hsl(var(--border)/0.5)", boxShadow: "0 1px 40px rgba(0,0,0,0.15)" }}>
           <div className="container flex items-center justify-between py-3">
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary/15 shrink-0">
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="relative flex items-center justify-center w-9 h-9 rounded-xl shrink-0" style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.2), hsl(var(--primary)/0.05))", border: "1px solid hsl(var(--primary)/0.3)" }}>
                 <BookOpen className="h-5 w-5 text-primary" />
+                <Sparkles className="h-2.5 w-2.5 text-amber-400 absolute -top-1 -right-1" />
               </div>
-              <h1 className="text-xl font-display font-semibold tracking-tight text-foreground leading-tight">
-                Book Tracker
-              </h1>
-            </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight font-display text-foreground leading-none">Book Tracker</h1>
+                <p className="text-[10px] text-muted-foreground font-display tracking-widest uppercase leading-none mt-0.5">Tu diario lector</p>
+              </div>
+            </Link>
 
             {/* Desktop nav */}
             <nav className="hidden md:flex gap-1 items-center">
@@ -78,10 +81,10 @@ export default function Layout() {
                   to={link.to}
                   end={link.end}
                   className={({ isActive }) =>
-                    `px-3 py-1.5 rounded-lg text-sm font-display transition-all duration-200 ${
+                    `px-3 py-2 rounded-lg text-sm font-body transition-all duration-200 ${
                       isActive
-                        ? "bg-primary/15 text-primary font-semibold"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        ? "bg-primary text-primary-foreground warm-shadow"
+                        : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
                     }`
                   }
                 >
@@ -121,11 +124,9 @@ export default function Layout() {
                   className="w-72 pt-10 border-l border-border"
                   style={{ backgroundColor: menuBg, color: menuText }}
                 >
-                  <div className="flex items-center gap-3 mb-8 px-4">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/15">
-                      <BookOpen className="h-4 w-4 text-primary" />
-                    </div>
-                    <span className="font-display text-lg font-semibold" style={{ color: menuText }}>Book Tracker</span>
+                  <div className="flex items-center gap-2 mb-8 px-4">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    <span className="font-display text-lg font-semibold" style={{ color: menuText }}>Menú</span>
                   </div>
                   <nav className="flex flex-col gap-1 px-2">
                     {navLinks.map((link) => (
@@ -133,7 +134,7 @@ export default function Layout() {
                         <NavLink
                           to={link.to}
                           end={link.end}
-                          className="block px-4 py-3 rounded-lg text-base font-display font-medium transition-all"
+                          className="block px-4 py-3 rounded-lg text-base font-body font-medium transition-all"
                           style={({ isActive }) => ({
                             backgroundColor: isActive ? "hsl(var(--primary))" : "transparent",
                             color: isActive ? "hsl(var(--primary-foreground))" : menuText,
