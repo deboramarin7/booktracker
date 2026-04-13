@@ -6,7 +6,7 @@ import { ImportBooksDialog, ExportBooksButton } from "@/components/ImportExportB
 import { useWishlist, type WishItem } from "@/hooks/useWishlist";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, Pencil, Check, LayoutGrid, AlignJustify, Library, Target, Star, Image } from "lucide-react";
+import { BookOpen, Pencil, Check, LayoutGrid, AlignJustify, Library, Target, Star, Image, Trash2 } from "lucide-react";
 import type { Book, ReadingStatus } from "@/hooks/useBooks";
 import { GENRES, FORMATS } from "@/lib/constants";
 import { EditBookDialog } from "@/components/EditBookDialog";
@@ -48,7 +48,7 @@ const STATUS_LABELS: Record<string, string> = {
   finished: "Terminado",
 };
 
-function CoverCard({ book, onUpdate }: { book: Book; onUpdate: (id: string, data: Partial<Omit<Book, "id" | "addedAt">>) => void }) {
+function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: string, data: Partial<Omit<Book, "id" | "addedAt">>) => void; onDelete: (id: string) => void }) {
   const [editing, setEditing] = useState(false);
 
   const statusBadge = () => {
@@ -77,6 +77,14 @@ function CoverCard({ book, onUpdate }: { book: Book; onUpdate: (id: string, data
           />
           <div className="absolute top-2 left-2">
             {statusBadge()}
+          </div>
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={(e) => { e.stopPropagation(); if (window.confirm(`¿Eliminar "${book.title}"? Esta acción no se puede deshacer.`)) onDelete(book.id); }}
+              className="w-7 h-7 rounded-full bg-red-500/80 hover:bg-red-500 flex items-center justify-center text-white transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
         <h3 className="text-sm font-semibold truncate font-body">{book.title}</h3>
@@ -391,7 +399,7 @@ export default function LibraryPage() {
               {viewMode === "covers" ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
                   {groupBooks.map((book) => (
-                    <CoverCard key={book.id} book={book} onUpdate={updateBook} />
+                    <CoverCard key={book.id} book={book} onUpdate={updateBook} onDelete={deleteBook} />
                   ))}
                 </div>
               ) : viewMode === "grid" ? (
