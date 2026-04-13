@@ -1,94 +1,222 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 
-export interface ThemePreset {
+export interface ThemeColors {
+  "--background": string;
+  "--foreground": string;
+  "--primary": string;
+  "--primary-foreground": string;
+  "--surface": string;
+  "--card": string;
+  "--card-foreground": string;
+  "--border": string;
+  "--muted": string;
+  "--muted-foreground": string;
+  "--accent": string;
+  "--accent-foreground": string;
+  "--popover": string;
+  "--popover-foreground": string;
+  "--secondary": string;
+  "--secondary-foreground": string;
+  "--destructive": string;
+  "--destructive-foreground": string;
+  "--input": string;
+  "--ring": string;
+  "--radius": string;
+  "--shelf-wood": string;
+  "--shelf-shadow": string;
+  "--book-shadow": string;
+  [key: string]: string;
+}
+
+export interface ThemeDefinition {
   id: string;
   name: string;
   emoji: string;
-  light: Record<string, string>;
-  dark: Record<string, string>;
+  light: ThemeColors;
+  dark: ThemeColors;
 }
 
-const PRESETS: ThemePreset[] = [
-  {
-    id: "classic", name: "Clásico", emoji: "🌿",
-    light: { "--primary": "152 45% 28%", "--accent": "142 40% 45%", "--ring": "152 45% 28%", "--reading": "142 52% 36%", "--finished": "152 45% 28%", "--want-to-read": "142 40% 45%" },
-    dark:  { "--primary": "142 40% 45%", "--accent": "142 40% 45%", "--ring": "142 40% 45%", "--reading": "142 52% 36%", "--finished": "142 40% 45%", "--want-to-read": "142 40% 45%" },
+const THEMES: Record<string, ThemeDefinition> = {
+  cozy: {
+    id: "cozy",
+    name: "Biblioteca Acogedora",
+    emoji: "📚",
+    light: {
+      "--background": "#F5EFEB",
+      "--foreground": "#2C1E16",
+      "--primary": "#D97757",
+      "--primary-foreground": "#FFFFFF",
+      "--surface": "#EAE0D8",
+      "--card": "#EAE0D8",
+      "--card-foreground": "#2C1E16",
+      "--border": "#D5C8BC",
+      "--muted": "#D5C8BC",
+      "--muted-foreground": "#6B5A4E",
+      "--accent": "#B85C3D",
+      "--accent-foreground": "#FFFFFF",
+      "--popover": "#EAE0D8",
+      "--popover-foreground": "#2C1E16",
+      "--secondary": "#D5C8BC",
+      "--secondary-foreground": "#2C1E16",
+      "--destructive": "#DC2626",
+      "--destructive-foreground": "#FFFFFF",
+      "--input": "#D5C8BC",
+      "--ring": "#D97757",
+      "--radius": "0.75rem",
+      "--shelf-wood": "linear-gradient(180deg, #8B5A2B 0%, #6B4226 50%, #5D3A1F 100%)",
+      "--shelf-shadow": "rgba(44, 30, 22, 0.3)",
+      "--book-shadow": "rgba(44, 30, 22, 0.25)",
+    },
+    dark: {
+      "--background": "#1E1611",
+      "--foreground": "#EAE0D8",
+      "--primary": "#D97757",
+      "--primary-foreground": "#1E1611",
+      "--surface": "#2C1E16",
+      "--card": "#2C1E16",
+      "--card-foreground": "#EAE0D8",
+      "--border": "#3A2B22",
+      "--muted": "#3A2B22",
+      "--muted-foreground": "#9A8578",
+      "--accent": "#E8956F",
+      "--accent-foreground": "#1E1611",
+      "--popover": "#2C1E16",
+      "--popover-foreground": "#EAE0D8",
+      "--secondary": "#3A2B22",
+      "--secondary-foreground": "#EAE0D8",
+      "--destructive": "#DC2626",
+      "--destructive-foreground": "#FFFFFF",
+      "--input": "#3A2B22",
+      "--ring": "#D97757",
+      "--radius": "0.75rem",
+      "--shelf-wood": "linear-gradient(180deg, #5D3A1F 0%, #4A2E18 50%, #3A2412 100%)",
+      "--shelf-shadow": "rgba(0, 0, 0, 0.5)",
+      "--book-shadow": "rgba(0, 0, 0, 0.4)",
+    },
   },
-  {
-    id: "ocean", name: "Océano", emoji: "🌊",
-    light: { "--primary": "210 65% 35%", "--accent": "200 55% 50%", "--ring": "210 65% 35%", "--reading": "200 60% 45%", "--finished": "210 65% 35%", "--want-to-read": "195 50% 55%" },
-    dark:  { "--primary": "200 55% 50%", "--accent": "200 55% 50%", "--ring": "200 55% 50%", "--reading": "200 60% 45%", "--finished": "200 55% 50%", "--want-to-read": "195 50% 55%" },
+  night: {
+    id: "night",
+    name: "Rincón Nocturno",
+    emoji: "🌙",
+    light: {
+      "--background": "#F0F4F8",
+      "--foreground": "#0A0A1A",
+      "--primary": "#1E3A8A",
+      "--primary-foreground": "#FFFFFF",
+      "--surface": "#FFFFFF",
+      "--card": "#FFFFFF",
+      "--card-foreground": "#0A0A1A",
+      "--border": "#E2E8F0",
+      "--muted": "#E2E8F0",
+      "--muted-foreground": "#64748B",
+      "--accent": "#F59E0B",
+      "--accent-foreground": "#0A0A1A",
+      "--popover": "#FFFFFF",
+      "--popover-foreground": "#0A0A1A",
+      "--secondary": "#E2E8F0",
+      "--secondary-foreground": "#0A0A1A",
+      "--destructive": "#DC2626",
+      "--destructive-foreground": "#FFFFFF",
+      "--input": "#E2E8F0",
+      "--ring": "#1E3A8A",
+      "--radius": "1rem",
+      "--shelf-wood": "linear-gradient(180deg, #334155 0%, #1E293B 50%, #0F172A 100%)",
+      "--shelf-shadow": "rgba(10, 10, 26, 0.2)",
+      "--book-shadow": "rgba(10, 10, 26, 0.15)",
+    },
+    dark: {
+      "--background": "#05070F",
+      "--foreground": "#EAEAEA",
+      "--primary": "#D4AF37",
+      "--primary-foreground": "#05070F",
+      "--surface": "#0C1021",
+      "--card": "#0C1021",
+      "--card-foreground": "#EAEAEA",
+      "--border": "#1A2035",
+      "--muted": "#1A2035",
+      "--muted-foreground": "#9CA3AF",
+      "--accent": "#F59E0B",
+      "--accent-foreground": "#05070F",
+      "--popover": "#0C1021",
+      "--popover-foreground": "#EAEAEA",
+      "--secondary": "#1A2035",
+      "--secondary-foreground": "#EAEAEA",
+      "--destructive": "#DC2626",
+      "--destructive-foreground": "#FFFFFF",
+      "--input": "#1A2035",
+      "--ring": "#D4AF37",
+      "--radius": "1rem",
+      "--shelf-wood": "linear-gradient(180deg, #1A2035 0%, #0F1525 50%, #080C18 100%)",
+      "--shelf-shadow": "rgba(0, 0, 0, 0.6)",
+      "--book-shadow": "rgba(0, 0, 0, 0.5)",
+    },
   },
-  {
-    id: "forest", name: "Bosque", emoji: "🌲",
-    light: { "--primary": "160 40% 25%", "--accent": "95 35% 45%", "--ring": "160 40% 25%", "--reading": "95 40% 40%", "--finished": "160 40% 25%", "--want-to-read": "80 30% 50%" },
-    dark:  { "--primary": "95 35% 45%", "--accent": "95 35% 45%", "--ring": "95 35% 45%", "--reading": "95 40% 40%", "--finished": "95 35% 45%", "--want-to-read": "80 30% 50%" },
+  editorial: {
+    id: "editorial",
+    name: "Galería Editorial",
+    emoji: "✨",
+    light: {
+      "--background": "#FAFAFA",
+      "--foreground": "#050505",
+      "--primary": "#166534",
+      "--primary-foreground": "#FFFFFF",
+      "--surface": "#FFFFFF",
+      "--card": "#FFFFFF",
+      "--card-foreground": "#050505",
+      "--border": "#E5E5E5",
+      "--muted": "#E5E5E5",
+      "--muted-foreground": "#737373",
+      "--accent": "#15803d",
+      "--accent-foreground": "#FFFFFF",
+      "--popover": "#FFFFFF",
+      "--popover-foreground": "#050505",
+      "--secondary": "#E5E5E5",
+      "--secondary-foreground": "#050505",
+      "--destructive": "#DC2626",
+      "--destructive-foreground": "#FFFFFF",
+      "--input": "#E5E5E5",
+      "--ring": "#166534",
+      "--radius": "0px",
+      "--shelf-wood": "linear-gradient(180deg, #1A1A1A 0%, #0D0D0D 50%, #000000 100%)",
+      "--shelf-shadow": "rgba(5, 5, 5, 0.1)",
+      "--book-shadow": "rgba(5, 5, 5, 0.08)",
+    },
+    dark: {
+      "--background": "#09090B",
+      "--foreground": "#FAFAFA",
+      "--primary": "#22c55e",
+      "--primary-foreground": "#09090B",
+      "--surface": "#121214",
+      "--card": "#121214",
+      "--card-foreground": "#FAFAFA",
+      "--border": "#27272A",
+      "--muted": "#27272A",
+      "--muted-foreground": "#A1A1AA",
+      "--accent": "#16a34a",
+      "--accent-foreground": "#09090B",
+      "--popover": "#121214",
+      "--popover-foreground": "#FAFAFA",
+      "--secondary": "#27272A",
+      "--secondary-foreground": "#FAFAFA",
+      "--destructive": "#DC2626",
+      "--destructive-foreground": "#FFFFFF",
+      "--input": "#27272A",
+      "--ring": "#22c55e",
+      "--radius": "0px",
+      "--shelf-wood": "linear-gradient(180deg, #27272A 0%, #18181B 50%, #09090B 100%)",
+      "--shelf-shadow": "rgba(0, 0, 0, 0.5)",
+      "--book-shadow": "rgba(0, 0, 0, 0.4)",
+    },
   },
-  {
-    id: "sunset", name: "Atardecer", emoji: "🌅",
-    light: { "--primary": "15 70% 45%", "--accent": "35 80% 55%", "--ring": "15 70% 45%", "--reading": "35 75% 50%", "--finished": "15 70% 45%", "--want-to-read": "45 80% 55%" },
-    dark:  { "--primary": "25 75% 55%", "--accent": "35 80% 55%", "--ring": "25 75% 55%", "--reading": "35 75% 50%", "--finished": "25 75% 55%", "--want-to-read": "45 80% 55%" },
-  },
-  {
-    id: "lavender", name: "Lavanda", emoji: "💜",
-    light: { "--primary": "270 45% 45%", "--accent": "280 40% 55%", "--ring": "270 45% 45%", "--reading": "280 45% 50%", "--finished": "270 45% 45%", "--want-to-read": "260 35% 60%" },
-    dark:  { "--primary": "275 40% 55%", "--accent": "280 40% 55%", "--ring": "275 40% 55%", "--reading": "280 45% 50%", "--finished": "275 40% 55%", "--want-to-read": "260 35% 60%" },
-  },
-  {
-    id: "midnight", name: "Medianoche", emoji: "🌙",
-    light: { "--primary": "230 50% 35%", "--accent": "220 45% 50%", "--ring": "230 50% 35%", "--reading": "220 50% 45%", "--finished": "230 50% 35%", "--want-to-read": "215 40% 55%" },
-    dark:  { "--primary": "220 45% 50%", "--accent": "220 45% 50%", "--ring": "220 45% 50%", "--reading": "220 50% 45%", "--finished": "220 45% 50%", "--want-to-read": "215 40% 55%" },
-  },
-];
-
-// All CSS variables that change between light and dark mode
-// These must be set explicitly so Portals (Sheet, Dialog, etc.) always read the correct values
-const DARK_VARS: Record<string, string> = {
-  "--background": "220 20% 8%",
-  "--foreground": "220 10% 92%",
-  "--card": "220 16% 12%",
-  "--card-foreground": "220 10% 92%",
-  "--popover": "220 16% 12%",
-  "--popover-foreground": "220 10% 92%",
-  "--primary-foreground": "220 20% 8%",
-  "--secondary": "220 12% 16%",
-  "--secondary-foreground": "220 10% 92%",
-  "--muted": "220 10% 16%",
-  "--muted-foreground": "220 8% 50%",
-  "--accent-foreground": "220 20% 8%",
-  "--destructive": "0 55% 42%",
-  "--destructive-foreground": "0 0% 100%",
-  "--border": "220 10% 17%",
-  "--input": "220 10% 17%",
-};
-
-const LIGHT_VARS: Record<string, string> = {
-  "--background": "220 14% 96%",
-  "--foreground": "220 15% 12%",
-  "--card": "220 14% 98%",
-  "--card-foreground": "220 15% 12%",
-  "--popover": "220 14% 98%",
-  "--popover-foreground": "220 15% 12%",
-  "--primary-foreground": "0 0% 100%",
-  "--secondary": "220 10% 91%",
-  "--secondary-foreground": "220 15% 12%",
-  "--muted": "220 8% 92%",
-  "--muted-foreground": "220 8% 46%",
-  "--accent-foreground": "0 0% 100%",
-  "--destructive": "0 62% 48%",
-  "--destructive-foreground": "0 0% 100%",
-  "--border": "220 10% 87%",
-  "--input": "220 10% 87%",
 };
 
 interface ThemeContextType {
   themeId: string;
   setThemeId: (id: string) => void;
-  customHue: number | null;
-  setCustomHue: (hue: number | null) => void;
-  presets: ThemePreset[];
   dark: boolean;
   setDark: (d: boolean) => void;
+  themes: Record<string, ThemeDefinition>;
+  currentTheme: ThemeDefinition;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -104,78 +232,42 @@ function applyVars(vars: Record<string, string>) {
   Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v));
 }
 
-function clearColorVars() {
-  const root = document.documentElement;
-  ["--primary", "--accent", "--ring", "--reading", "--finished", "--want-to-read"].forEach(k =>
-    root.style.removeProperty(k)
-  );
-}
-
-function generateCustomTheme(hue: number): { light: Record<string, string>; dark: Record<string, string> } {
-  return {
-    light: { "--primary": `${hue} 50% 35%`, "--accent": `${(hue + 15) % 360} 45% 50%`, "--ring": `${hue} 50% 35%`, "--reading": `${(hue + 10) % 360} 50% 42%`, "--finished": `${hue} 50% 35%`, "--want-to-read": `${(hue + 20) % 360} 40% 55%` },
-    dark:  { "--primary": `${hue} 45% 50%`, "--accent": `${(hue + 15) % 360} 45% 50%`, "--ring": `${hue} 45% 50%`, "--reading": `${(hue + 10) % 360} 50% 42%`, "--finished": `${hue} 45% 50%`, "--want-to-read": `${(hue + 20) % 360} 40% 55%` },
-  };
-}
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [dark, setDarkState] = useState(() => {
-    return localStorage.getItem("theme") === "dark" ||
-      (!localStorage.getItem("theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    const saved = localStorage.getItem("booktracker-dark");
+    if (saved !== null) return saved === "true";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
-  const [themeId, setThemeIdState] = useState(() => localStorage.getItem("color-theme") || "classic");
-  const [customHue, setCustomHueState] = useState<number | null>(() => {
-    const h = localStorage.getItem("custom-hue");
-    return h ? Number(h) : null;
-  });
+
+  const [themeId, setThemeIdState] = useState(
+    () => localStorage.getItem("booktracker-theme") || "night"
+  );
 
   const setDark = useCallback((d: boolean) => {
     setDarkState(d);
     document.documentElement.classList.toggle("dark", d);
-    localStorage.setItem("theme", d ? "dark" : "light");
-  }, []);
-
-  const applyCurrentTheme = useCallback((id: string, hue: number | null, isDark: boolean) => {
-    // 1. Apply light/dark base variables explicitly so Portals always read correct values
-    applyVars(isDark ? DARK_VARS : LIGHT_VARS);
-
-    // 2. Apply color preset on top
-    if (id === "custom" && hue !== null) {
-      const t = generateCustomTheme(hue);
-      applyVars(isDark ? t.dark : t.light);
-    } else {
-      const preset = PRESETS.find(p => p.id === id);
-      if (preset) {
-        applyVars(isDark ? preset.dark : preset.light);
-      } else {
-        clearColorVars();
-      }
-    }
+    localStorage.setItem("booktracker-dark", String(d));
   }, []);
 
   const setThemeId = useCallback((id: string) => {
     setThemeIdState(id);
-    localStorage.setItem("color-theme", id);
-    applyCurrentTheme(id, customHue, dark);
-  }, [customHue, dark, applyCurrentTheme]);
-
-  const setCustomHue = useCallback((hue: number | null) => {
-    setCustomHueState(hue);
-    if (hue !== null) {
-      localStorage.setItem("custom-hue", String(hue));
-      setThemeIdState("custom");
-      localStorage.setItem("color-theme", "custom");
-      applyCurrentTheme("custom", hue, dark);
-    }
-  }, [dark, applyCurrentTheme]);
+    localStorage.setItem("booktracker-theme", id);
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
-    applyCurrentTheme(themeId, customHue, dark);
-  }, [dark, themeId, customHue, applyCurrentTheme]);
+    const theme = THEMES[themeId] || THEMES.night;
+    const vars = dark ? theme.dark : theme.light;
+    applyVars(vars);
+    document.documentElement.setAttribute("data-theme", themeId);
+  }, [dark, themeId]);
+
+  const currentTheme = THEMES[themeId] || THEMES.night;
 
   return (
-    <ThemeContext.Provider value={{ themeId, setThemeId, customHue, setCustomHue, presets: PRESETS, dark, setDark }}>
+    <ThemeContext.Provider
+      value={{ dark, setDark, themeId, setThemeId, themes: THEMES, currentTheme }}
+    >
       {children}
     </ThemeContext.Provider>
   );
