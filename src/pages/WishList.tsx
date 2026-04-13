@@ -374,12 +374,20 @@ function WishListContent() {
       </div>
 
       {items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-            <BookHeart className="h-10 w-10 text-primary/30" />
+        <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-2xl bg-primary/8 border border-primary/15 flex items-center justify-center">
+              <BookHeart className="h-10 w-10 text-primary/40" />
+            </div>
+            <div className="absolute -top-1 -right-1 text-xl">💜</div>
           </div>
-          <p className="text-xl text-muted-foreground font-display">Tu wish list está vacía</p>
-          <p className="text-sm text-muted-foreground/60 mt-2 font-body">Añade libros que quieras leer</p>
+          <div className="space-y-1.5">
+            <p className="text-xl font-semibold font-display text-foreground">Tu lista de deseos está vacía</p>
+            <p className="text-sm text-muted-foreground font-display max-w-xs mx-auto">
+              "Una casa sin libros es como un cuerpo sin alma." — Cicerón
+            </p>
+          </div>
+          <p className="text-xs text-muted-foreground/60 font-display">Añade libros que tengas ganas de leer 📖</p>
         </div>
       ) : (
         <div className="space-y-8">
