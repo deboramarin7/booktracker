@@ -435,32 +435,6 @@ export default function ReadingHabits() {
             ))}
           </div>
 
-          {/* ── HEATMAP ── */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold font-body text-foreground flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-primary/60" />
-                Mapa de lectura
-              </p>
-              <Select value={String(selectedYear)} onValueChange={(v) => {
-                const y = Number(v);
-                setSelectedYear(y);
-                setVisibleMonth(y === now.getFullYear() ? new Date(y, now.getMonth()) : new Date(y, 0));
-              }}>
-                <SelectTrigger className="w-[100px] h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Card className="border-border/30">
-              <CardContent className="p-4 sm:p-6">
-                <YearHeatmap year={selectedYear} habits={habits} />
-              </CardContent>
-            </Card>
-          </div>
-
           {/* ── CALENDAR PICKER ── */}
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground font-body">Haz clic en un día para marcar/desmarcar que leíste</p>
