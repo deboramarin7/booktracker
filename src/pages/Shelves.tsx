@@ -74,7 +74,8 @@ function SortableBook({ book }: { book: Book }) {
       <TooltipTrigger asChild>
         <div
           ref={setNodeRef}
-          style={{ ...style, width: "90px", height: "135px" }}
+          style={style}
+          style={{ width: "78px", height: "118px" }}
           className={`relative group shrink-0 cursor-grab active:cursor-grabbing touch-none select-none ${
             isDragging ? "scale-110 rotate-2" : "transition-all duration-200 hover:-translate-y-3 hover:z-20"
           }`}
@@ -263,9 +264,9 @@ export default function Shelves() {
               }}
             >
               
-              
-              
-              <div className="relative mt-3 rounded-sm overflow-hidden" style={{ background: "transparent" }}>
+              <div className="absolute top-3 bottom-0 left-0 w-3 sm:w-4" style={{ background: "linear-gradient(to right, #78350f, #92400e 50%, #6b2d0c)" }} />
+              <div className="absolute top-3 bottom-0 right-0 w-3 sm:w-4" style={{ background: "linear-gradient(to left, #78350f, #92400e 50%, #6b2d0c)" }} />
+              <div className="relative mt-3 rounded-sm overflow-hidden" style={{ background: "linear-gradient(to bottom, #0f0704 0%, #130a05 50%, #0f0704 100%)" }}>
                 <div className="space-y-0 py-1 px-1 sm:px-1">
                   {shelves.map((row, rowIndex) => (
                     <ShelfRow key={rowIndex} row={row} rowIndex={rowIndex} />
@@ -294,8 +295,8 @@ function ShelfRow({ row, rowIndex }: { row: Book[]; rowIndex: number }) {
   return (
     <div className="relative">
       <div
-        className="flex items-end gap-[4px] sm:gap-[5px] px-3 sm:px-5 pt-4 pb-0 min-h-[80px] sm:min-h-[100px] relative overflow-x-auto"
-        style={{ background: "transparent", scrollbarWidth: "none" }}
+        className="flex items-end gap-[2px] sm:gap-[3px] px-3 sm:px-5 pt-4 pb-0 min-h-[80px] sm:min-h-[100px] relative overflow-x-auto"
+        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.0), rgba(0,0,0,0.1))", scrollbarWidth: "none" }}
       >
         <style>{`div::-webkit-scrollbar { display: none; }`}</style>
         {row.map((book) => (
