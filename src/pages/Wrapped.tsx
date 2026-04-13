@@ -58,34 +58,15 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 // --- Fullscreen slide wrapper ---
-function WrappedSlide({
-  children,
-  index,
-  currentSlide,
-  gradient = "from-emerald-950 via-gray-950 to-gray-950",
-}: {
-  children: React.ReactNode;
-  index: number;
-  currentSlide: number;
-  gradient?: string;
-}) {
-  const isActive = index === currentSlide;
-  const isPast = index < currentSlide;
-
-  if (Math.abs(index - currentSlide) > 1) return null;
-
+function WrappedSlide({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-        isActive
-          ? "opacity-100 translate-y-0 scale-100"
-          : isPast
-          ? "opacity-0 -translate-y-8 scale-[0.97] pointer-events-none"
-          : "opacity-0 translate-y-8 scale-[0.97] pointer-events-none"
-      }`}
-    >
-      <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
-      <div className="relative z-10 w-full max-w-lg mx-auto px-8 text-center">
+    <div className="relative h-[70vh] sm:h-[75vh] flex items-center justify-center overflow-hidden rounded-3xl">
+      
+      {/* Fondo blur bonito */}
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-[6px]" />
+
+      {/* Contenido */}
+      <div className="relative z-10 w-full max-w-2xl mx-auto px-8 text-center">
         {children}
       </div>
     </div>
@@ -254,28 +235,63 @@ export default function Wrapped() {
 
   if (yearBooks.length === 0) {
     return (
-      <div className="space-y-8">
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold font-display flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-accent" /> Tu Wrapped
-          </h2>
-          <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
-            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mb-6">
-            <BookOpen className="h-10 w-10 text-emerald-500/40" />
-          </div>
-          <p className="text-xl font-display text-muted-foreground">No hay libros terminados en {selectedYear}</p>
-          <p className="text-sm text-muted-foreground/60 mt-2">¡Empieza a leer para generar tu resumen!</p>
-        </div>
+  <div className="space-y-6">
+
+    {/* Header */}
+    <div className="text-center">
+      <h1 className="text-2xl font-bold font-display">✨ Tu Wrapped</h1>
+    </div>
+
+    {/* SLIDE */}
+    {wrappedContent}
+
+    {/* NAVIGATION (AHORA FUERA) */}
+    <div className="flex items-center justify-center gap-4">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={prev}
+        disabled={currentSlide === 0}
+        className="rounded-full h-10 w-10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-20 border border-white/10"
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </Button>
+
+      <div className="flex gap-1.5">
+        {Array.from({ length: totalSlides }).map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setCurrentSlide(i)}
+            className={`h-1.5 rounded-full transition-all duration-500 ${
+              i === currentSlide
+                ? "w-6 bg-emerald-400"
+                : i < currentSlide
+                ? "w-1.5 bg-white/30"
+                : "w-1.5 bg-white/10"
+            }`}
+          />
+        ))}
       </div>
-    );
-  }
+
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={next}
+        disabled={currentSlide === totalSlides - 1}
+        className="rounded-full h-10 w-10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-20 border border-white/10"
+      >
+        <ChevronRight className="h-5 w-5" />
+      </Button>
+    </div>
+
+    {/* TEXTO AYUDA */}
+    {currentSlide < totalSlides - 1 && (
+      <p className="text-center text-xs text-muted-foreground/40 font-body">
+        Desliza o usa ← → para navegar
+      </p>
+    )}
+  </div>
+);
 
   const wrappedContent = (
     <div
@@ -291,59 +307,40 @@ export default function Wrapped() {
       onTouchEnd={handleTouchEnd}
     >
       {/* --- SLIDE 0: Intro / Total Books --- */}
-      <WrappedSlide index={0} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/50 to-gray-950">
-        <GlowOrb color="emerald" size="lg" position="center" />
-        <div className="space-y-8">
-          <p className="text-emerald-400/80 text-sm uppercase tracking-[0.4em] font-medium">
-            Tu año lector · {selectedYear}
-          </p>
-          <div className="space-y-2">
-            <h2 className="text-[190px] sm:text-[250px] font-black text-white leading-[0.85] font-display">
-               <AnimatedNumber value={yearBooks.length} />
-            </h2>
-            <p className="text-xl text-white/60">libros terminados</p>
-          </div>
-          <div className="flex justify-center gap-1">
-            {yearBooks.slice(0, 6).map((b, i) => (
-              <div key={b.id} className="w-14 h-20 rounded-lg overflow-hidden shadow-xl ring-1 ring-white/20 hover:opacity-100 transition-opacity" style={{ animationDelay: `${i * 100}ms` }}>
-                {b.coverUrl ? (
-                  <img src={b.coverUrl} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-emerald-800/40 flex items-center justify-center">
-                    <BookOpen className="h-3 w-3 text-emerald-400/40" />
-                  </div>
-                )}
-              </div>
-            ))}
-            {yearBooks.length > 8 && (
-              <div className="w-8 h-12 rounded-sm bg-white/5 flex items-center justify-center text-white/40 text-xs">
-                +{yearBooks.length - 8}
-              </div>
-            )}
-          </div>
-        </div>
-      </WrappedSlide>
+      <WrappedSlide>
+  <p className="text-xs tracking-[0.4em] text-emerald-400 mb-6 font-body uppercase">
+    Tu año lector · 2026
+  </p>
 
+  <h2 className="text-[230px] sm:text-[300px] font-black text-white leading-[0.8] font-display">
+    <AnimatedNumber value={yearBooks.length} />
+  </h2>
+
+  <p className="text-lg text-white/55 mt-4 font-body">
+    libros terminados
+  </p>
+</WrappedSlide>
+      
       {/* --- SLIDE 1: Total Pages --- */}
-      <WrappedSlide index={1} currentSlide={currentSlide} gradient="from-gray-950 via-emerald-950/40 to-gray-950">
-        <GlowOrb color="emerald" size="md" position="top-right" />
-        <div className="space-y-8">
-          <div className="inline-flex p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-            <BookOpen className="h-8 w-8 text-emerald-400" />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-[150px] sm:text-[200px] font-black text-white leading-[0.85] font-display">
-              <AnimatedNumber value={totalPages} />
-            </h2>
-            <p className="text-xl text-white/60">páginas leídas</p>
-          </div>
-          <div className="pt-4 space-y-3">
-            <div className="flex items-center justify-center gap-3 text-white/40 text-sm">
-              <span>≈ {Math.round(totalPages / 250)} novelas estándar</span>
-            </div>
-          </div>
-        </div>
-      </WrappedSlide>
+      <WrappedSlide>
+  <div className="flex flex-col items-center gap-6">
+    <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+      <BookOpen className="h-8 w-8 text-emerald-400" />
+    </div>
+
+    <h2 className="text-[190px] sm:text-[240px] font-black text-white leading-[0.8] font-display">
+      <AnimatedNumber value={totalPages} />
+    </h2>
+
+    <p className="text-xl text-white/60 font-body">
+      páginas leídas
+    </p>
+
+    <p className="text-sm text-white/40 font-body">
+      ≈ {Math.round(totalPages / 250)} novelas estándar
+    </p>
+  </div>
+</WrappedSlide>
 
       {/* --- SLIDE 2: Best Month --- */}
       <WrappedSlide index={2} currentSlide={currentSlide} gradient="from-gray-950 via-purple-950/30 to-gray-950">
