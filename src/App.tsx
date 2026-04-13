@@ -28,7 +28,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route element={<Layout />}>
-              <Route path="/" element={<Navigate to="/biblioteca" replace />} />
+              <Route index element={<Navigate to="/biblioteca" replace />} />
               <Route path="/biblioteca" element={<Library />} />
               <Route path="/autores-sagas" element={<AuthorsSagas />} />
               <Route path="/dashboard" element={<Dashboard />} />
