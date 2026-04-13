@@ -75,7 +75,7 @@ function SortableBook({ book }: { book: Book }) {
         <div
           ref={setNodeRef}
           style={style}
-          style={{ width: "90px", height: "135px" }}
+          style={{ width: "78px", height: "118px" }}
           className={`relative group shrink-0 cursor-grab active:cursor-grabbing touch-none select-none ${
             isDragging ? "scale-110 rotate-2" : "transition-all duration-200 hover:-translate-y-3 hover:z-20"
           }`}
@@ -87,26 +87,26 @@ function SortableBook({ book }: { book: Book }) {
               <img
                 src={book.coverUrl}
                 alt={book.title}
-                className="w-[46px] sm:w-[58px] md:w-[70px] h-[69px] sm:h-[87px] md:h-[105px] object-cover rounded-lg"
+                className="w-[46px] sm:w-[58px] md:w-[70px] h-[69px] sm:h-[87px] md:h-[105px] object-cover rounded-[2px]"
                 draggable={false}
                 style={{ boxShadow: "3px 3px 8px rgba(0,0,0,0.5), inset -2px 0 4px rgba(0,0,0,0.2), inset 1px 0 1px rgba(255,255,255,0.15)" }}
                 onError={() => setCoverFailed(true)}
               />
-              <div className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-r from-white/20 to-transparent rounded-l-[2px]" />
-              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-200 rounded-lg" />
+              
+              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-200 rounded-[2px]" />
             </div>
           ) : (
             <div
-              className="w-[46px] sm:w-[58px] md:w-[70px] h-[69px] sm:h-[87px] md:h-[105px] rounded-lg flex items-center justify-center relative overflow-hidden"
+              className="w-[46px] sm:w-[58px] md:w-[70px] h-[69px] sm:h-[87px] md:h-[105px] rounded-[2px] flex items-center justify-center relative overflow-hidden"
               style={{
                 backgroundColor: spineColor,
                 boxShadow: "3px 3px 8px rgba(0,0,0,0.5), inset -2px 0 4px rgba(0,0,0,0.2), inset 1px 0 1px rgba(255,255,255,0.2)",
               }}
             >
               <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(0,0,0,0.3) 8px, rgba(0,0,0,0.3) 9px)" }} />
-              <div className="absolute top-[4px] left-[3px] right-[3px] h-[1px] opacity-40" style={{ backgroundColor: spineTextColor }} />
-              <div className="absolute bottom-[4px] left-[3px] right-[3px] h-[1px] opacity-40" style={{ backgroundColor: spineTextColor }} />
-              <div className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-r from-white/25 to-transparent" />
+              
+              
+              
               <span
                 className="text-[6px] sm:text-[7px] font-bold tracking-widest whitespace-nowrap overflow-hidden max-w-[85%] z-10"
                 style={{ writingMode: "vertical-rl", textOrientation: "mixed", color: spineTextColor, textShadow: "0 1px 2px rgba(0,0,0,0.4)" }}
@@ -296,7 +296,7 @@ function ShelfRow({ row, rowIndex }: { row: Book[]; rowIndex: number }) {
   return (
     <div className="relative">
       <div
-        className="flex items-end gap-[8px] sm:gap-[10px] px-3 sm:px-5 pt-4 pb-0 min-h-[80px] sm:min-h-[100px] relative overflow-x-auto"
+        className="flex items-end gap-[4px] sm:gap-[5px] px-3 sm:px-5 pt-4 pb-0 min-h-[80px] sm:min-h-[100px] relative overflow-x-auto"
         style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.0), rgba(0,0,0,0.1))", scrollbarWidth: "none" }}
       >
         <style>{`div::-webkit-scrollbar { display: none; }`}</style>
@@ -305,7 +305,7 @@ function ShelfRow({ row, rowIndex }: { row: Book[]; rowIndex: number }) {
         ))}
       </div>
       <div
-        className="h-[22px] sm:h-[26px] rounded-b-xl shadow-[0_8px_16px_rgba(0,0,0,0.5)]"
+        className="h-[16px] sm:h-[20px]"
         style={{
           background: "linear-gradient(to bottom, #a16207 0%, #92400e 30%, #78350f 60%, #5c2408 100%)",
           boxShadow: "0 5px 15px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,180,80,0.25)",
