@@ -128,6 +128,24 @@ export default function Layout() {
     <BooksContext.Provider value={{ books, loading, addBook, addBooksInBatch, updateBook, deleteBook, addWishItem }}>
       <div className="min-h-screen bg-background">
 
+        {/* Starfield for Night theme */}
+        {themeId === "night" && (
+          <div className="starfield">
+            {[...Array(50)].map((_, i) => (
+              <div
+                key={i}
+                className="star"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 3}s`,
+                  opacity: Math.random() * 0.5 + 0.3,
+                }}
+              />
+            ))}
+          </div>
+        )}
+
         {/* ── Desktop Sidebar ── */}
         <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-64 lg:overflow-y-auto lg:border-r border-border bg-card">
           <SidebarContent />
