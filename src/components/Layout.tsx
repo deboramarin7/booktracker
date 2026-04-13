@@ -1,4 +1,3 @@
-// Library.tsx - RESTYLED
 import { useState, useMemo, useRef } from "react";
 import { useBooks } from "@/hooks/useBooks";
 import { BookCard } from "@/components/BookCard";
@@ -10,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, Pencil, Check, LayoutGrid, AlignJustify, Library, Target } from "lucide-react";
 import type { Book, ReadingStatus } from "@/hooks/useBooks";
 import { GENRES, FORMATS, STATUSES } from "@/lib/constants";
-
+ 
 const GOALS_KEY = "book-tracker-reading-goals";
 function loadGoals(): Record<number, number> {
   try { return JSON.parse(localStorage.getItem(GOALS_KEY) || "{}"); } catch { return {}; }
@@ -18,16 +17,16 @@ function loadGoals(): Record<number, number> {
 function saveGoals(goals: Record<number, number>) {
   localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
 }
-
+ 
 function getBookYear(book: Book): number {
   const dateStr = book.endDate || book.startDate || book.addedAt;
   if (!dateStr) return new Date().getFullYear();
   const d = new Date(dateStr);
   return isNaN(d.getTime()) ? new Date().getFullYear() : d.getFullYear();
 }
-
+ 
 type SortOption = "read-desc" | "read-asc" | "added-desc" | "added-asc" | "title-asc" | "title-desc" | "rating-desc" | "author-asc";
-
+ 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "read-desc", label: "Leídos recientemente" },
   { value: "read-asc", label: "Leídos antes" },
@@ -38,39 +37,39 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "rating-desc", label: "Mejor valorados" },
   { value: "author-asc", label: "Autor A-Z" },
 ];
-
+ 
 const STATUS_LABELS: Record<string, string> = {
   "want-to-read": "Quiero leer",
   reading: "Leyendo",
   finished: "Terminado",
 };
-
+ 
 export default function LibraryPage() {
   const { books, loading, addBook, addBooksInBatch, updateBook, deleteBook } = useBooks();
   const { addItem } = useWishlist();
-
+ 
   const currentYear = new Date().getFullYear();
   const [yearFilter, setYearFilter] = useState<string>(String(currentYear));
   const [viewMode, setViewMode] = useState<"grid" | "spine">("grid");
   const [genreFilter, setGenreFilter] = useState<string>("all");
   const [formatFilter, setFormatFilter] = useState<string>("all");
   const [sort, setSort] = useState<SortOption>("read-desc");
-
+ 
   const [goals, setGoals] = useState<Record<number, number>>(loadGoals);
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState("");
   const goalInputRef = useRef<HTMLInputElement>(null);
-
+ 
   const availableYears = useMemo(() => {
     const yearSet = new Set<number>();
     yearSet.add(currentYear);
     books.forEach((b) => yearSet.add(getBookYear(b)));
     return Array.from(yearSet).sort((a, b) => b - a);
   }, [books, currentYear]);
-
+ 
   const selectedYear = yearFilter === "all" ? null : Number(yearFilter);
   const currentGoal = selectedYear ? (goals[selectedYear] ?? 0) : 0;
-
+ 
   const handleGoalSave = () => {
     const val = parseInt(goalInput, 10);
     if (!isNaN(val) && val >= 0 && selectedYear) {
@@ -80,13 +79,13 @@ export default function LibraryPage() {
     }
     setEditingGoal(false);
   };
-
+ 
   const handleGoalEdit = () => {
     setGoalInput(String(currentGoal || ""));
     setEditingGoal(true);
     setTimeout(() => goalInputRef.current?.focus(), 0);
   };
-
+ 
   const handleImportWishlist = async (items: { title: string; author: string; coverUrl?: string; totalPages: number }[]) => {
     for (const item of items) {
       await addItem({
@@ -101,7 +100,7 @@ export default function LibraryPage() {
       });
     }
   };
-
+ 
   const handleMoveToWishlist = async (book: Book) => {
     const wishItem: Omit<WishItem, "id"> = {
       title: book.title,
@@ -118,34 +117,34 @@ export default function LibraryPage() {
     await addItem(wishItem);
     await deleteBook(book.id);
   };
-
+ 
   const yearBooks = useMemo(() => {
     if (!selectedYear) return books;
     return books.filter((b) => getBookYear(b) === selectedYear);
   }, [books, selectedYear]);
-
+ 
   const finishedYearBooks = useMemo(
     () => yearBooks.filter((b) => b.status === "finished"),
     [yearBooks]
   );
-
+ 
   const totalPages = useMemo(() => finishedYearBooks.reduce((s, b) => s + b.totalPages, 0), [finishedYearBooks]);
-
+ 
   const totalSpent = useMemo(() => {
     return finishedYearBooks.reduce((s, b) => {
       const p = parseFloat(b.price || "0");
       return s + (isNaN(p) ? 0 : p);
     }, 0);
   }, [finishedYearBooks]);
-
+ 
   const physicalCount = useMemo(() => finishedYearBooks.filter((b) => b.format === "Físico").length, [finishedYearBooks]);
   const digitalCount = useMemo(() => finishedYearBooks.filter((b) => b.format === "Digital").length, [finishedYearBooks]);
-
+ 
   const filtered = useMemo(() => {
     let result = [...yearBooks];
     if (genreFilter !== "all") result = result.filter((b) => b.genre === genreFilter);
     if (formatFilter !== "all") result = result.filter((b) => b.format === formatFilter);
-
+ 
     result.sort((a, b) => {
       switch (sort) {
         case "read-desc": return new Date(b.endDate || b.startDate || b.addedAt).getTime() - new Date(a.endDate || a.startDate || a.addedAt).getTime();
@@ -161,7 +160,7 @@ export default function LibraryPage() {
     });
     return result;
   }, [yearBooks, genreFilter, formatFilter, sort]);
-
+ 
   const groupedByStatus = useMemo(() => {
     const groups: { status: ReadingStatus; label: string; books: Book[] }[] = [];
     const statuses: ReadingStatus[] = ["finished", "reading", "want-to-read"];
@@ -173,12 +172,12 @@ export default function LibraryPage() {
     }
     return groups;
   }, [filtered]);
-
+ 
   const goalPercent = currentGoal > 0 ? Math.min(100, Math.round((finishedYearBooks.length / currentGoal) * 100)) : 0;
-
+ 
   return (
     <div className="space-y-8">
-
+ 
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -218,7 +217,7 @@ export default function LibraryPage() {
           <AddBookDialog onAdd={addBook} onAddToWishlist={addItem} />
         </div>
       </div>
-
+ 
       {/* STATS */}
       {!loading && yearBooks.length > 0 && (
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
@@ -230,7 +229,7 @@ export default function LibraryPage() {
           {digitalCount > 0 && (<><span className="text-border">·</span><span className="flex items-center gap-1.5"><span className="text-base leading-none">📱</span><span className="text-lg font-semibold text-foreground">{digitalCount}</span> digital</span></>)}
         </div>
       )}
-
+ 
       {/* OBJETIVO ANUAL */}
       {selectedYear && (
         <div className="rounded-[var(--radius)] border border-border/40 bg-card p-5 sm:p-6">
@@ -287,7 +286,7 @@ export default function LibraryPage() {
           )}
         </div>
       )}
-
+ 
       {/* FILTROS */}
       <div className="flex flex-wrap gap-3 items-center">
         <Select value={genreFilter} onValueChange={setGenreFilter}>
@@ -316,7 +315,7 @@ export default function LibraryPage() {
           </button>
         )}
       </div>
-
+ 
       {/* LIBROS */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
