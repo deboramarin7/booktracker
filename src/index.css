@@ -106,202 +106,128 @@
 [data-theme="night"] { --radius: 1rem; }
 [data-theme="editorial"] { --radius: 0.5rem; }
 
+
 /* ============================================================
-   NIGHT THEME — Estrellas
+   INTER FONT
    ============================================================ */
-[data-theme="night"] .starfield {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  pointer-events: none;
-  z-index: 0;
-  background: radial-gradient(ellipse at bottom, #0d1d31 0%, #0c0d13 100%);
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-[data-theme="night"] .star {
-  position: absolute;
-  width: 2px; height: 2px;
-  background: white;
-  border-radius: 50%;
-  animation: twinkle 3s infinite ease-in-out;
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
+body {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 15px !important;
 }
 
 /* ============================================================
-   NIGHT THEME — Glassmorphism
-   ============================================================ */
-[data-theme="night"] .glass-card {
-  background: rgba(12, 16, 33, 0.7);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(212, 175, 55, 0.2);
-}
-
-/* ============================================================
-   COMPONENTES COMPARTIDOS
+   NIGHT THEME — SETUP PRO COMPLETO
    ============================================================ */
 
-/* Estantería de madera */
-.bookshelf {
-  background: var(--shelf-wood);
-  box-shadow:
-    0 4px 8px var(--shelf-shadow),
-    inset 0 2px 4px rgba(255, 255, 255, 0.1);
-}
-
-/* Libro con efecto 3D */
-.book-3d {
-  transform-style: preserve-3d;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.book-3d:hover {
-  transform: translateY(-8px) rotateY(-5deg);
-  box-shadow:
-    8px 8px 20px var(--book-shadow),
-    -2px -2px 10px rgba(255, 255, 255, 0.1);
-}
-
-/* ============================================================
-   UTILIDADES
-   ============================================================ */
-
-/* Custom scrollbar */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: var(--muted); }
-::-webkit-scrollbar-thumb { background: var(--primary); border-radius: var(--radius); }
-::-webkit-scrollbar-thumb:hover { background: var(--accent); }
-
-/* Accesibilidad */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-/* ============================================================
-   MEJORAS VISUALES
-   ============================================================ */
-
-/* Microinteracción en cards */
-.animate-fade-in {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-/* Botón primario con más presencia */
-.bg-primary {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-}
-
-/* Texto secundario más diferenciado */
-.text-muted-foreground {
-  opacity: 0.8;
-}
-
-/* Imágenes con transición suave */
-img {
-  transition: transform 0.2s ease;
-}
-
-/* ── Night Theme: Fondo de estrellas (imagen real) ── */
+/* 1. FONDO */
 [data-theme="night"] body {
-  background-image: url('/estrellas.jpeg');
-  background-size: cover;
+  background-image: url('https://images.unsplash.com/photo-1634156541649-f418858f5b62?fm=jpg&q=60&w=3000&auto=format&fit=crop');
+  background-size: 120%;
   background-position: center;
   background-attachment: fixed;
   background-repeat: no-repeat;
 }
 
-[data-theme="night"] .bg-background {
-  background-color: transparent !important;
-}
-
-[data-theme="night"] .bg-card {
-  background-color: rgba(7, 15, 26, 0.85) !important;
-  backdrop-filter: blur(12px);
-}
-
-[data-theme="night"] aside {
-  background-color: rgba(3, 8, 16, 0.9) !important;
-  backdrop-filter: blur(16px);
-}
-
-[data-theme="night"] header {
-  background-color: rgba(3, 8, 16, 0.85) !important;
-  backdrop-filter: blur(16px);
-}
-
-
-[data-theme="night"] [role="combobox"] span,
-[data-theme="night"] [role="combobox"] > * {
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-/* ── Night theme: botones, selects, inputs ── */
-:root {
-  --night-panel-bg: rgba(7, 15, 26, 0.88);
-  --night-panel-border: rgba(96, 165, 250, 0.18);
-}
-
-[data-theme="night"] [role="combobox"],
-[data-theme="night"] button:not([class*="bg-primary"]):not([class*="bg-red"]):not([class*="rounded-full"][class*="bg-"]):not([class*="w-7"]) {
-  background-color: var(--night-panel-bg) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--night-panel-border) !important;
-  color: rgba(255, 255, 255, 0.92) !important;
-}
-
-[data-theme="night"] input:not([type="checkbox"]):not([type="radio"]),
-[data-theme="night"] textarea {
-  background-color: var(--night-panel-bg) !important;
-  border: 1px solid var(--night-panel-border) !important;
-  color: rgba(255, 255, 255, 0.92) !important;
-}
-
-[data-theme="night"] [role="combobox"] span,
-[data-theme="night"] [role="combobox"] svg {
-  color: rgba(255, 255, 255, 0.92) !important;
-}
-
-[data-theme="night"] [role="dialog"] > div,
-[data-theme="night"] [data-radix-dialog-content] {
-  background-color: rgba(5, 12, 25, 0.97) !important;
-  border: 1px solid var(--night-panel-border) !important;
-  backdrop-filter: blur(24px);
-}
-
-[data-theme="night"] [data-radix-popper-content-wrapper] > div {
-  background-color: rgba(5, 12, 25, 0.97) !important;
-  border: 1px solid var(--night-panel-border) !important;
-}
-
-/* ── Night theme: difuminar fondo de estrellas ── */
-[data-theme="night"] body {
-  background-size: 120%;
-}
-
+/* 2. CAPA MÁGICA — blur + oscuridad */
 [data-theme="night"] body::before {
   content: "";
   position: fixed;
   inset: 0;
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.45);
   z-index: 0;
   pointer-events: none;
 }
 
-/* Contenido por encima del blur */
-[data-theme="night"] #root > div > div,
+[data-theme="night"] .bg-background {
+  background-color: transparent !important;
+}
+
+/* 3. CONTENIDO POR ENCIMA */
+[data-theme="night"] #root > div,
 [data-theme="night"] main,
 [data-theme="night"] aside,
 [data-theme="night"] header {
   position: relative;
   z-index: 1;
+}
+
+/* 4. CARDS */
+[data-theme="night"] .bg-card {
+  background: rgba(7, 15, 26, 0.65) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="night"] aside,
+[data-theme="night"] header {
+  background: rgba(3, 8, 20, 0.75) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* 5. BOTONES Y FILTROS */
+[data-theme="night"] [role="combobox"],
+[data-theme="night"] button:not([class*="bg-primary"]):not([class*="bg-red"]):not([class*="w-7"]):not([class*="h-7"]) {
+  background: rgba(7, 15, 26, 0.65) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  transition: all 0.2s ease;
+}
+
+[data-theme="night"] [role="combobox"]:hover,
+[data-theme="night"] button:not([class*="bg-primary"]):not([class*="bg-red"]):not([class*="w-7"]):not([class*="h-7"]):hover {
+  background: rgba(7, 15, 26, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="night"] [role="combobox"] *,
+[data-theme="night"] [role="combobox"] svg {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+/* 6. INPUTS */
+[data-theme="night"] input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="night"] textarea {
+  background: rgba(7, 15, 26, 0.65) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+/* 7. DIALOG / FORMULARIO */
+[data-theme="night"] [role="dialog"] > div,
+[data-theme="night"] [data-radix-dialog-content] {
+  background: rgba(5, 12, 25, 0.95) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="night"] [data-radix-popper-content-wrapper] > div {
+  background: rgba(5, 12, 25, 0.97) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 8. HOVER EN PORTADAS (libros y estantería) */
+.book-3d:hover,
+img.object-cover:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+img.object-cover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* 9. MICROINTERACCIONES EN CARDS */
+.animate-fade-in {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
