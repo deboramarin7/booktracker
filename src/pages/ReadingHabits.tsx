@@ -102,11 +102,6 @@ function YearHeatmap({ year, habits }: { year: number; habits: Record<string, st
         </div>
         {/* Day labels + grid */}
         <div className="flex gap-0">
-          <div className="flex flex-col gap-[3px] mr-1 text-[9px] text-muted-foreground pt-0">
-            {["", "Mar", "", "Jue", "", "Sáb", ""].map((d, i) => (
-              <div key={i} className="h-[11px] flex items-center justify-end pr-0.5 w-6">{d}</div>
-            ))}
-          </div>
           <div className="flex gap-[3px]">
             {weeks.map((week, wi) => (
               <div key={wi} className="flex flex-col gap-[3px]">
@@ -138,12 +133,7 @@ function YearHeatmap({ year, habits }: { year: number; habits: Record<string, st
         </div>
       </div>
     </div>
-    {/* Legend — simplificada (solo 2 niveles reales) */}
-    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-1">
-      <span>Menos</span>
-      <div className="w-[18px] h-[18px] rounded-[2px] bg-muted/60 dark:bg-muted/30" />
-      <div className="w-[18px] h-[18px] rounded-[2px] bg-emerald-500 dark:bg-emerald-400" />
-      <span>Más</span>
+
     </div>
   </div>
 );
