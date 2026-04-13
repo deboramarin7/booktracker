@@ -1,14 +1,3 @@
-Resumiendo lo que necesitas hacer:
-
----
-
-### **Lo ÚNICO que tienes que cambiar es 1 archivo:**
-
-**`Layout.tsx`** → Reemplaza tu `src/components/Layout.tsx`
-
-Aquí está el contenido:
-Action: file_editor view /app/theme-package/Layout.tsx
-Observation: [Showing lines 1-244 of 244 total] /app/theme-package/Layout.tsx:
 1|// Layout.tsx - DISTRIBUCIÓN SIDEBAR
 2|// 
 3|// CAMBIOS: Solo la estructura visual (sidebar desktop + mobile drawer)
