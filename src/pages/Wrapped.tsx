@@ -298,8 +298,8 @@ export default function Wrapped() {
             Tu año lector · {selectedYear}
           </p>
           <div className="space-y-2">
-            <h2 className="text-[160px] sm:text-[220px] font-black text-white leading-[0.85] font-display">
-              <AnimatedNumber value={yearBooks.length} />
+            <h2 className="text-[190px] sm:text-[250px] font-black text-white leading-[0.85] font-display">
+               <AnimatedNumber value={yearBooks.length} />
             </h2>
             <p className="text-xl text-white/60">libros terminados</p>
           </div>
@@ -332,7 +332,7 @@ export default function Wrapped() {
             <BookOpen className="h-8 w-8 text-emerald-400" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-[120px] sm:text-[160px] font-black text-white leading-[0.85] font-display">
+            <h2 className="text-[150px] sm:text-[200px] font-black text-white leading-[0.85] font-display">
               <AnimatedNumber value={totalPages} />
             </h2>
             <p className="text-xl text-white/60">páginas leídas</p>
@@ -576,38 +576,6 @@ export default function Wrapped() {
         </div>
       </WrappedSlide>
 
-      {/* --- Navigation overlay --- */}
-      <div className="absolute bottom-6 left-0 right-0 z-20 flex items-center justify-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={prev}
-          disabled={currentSlide === 0}
-          className="rounded-full h-10 w-10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-20 border border-white/10"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex gap-1.5">
-          {Array.from({ length: totalSlides }).map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentSlide(i)}
-              className={`h-1.5 rounded-full transition-all duration-500 ${
-                i === currentSlide ? "w-6 bg-emerald-400" : i < currentSlide ? "w-1.5 bg-white/30" : "w-1.5 bg-white/10"
-              }`}
-            />
-          ))}
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={next}
-          disabled={currentSlide === totalSlides - 1}
-          className="rounded-full h-10 w-10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-20 border border-white/10"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </Button>
-      </div>
 
       {/* Fullscreen toggle */}
       {isFullscreen && !isExporting && (
@@ -691,7 +659,46 @@ export default function Wrapped() {
       </div>
 
       {wrappedContent}
+      {wrappedContent}
 
+<div className="flex items-center justify-center gap-4">
+  <Button
+    variant="ghost"
+    size="icon"
+    onClick={prev}
+    disabled={currentSlide === 0}
+    className="rounded-full h-10 w-10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-20 border border-white/10"
+  >
+    <ChevronLeft className="h-5 w-5" />
+  </Button>
+
+  <div className="flex gap-1.5">
+    {Array.from({ length: totalSlides }).map((_, i) => (
+      <button
+        key={i}
+        onClick={() => setCurrentSlide(i)}
+        className={`h-1.5 rounded-full transition-all duration-500 ${
+          i === currentSlide
+            ? "w-6 bg-emerald-400"
+            : i < currentSlide
+            ? "w-1.5 bg-white/30"
+            : "w-1.5 bg-white/10"
+        }`}
+      />
+    ))}
+  </div>
+
+  <Button
+    variant="ghost"
+    size="icon"
+    onClick={next}
+    disabled={currentSlide === totalSlides - 1}
+    className="rounded-full h-10 w-10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-20 border border-white/10"
+  >
+    <ChevronRight className="h-5 w-5" />
+  </Button>
+</div>
+      
       {currentSlide < totalSlides - 1 && (
         <p className="text-center text-xs text-muted-foreground/40 font-body">
           Desliza o usa ← → para navegar
