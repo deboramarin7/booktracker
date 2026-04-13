@@ -133,8 +133,6 @@ function YearHeatmap({ year, habits }: { year: number; habits: Record<string, st
         </div>
       </div>
     </div>
-
-    </div>
   </div>
 );
 }
