@@ -77,7 +77,7 @@
    ============================================================ */
 [data-theme="cozy"] { --radius: 0.75rem; }
 [data-theme="night"] { --radius: 1rem; }
-[data-theme="editorial"] { --radius: 0px; }
+[data-theme="editorial"] { --radius: 0.5rem; }
 
 /* ============================================================
    NIGHT THEME — Estrellas
