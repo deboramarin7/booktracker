@@ -62,18 +62,41 @@
     @apply border-border;
   }
 
- body {
-  font-family: 'Quicksand', sans-serif;
-  font-weight: 400; /* texto normal */
-}
+  html {
+    scroll-behavior: smooth;
+    font-size: 18px; /* antes no estaba definido */
+  }
 
-h1 { font-size: 2rem; }     /* 32px */
-h2 { font-size: 1.5rem; }   /* 24px */
-h3 { font-size: 1.25rem; }  /* 20px */
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 400;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
 
-p {
-  font-size: 1rem; /* 16px → sube a 1.1rem si quieres más grande */
-}
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  h1 { font-size: 2.25rem; }
+  h2 { font-size: 1.8rem; }
+  h3 { font-size: 1.5rem; }
+  h4 { font-size: 1.25rem; }
+  h5 { font-size: 1.125rem; }
+  h6 { font-size: 1rem; }
+
+  p, span, button, input, textarea, select, li, a {
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 400;
+    font-size: 1rem;
+  }
+
+  small {
+    font-size: 0.92rem;
+  }
 }
 
 /* ============================================================
@@ -145,8 +168,6 @@ p {
 /* ============================================================
    UTILIDADES
    ============================================================ */
-
-html { scroll-behavior: smooth; }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
