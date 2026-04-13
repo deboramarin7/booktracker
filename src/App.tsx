@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/hooks/useTheme";
 import Layout from "./components/Layout";
 import Library from "./pages/Library";
+import Home from "./pages/Home";
 import AuthorsSagas from "./pages/AuthorsSagas";
 import Dashboard from "./pages/Dashboard";
 import WishList from "./pages/WishList";
@@ -14,7 +15,6 @@ import Achievements from "./pages/Achievements";
 import Wrapped from "./pages/Wrapped";
 import Shelves from "./pages/Shelves";
 import NotFound from "./pages/NotFound";
-import Help from "./pages/Help";
 
 const queryClient = new QueryClient();
 
@@ -27,7 +27,8 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route element={<Layout />}>
-              <Route path="/" element={<Library />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/biblioteca" element={<Library />} />
               <Route path="/autores-sagas" element={<AuthorsSagas />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/wishlist" element={<WishList />} />
@@ -35,7 +36,6 @@ const App = () => (
               <Route path="/logros" element={<Achievements />} />
               <Route path="/wrapped" element={<Wrapped />} />
               <Route path="/estanterias" element={<Shelves />} />
-              <Route path="/ayuda" element={<Help />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
