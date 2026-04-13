@@ -369,72 +369,6 @@ export default function ReadingHabits() {
         {/* ===== HABITS TAB ===== */}
         <TabsContent value="habits" className="space-y-8 mt-6">
 
-          {/* ── STREAK HERO ── */}
-          <Card className={cn(
-            "border-none overflow-hidden relative",
-            streak > 0
-              ? "bg-gradient-to-br from-orange-500/15 via-amber-500/10 to-yellow-500/5"
-              : "bg-gradient-to-br from-muted/40 to-muted/20"
-          )}>
-            {streak > 0 && (
-              <div className="absolute top-0 right-0 w-48 h-48 bg-orange-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
-            )}
-            <CardContent className="p-8 sm:p-10 relative">
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16">
-                {/* Current streak */}
-                <StreakBadge
-                  value={streak}
-                  label="Racha actual"
-                  icon={Flame}
-                  color="from-orange-500/30 to-amber-500/20"
-                  size="lg"
-                />
-                {/* Best streak */}
-                <StreakBadge
-                  value={bestStreak}
-                  label="Mejor racha"
-                  icon={Trophy}
-                  color="from-amber-500/30 to-yellow-500/20"
-                  size="sm"
-                />
-              </div>
-
-              {/* Motivational text */}
-              {streak > 0 && (
-                <p className="text-center text-sm text-muted-foreground mt-6 font-body">
-                  {streak >= 30 ? "🔥 ¡Increíble! Un mes entero leyendo sin parar." :
-                   streak >= 14 ? "🔥 ¡Dos semanas seguidas! Estás en racha." :
-                   streak >= 7 ? "🔥 ¡Una semana! Sigue así." :
-                   streak >= 3 ? "¡Buen ritmo! No pares ahora." :
-                   "¡Has empezado! Vuelve mañana para mantener la racha."}
-                </p>
-              )}
-              {streak === 0 && (
-                <p className="text-center text-sm text-muted-foreground mt-6 font-body">
-                  Marca el día de hoy como leído para empezar tu racha 🔥
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* ── QUICK STATS ── */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: "Días leídos", value: totalDays, icon: CalendarDays },
-              { label: "Media/mes", value: avgPerMonth, icon: TrendingUp },
-              { label: `Mejor mes (${bestMonth.name})`, value: bestMonth.days, icon: Zap },
-              { label: "Consistencia", value: `${consistencyScore}%`, icon: Trophy },
-            ].map(stat => (
-              <div key={stat.label} className="text-center p-4 rounded-xl bg-muted/30 border border-border/20">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <stat.icon className="h-3.5 w-3.5 text-primary/50" />
-                </div>
-                <p className="text-2xl font-bold font-display text-foreground">{stat.value}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-
           {/* ── CALENDAR PICKER ── */}
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground font-body">Haz clic en un día para marcar/desmarcar que leíste</p>
@@ -466,9 +400,9 @@ export default function ReadingHabits() {
               </p>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={chartData} barSize={28}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" width={24} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" opacity={0.3} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.7)" }} stroke="rgba(255,255,255,0.15)" />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "rgba(255,255,255,0.7)" }} stroke="rgba(255,255,255,0.15)" width={24} />
                   <RechartsTooltip
                     formatter={(value: number) => [`${value} días`, ""]}
                     contentStyle={{
@@ -629,3 +563,69 @@ export default function ReadingHabits() {
     </div>
   );
 }
+
+          {/* ── STREAK HERO ── */}
+          <Card className={cn(
+            "border-none overflow-hidden relative",
+            streak > 0
+              ? "bg-gradient-to-br from-orange-500/15 via-amber-500/10 to-yellow-500/5"
+              : "bg-gradient-to-br from-muted/40 to-muted/20"
+          )}>
+            {streak > 0 && (
+              <div className="absolute top-0 right-0 w-48 h-48 bg-orange-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
+            )}
+            <CardContent className="p-8 sm:p-10 relative">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16">
+                {/* Current streak */}
+                <StreakBadge
+                  value={streak}
+                  label="Racha actual"
+                  icon={Flame}
+                  color="from-orange-500/30 to-amber-500/20"
+                  size="lg"
+                />
+                {/* Best streak */}
+                <StreakBadge
+                  value={bestStreak}
+                  label="Mejor racha"
+                  icon={Trophy}
+                  color="from-amber-500/30 to-yellow-500/20"
+                  size="sm"
+                />
+              </div>
+
+              {/* Motivational text */}
+              {streak > 0 && (
+                <p className="text-center text-sm text-muted-foreground mt-6 font-body">
+                  {streak >= 30 ? "🔥 ¡Increíble! Un mes entero leyendo sin parar." :
+                   streak >= 14 ? "🔥 ¡Dos semanas seguidas! Estás en racha." :
+                   streak >= 7 ? "🔥 ¡Una semana! Sigue así." :
+                   streak >= 3 ? "¡Buen ritmo! No pares ahora." :
+                   "¡Has empezado! Vuelve mañana para mantener la racha."}
+                </p>
+              )}
+              {streak === 0 && (
+                <p className="text-center text-sm text-muted-foreground mt-6 font-body">
+                  Marca el día de hoy como leído para empezar tu racha 🔥
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ── QUICK STATS ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: "Días leídos", value: totalDays, icon: CalendarDays },
+              { label: "Media/mes", value: avgPerMonth, icon: TrendingUp },
+              { label: `Mejor mes (${bestMonth.name})`, value: bestMonth.days, icon: Zap },
+              { label: "Consistencia", value: `${consistencyScore}%`, icon: Trophy },
+            ].map(stat => (
+              <div key={stat.label} className="text-center p-4 rounded-xl bg-muted/30 border border-border/20">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <stat.icon className="h-3.5 w-3.5 text-primary/50" />
+                </div>
+                <p className="text-2xl font-bold font-display text-foreground">{stat.value}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{stat.label}</p>
+              </div>
+            ))}
+          </div>
