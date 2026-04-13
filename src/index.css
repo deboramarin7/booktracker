@@ -210,14 +210,3 @@ img {
   background-color: rgba(3, 8, 16, 0.85) !important;
   backdrop-filter: blur(16px);
 }
-
-/* ── Bookshelf balda mejorada ── */
-.bookshelf {
-  background: linear-gradient(180deg, #2a1f14 0%, #1a1209 60%, #0f0a05 100%) !important;
-  height: 26px !important;
-  border-radius: 0 0 10px 10px;
-  box-shadow:
-    0 6px 20px rgba(0,0,0,0.7),
-    0 2px 4px rgba(0,0,0,0.5),
-    inset 0 2px 3px rgba(255,255,255,0.06) !important;
-}
