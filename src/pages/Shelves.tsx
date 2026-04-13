@@ -75,7 +75,7 @@ function SortableBook({ book }: { book: Book }) {
         <div
           ref={setNodeRef}
           style={style}
-          style={{ width: "78px", height: "118px" }}
+          style={{ width: "90px", height: "135px" }}
           className={`relative group shrink-0 cursor-grab active:cursor-grabbing touch-none select-none ${
             isDragging ? "scale-110 rotate-2" : "transition-all duration-200 hover:-translate-y-3 hover:z-20"
           }`}
@@ -87,17 +87,17 @@ function SortableBook({ book }: { book: Book }) {
               <img
                 src={book.coverUrl}
                 alt={book.title}
-                className="w-[46px] sm:w-[58px] md:w-[70px] h-[69px] sm:h-[87px] md:h-[105px] object-cover rounded-[2px]"
+                className="w-[46px] sm:w-[58px] md:w-[70px] h-[69px] sm:h-[87px] md:h-[105px] object-cover rounded-lg"
                 draggable={false}
                 style={{ boxShadow: "3px 3px 8px rgba(0,0,0,0.5), inset -2px 0 4px rgba(0,0,0,0.2), inset 1px 0 1px rgba(255,255,255,0.15)" }}
                 onError={() => setCoverFailed(true)}
               />
               <div className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-r from-white/20 to-transparent rounded-l-[2px]" />
-              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-200 rounded-[2px]" />
+              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-200 rounded-lg" />
             </div>
           ) : (
             <div
-              className="w-[46px] sm:w-[58px] md:w-[70px] h-[69px] sm:h-[87px] md:h-[105px] rounded-[2px] flex items-center justify-center relative overflow-hidden"
+              className="w-[46px] sm:w-[58px] md:w-[70px] h-[69px] sm:h-[87px] md:h-[105px] rounded-lg flex items-center justify-center relative overflow-hidden"
               style={{
                 backgroundColor: spineColor,
                 boxShadow: "3px 3px 8px rgba(0,0,0,0.5), inset -2px 0 4px rgba(0,0,0,0.2), inset 1px 0 1px rgba(255,255,255,0.2)",
@@ -305,7 +305,7 @@ function ShelfRow({ row, rowIndex }: { row: Book[]; rowIndex: number }) {
         ))}
       </div>
       <div
-        className="h-[16px] sm:h-[20px]"
+        className="h-[22px] sm:h-[26px] rounded-b-xl shadow-[0_8px_16px_rgba(0,0,0,0.5)]"
         style={{
           background: "linear-gradient(to bottom, #a16207 0%, #92400e 30%, #78350f 60%, #5c2408 100%)",
           boxShadow: "0 5px 15px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,180,80,0.25)",
