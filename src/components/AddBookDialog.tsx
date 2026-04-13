@@ -36,13 +36,14 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
   const [endDate, setEndDate] = useState("");
   const [rating, setRating] = useState("0");
   const [tags, setTags] = useState<string[]>([]);
+  const [wishStatus, setWishStatus] = useState<"Buscar" | "Comprado" | "En biblioteca" | "En kindle">("Buscar");
 
   const reset = () => {
     setTitle(""); setAuthor(""); setCoverUrl("");
     setSagaName(""); setSagaOrder(""); setGenre(GENRES[0]);
     setFormat(FORMATS[0]); setSource(SOURCES[0]); setPrice("");
     setStatus("reading"); setTotalPages(""); setPagesRead("");
-    setStartDate(new Date().toISOString().slice(0, 10)); setEndDate(""); setRating("0"); setTags([]);
+    setStartDate(new Date().toISOString().slice(0, 10)); setEndDate(""); setRating("0"); setTags([]); setWishStatus("Buscar");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -59,7 +60,7 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
         sagaOrder: sagaOrder.trim() || undefined,
         genre,
         priority: 3,
-        status: "Buscar",
+        status: wishStatus,
         totalPages: Number(totalPages) || 0,
       });
       toast({ title: "Añadido a Wish List", description: `"${title.trim()}" se ha añadido a tu lista de deseos` });
@@ -197,6 +198,22 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
               <Input type="number" value={totalPages} onChange={(e) => setTotalPages(e.target.value)} placeholder="350" min={0} />
             </div>
           </div>
+
+          {/* Wish List status - only when want-to-read */}
+          {status === "want-to-read" && (
+            <div className="space-y-1.5">
+              <Label className="font-body text-sm">Estado en Wish List</Label>
+              <Select value={wishStatus} onValueChange={(v) => setWishStatus(v as "Buscar" | "Comprado" | "En biblioteca" | "En kindle")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Buscar">🔍 Buscar</SelectItem>
+                  <SelectItem value="Comprado">🛒 Comprado</SelectItem>
+                  <SelectItem value="En biblioteca">🏛️ En biblioteca</SelectItem>
+                  <SelectItem value="En kindle">📱 En kindle</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Páginas leídas - only if reading */}
           {status === "reading" && (
