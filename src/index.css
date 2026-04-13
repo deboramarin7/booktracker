@@ -147,10 +147,7 @@ body {
 }
 
 /* 3. CONTENIDO POR ENCIMA */
-[data-theme="night"] #root > div,
-[data-theme="night"] main,
-[data-theme="night"] aside,
-[data-theme="night"] header {
+[data-theme="night"] #root {
   position: relative;
   z-index: 1;
 }
@@ -164,7 +161,12 @@ body {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
-[data-theme="night"] aside,
+[data-theme="night"] aside {
+  background: rgba(3, 8, 20, 0.75) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
 [data-theme="night"] header {
   background: rgba(3, 8, 20, 0.75) !important;
   backdrop-filter: blur(20px);
