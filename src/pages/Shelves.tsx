@@ -256,12 +256,7 @@ export default function Shelves() {
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={orderedIds} strategy={rectSortingStrategy}>
             <div
-              className="relative rounded-xl overflow-hidden"
-              style={{
-                background: "rgba(0, 0, 0, 0.2)",
-                padding: "0",
-                border: "none",
-              }}
+              className="relative"
             >
               
               <div className="absolute top-3 bottom-0 left-0 w-3 sm:w-4" style={{ background: "linear-gradient(to right, #78350f, #92400e 50%, #6b2d0c)" }} />
@@ -296,7 +291,7 @@ function ShelfRow({ row, rowIndex }: { row: Book[]; rowIndex: number }) {
     <div className="relative">
       <div
         className="flex items-end gap-[2px] sm:gap-[3px] px-3 sm:px-5 pt-4 pb-0 min-h-[80px] sm:min-h-[100px] relative overflow-x-auto"
-        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.0), rgba(0,0,0,0.1))", scrollbarWidth: "none" }}
+        style={{ background: "transparent", scrollbarWidth: "none" }}
       >
         <style>{`div::-webkit-scrollbar { display: none; }`}</style>
         {row.map((book) => (
