@@ -258,7 +258,7 @@ export default function Shelves() {
             <div
               className="relative rounded-xl overflow-hidden"
               style={{
-                background: "transparent",
+                background: "rgba(0, 0, 0, 0.2)",
                 padding: "0",
                 border: "none",
               }}
