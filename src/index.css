@@ -160,22 +160,32 @@ html { scroll-behavior: smooth; }
 }
 
 /* ============================================================
-   INTER FONT + TAMAÑO BASE
+   MEJORAS VISUALES
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-body {
-  font-family: 'Inter', sans-serif !important;
-  font-size: 15px !important;
+/* Microinteracción en cards */
+.animate-fade-in {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-/* ============================================================
-   FONDO ESTRELLAS — NIGHT THEME
-   ============================================================ */
+/* Botón primario con más presencia */
+.bg-primary {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
 
+/* Texto secundario más diferenciado */
+.text-muted-foreground {
+  opacity: 0.8;
+}
+
+/* Imágenes con transición suave */
+img {
+  transition: transform 0.2s ease;
+}
+
+/* ── Night Theme: Fondo de estrellas (imagen real) ── */
 [data-theme="night"] body {
-  background-image: url('https://images.unsplash.com/photo-1634156541649-f418858f5b62?fm=jpg&q=60&w=3000&auto=format&fit=crop');
+  background-image: url('https://images.unsplash.com/photo-1634156541649-f418858f5b62?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OHx8Zm9uZG8lMjBkZSUyMGVzdHJlbGxhfGVufDB8fDB8fHww');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -186,66 +196,31 @@ body {
   background-color: transparent !important;
 }
 
-/* ============================================================
-   NIGHT THEME — BOTONES, SELECTS, INPUTS, FORMULARIOS
-   Con el mismo fondo que el card "Objetivo Anual"
-   ============================================================ */
-
-/* Fondo base igual al card objetivo */
 [data-theme="night"] .bg-card {
-  background-color: rgba(8, 16, 30, 0.88) !important;
+  background-color: rgba(7, 15, 26, 0.85) !important;
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
-/* Sidebar y header */
-[data-theme="night"] aside,
+[data-theme="night"] aside {
+  background-color: rgba(3, 8, 16, 0.9) !important;
+  backdrop-filter: blur(16px);
+}
+
 [data-theme="night"] header {
-  background-color: rgba(3, 8, 20, 0.92) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background-color: rgba(3, 8, 16, 0.85) !important;
+  backdrop-filter: blur(16px);
 }
 
-/* Botones outline y selects — mismo fondo que objetivo anual */
+/* ── Night theme: texto blanco en botones y controles ── */
 [data-theme="night"] button:not([class*="bg-primary"]):not([class*="bg-red"]):not([class*="bg-green"]),
 [data-theme="night"] [role="combobox"],
-[data-theme="night"] [data-state] {
-  background-color: rgba(8, 16, 30, 0.88) !important;
-  backdrop-filter: blur(12px);
-}
-
-/* Inputs y textareas */
 [data-theme="night"] input:not([type="checkbox"]):not([type="radio"]),
-[data-theme="night"] textarea {
-  background-color: rgba(8, 16, 30, 0.88) !important;
-  border-color: rgba(125, 211, 252, 0.2) !important;
+[data-theme="night"] textarea,
+[data-theme="night"] select {
+  color: rgba(255, 255, 255, 0.9) !important;
 }
 
-/* Dialog / formulario añadir libro */
-[data-theme="night"] [role="dialog"] > div,
-[data-theme="night"] .DialogContent,
-[data-theme="night"] [data-radix-dialog-content] {
-  background-color: rgba(5, 12, 25, 0.97) !important;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(125, 211, 252, 0.12) !important;
-}
-
-/* Dropdowns / popovers */
-[data-theme="night"] [data-radix-popper-content-wrapper] > div {
-  background-color: rgba(5, 12, 25, 0.97) !important;
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(125, 211, 252, 0.12) !important;
-}
-
-/* ============================================================
-   MICROINTERACCIONES EN CARDS
-   ============================================================ */
-
-.animate-fade-in {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-img {
-  transition: transform 0.2s ease;
+[data-theme="night"] [role="combobox"] span,
+[data-theme="night"] [role="combobox"] > * {
+  color: rgba(255, 255, 255, 0.9) !important;
 }
