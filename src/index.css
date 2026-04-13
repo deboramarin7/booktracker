@@ -158,3 +158,27 @@ html { scroll-behavior: smooth; }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============================================================
+   MEJORAS VISUALES
+   ============================================================ */
+
+/* Microinteracción en cards */
+.animate-fade-in {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* Botón primario con más presencia */
+.bg-primary {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+/* Texto secundario más diferenciado */
+.text-muted-foreground {
+  opacity: 0.8;
+}
+
+/* Imágenes con transición suave */
+img {
+  transition: transform 0.2s ease;
+}
