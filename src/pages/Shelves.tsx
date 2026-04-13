@@ -208,7 +208,7 @@ export default function Shelves() {
     <div className="space-y-6">
       <div className="flex items-end justify-between">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">Mi Estantería</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">📖 Mi Estantería</h2>
           <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
             <span className="font-semibold text-foreground">{finishedBooks.length}</span> libro{finishedBooks.length !== 1 ? "s" : ""} leído{finishedBooks.length !== 1 ? "s" : ""}
             <span className="mx-2 opacity-30">·</span>
