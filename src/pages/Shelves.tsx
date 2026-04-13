@@ -259,11 +259,11 @@ export default function Shelves() {
               className="relative rounded-xl overflow-hidden"
               style={{
                 background: "transparent",
-                padding: "0 0 0",
-                border: "1px solid rgba(146, 64, 14, 0.3)",
+                padding: "0",
+                border: "none",
               }}
             >
-              <div className="absolute top-0 left-0 right-0 h-3 rounded-t-xl" style={{ background: "linear-gradient(to bottom, #92400e, #78350f)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.4)" }} />
+              
               <div className="absolute top-3 bottom-0 left-0 w-3 sm:w-4" style={{ background: "linear-gradient(to right, #78350f, #92400e 50%, #6b2d0c)" }} />
               <div className="absolute top-3 bottom-0 right-0 w-3 sm:w-4" style={{ background: "linear-gradient(to left, #78350f, #92400e 50%, #6b2d0c)" }} />
               <div className="relative mt-3 rounded-sm overflow-hidden" style={{ background: "linear-gradient(to bottom, #0f0704 0%, #130a05 50%, #0f0704 100%)" }}>
@@ -273,7 +273,7 @@ export default function Shelves() {
                   ))}
                 </div>
               </div>
-              <div className="absolute bottom-0 left-0 right-0 h-4 rounded-b-xl" style={{ background: "linear-gradient(to top, #6b2d0c, #92400e)", boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.1)" }} />
+              
             </div>
           </SortableContext>
         </DndContext>
@@ -306,8 +306,8 @@ function ShelfRow({ row, rowIndex }: { row: Book[]; rowIndex: number }) {
       <div
         className="h-[16px] sm:h-[20px]"
         style={{
-          background: "linear-gradient(180deg, #263c5e 0%, #1a2d47 50%, #0f1e33 100%)",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.7), inset 0 1px 0px rgba(255,255,255,0.08)",
+          background: "linear-gradient(to bottom, #a16207 0%, #92400e 30%, #78350f 60%, #5c2408 100%)",
+          boxShadow: "0 5px 15px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,180,80,0.25)",
         }}
       />
       <div className="h-[4px] sm:h-[6px]" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.0) 100%)" }} />
