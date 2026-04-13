@@ -298,7 +298,7 @@ export default function Wrapped() {
             Tu año lector · {selectedYear}
           </p>
           <div className="space-y-2">
-            <h2 className="text-8xl sm:text-9xl font-bold text-white leading-none font-display">
+            <h2 className="text-[120px] sm:text-[160px] font-bold text-white leading-none font-display">
               <AnimatedNumber value={yearBooks.length} />
             </h2>
             <p className="text-xl text-white/60">libros terminados</p>
