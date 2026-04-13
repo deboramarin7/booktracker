@@ -210,7 +210,7 @@ img {
 
 /* ── Night Theme: Fondo de estrellas (imagen real) ── */
 [data-theme="night"] body {
-  background-image: url('https://muyinteresante.okdiario.com/wp-content/uploads/sites/5/2023/06/12/648713476ae20.jpeg');
+  background-image: url('/estrellas.jpg');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
