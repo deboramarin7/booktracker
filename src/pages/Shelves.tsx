@@ -33,31 +33,57 @@ function getBooksPerShelf() {
 }
 
 function loadOrder(): string[] {
-  try { return JSON.parse(localStorage.getItem(SHELF_ORDER_KEY) || "[]"); } catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(SHELF_ORDER_KEY) || "[]");
+  } catch {
+    return [];
+  }
 }
+
 function saveOrder(order: string[]) {
   localStorage.setItem(SHELF_ORDER_KEY, JSON.stringify(order));
 }
 
 function getSpineColor(title: string): string {
   const colors = [
-    { bg: "#7c3aed" }, { bg: "#0f766e" }, { bg: "#b91c1c" }, { bg: "#b45309" },
-    { bg: "#1d4ed8" }, { bg: "#be185d" }, { bg: "#15803d" }, { bg: "#7e22ce" },
-    { bg: "#c2410c" }, { bg: "#0e7490" },
+    { bg: "#7c3aed" },
+    { bg: "#0f766e" },
+    { bg: "#b91c1c" },
+    { bg: "#b45309" },
+    { bg: "#1d4ed8" },
+    { bg: "#be185d" },
+    { bg: "#15803d" },
+    { bg: "#7e22ce" },
+    { bg: "#c2410c" },
+    { bg: "#0e7490" },
   ];
-  const idx = (title.charCodeAt(0) + title.charCodeAt(title.length - 1)) % colors.length;
+  const idx =
+    (title.charCodeAt(0) + title.charCodeAt(title.length - 1)) % colors.length;
   return colors[idx].bg;
 }
 
 function getSpineTextColor(title: string): string {
-  const colors = ["#ede9fe","#ccfbf1","#fee2e2","#fef3c7","#dbeafe","#fce7f3","#dcfce7","#f3e8ff","#ffedd5","#cffafe"];
-  const idx = (title.charCodeAt(0) + title.charCodeAt(title.length - 1)) % colors.length;
+  const colors = [
+    "#ede9fe",
+    "#ccfbf1",
+    "#fee2e2",
+    "#fef3c7",
+    "#dbeafe",
+    "#fce7f3",
+    "#dcfce7",
+    "#f3e8ff",
+    "#ffedd5",
+    "#cffafe",
+  ];
+  const idx =
+    (title.charCodeAt(0) + title.charCodeAt(title.length - 1)) % colors.length;
   return colors[idx];
 }
 
 function SortableBook({ book }: { book: Book }) {
   const [coverFailed, setCoverFailed] = useState(false);
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: book.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: book.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -74,10 +100,11 @@ function SortableBook({ book }: { book: Book }) {
       <TooltipTrigger asChild>
         <div
           ref={setNodeRef}
-          style={style}
-          style={{ width: "78px", height: "118px" }}
+          style={{ ...style, width: "78px", height: "118px" }}
           className={`relative group shrink-0 cursor-grab active:cursor-grabbing touch-none select-none ${
-            isDragging ? "scale-110 rotate-2" : "transition-all duration-200 hover:-translate-y-3 hover:z-20"
+            isDragging
+              ? "scale-110 rotate-2"
+              : "transition-all duration-200 hover:-translate-y-3 hover:z-20"
           }`}
           {...attributes}
           {...listeners}
@@ -87,41 +114,61 @@ function SortableBook({ book }: { book: Book }) {
               <img
                 src={book.coverUrl}
                 alt={book.title}
-                className="w-[46px] sm:w-[58px] md:w-[70px] h-[69px] sm:h-[87px] md:h-[105px] object-cover rounded-[2px]"
+                className="w-[46px] sm:w-[58px] md:w-[70px] h-[69px] sm:h-[87px] md:h-[105px] object-cover rounded-[4px] transition-transform duration-200 group-hover:scale-[1.03]"
                 draggable={false}
-                style={{ boxShadow: "3px 3px 8px rgba(0,0,0,0.5), inset -2px 0 4px rgba(0,0,0,0.2), inset 1px 0 1px rgba(255,255,255,0.15)" }}
+                style={{
+                  boxShadow: "0 6px 14px rgba(0,0,0,0.35)",
+                }}
                 onError={() => setCoverFailed(true)}
               />
-              
-              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-200 rounded-[2px]" />
+              <div className="absolute inset-0 rounded-[4px] bg-white/0 group-hover:bg-white/10 transition-colors duration-200" />
             </div>
           ) : (
             <div
-              className="w-[46px] sm:w-[58px] md:w-[70px] h-[69px] sm:h-[87px] md:h-[105px] rounded-[2px] flex items-center justify-center relative overflow-hidden"
+              className="w-[46px] sm:w-[58px] md:w-[70px] h-[69px] sm:h-[87px] md:h-[105px] rounded-[4px] flex items-center justify-center relative overflow-hidden"
               style={{
                 backgroundColor: spineColor,
-                boxShadow: "3px 3px 8px rgba(0,0,0,0.5), inset -2px 0 4px rgba(0,0,0,0.2), inset 1px 0 1px rgba(255,255,255,0.2)",
+                boxShadow: "0 6px 14px rgba(0,0,0,0.35)",
               }}
             >
-              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(0,0,0,0.3) 8px, rgba(0,0,0,0.3) 9px)" }} />
-              
-              
-              
+              <div
+                className="absolute inset-0 opacity-10"
+                style={{
+                  backgroundImage:
+                    "repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(0,0,0,0.3) 8px, rgba(0,0,0,0.3) 9px)",
+                }}
+              />
               <span
                 className="text-[6px] sm:text-[7px] font-bold tracking-widest whitespace-nowrap overflow-hidden max-w-[85%] z-10"
-                style={{ writingMode: "vertical-rl", textOrientation: "mixed", color: spineTextColor, textShadow: "0 1px 2px rgba(0,0,0,0.4)" }}
+                style={{
+                  writingMode: "vertical-rl",
+                  textOrientation: "mixed",
+                  color: spineTextColor,
+                  textShadow: "0 1px 2px rgba(0,0,0,0.4)",
+                }}
               >
-                {book.title.length > 14 ? book.title.slice(0, 14) + "…" : book.title}
+                {book.title.length > 14 ? `${book.title.slice(0, 14)}…` : book.title}
               </span>
             </div>
           )}
         </div>
       </TooltipTrigger>
+
       <TooltipContent side="top" className="max-w-[180px] bg-popover/95 backdrop-blur-sm">
         <p className="text-xs font-semibold">{book.title}</p>
         <p className="text-[10px] text-muted-foreground">{book.author}</p>
-        {book.rating > 0 && <p className="text-amber-400 text-[10px] mt-0.5">{"★".repeat(book.rating)}{"☆".repeat(5 - book.rating)}</p>}
-        {book.hasSaga && book.saga && <p className="text-[9px] text-muted-foreground/60 mt-0.5 italic">{book.saga}{book.sagaOrder ? ` #${book.sagaOrder}` : ""}</p>}
+        {book.rating > 0 && (
+          <p className="text-amber-400 text-[10px] mt-0.5">
+            {"★".repeat(book.rating)}
+            {"☆".repeat(5 - book.rating)}
+          </p>
+        )}
+        {book.hasSaga && book.saga && (
+          <p className="text-[9px] text-muted-foreground/60 mt-0.5 italic">
+            {book.saga}
+            {book.sagaOrder ? ` #${book.sagaOrder}` : ""}
+          </p>
+        )}
       </TooltipContent>
     </Tooltip>
   );
@@ -132,6 +179,7 @@ export default function Shelves() {
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [booksPerShelf, setBooksPerShelf] = useState(getBooksPerShelf);
   const [groupBySaga, setGroupBySaga] = useState(false);
+  const [orderedIds, setOrderedIds] = useState<string[]>([]);
 
   useEffect(() => {
     const handleResize = () => setBooksPerShelf(getBooksPerShelf());
@@ -139,27 +187,36 @@ export default function Shelves() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const finishedBooks = useMemo(() => books.filter((b) => b.status === "finished"), [books]);
-
-  const [orderedIds, setOrderedIds] = useState<string[]>([]);
+  const finishedBooks = useMemo(
+    () => books.filter((b) => b.status === "finished"),
+    [books]
+  );
 
   useEffect(() => {
     const saved = loadOrder();
     const finishedIds = new Set(finishedBooks.map((b) => b.id));
     const existing = saved.filter((id) => finishedIds.has(id));
-    const newIds = finishedBooks.filter((b) => !existing.includes(b.id)).map((b) => b.id);
+    const newIds = finishedBooks
+      .filter((b) => !existing.includes(b.id))
+      .map((b) => b.id);
+
     const merged = [...existing, ...newIds];
     setOrderedIds(merged);
+
     if (newIds.length > 0) saveOrder(merged);
   }, [finishedBooks]);
 
   const orderedBooks = useMemo(() => {
     const bookMap = new Map(finishedBooks.map((b) => [b.id, b]));
-    const ordered = orderedIds.map((id) => bookMap.get(id)).filter(Boolean) as Book[];
+    const ordered = orderedIds
+      .map((id) => bookMap.get(id))
+      .filter(Boolean) as Book[];
+
     if (!groupBySaga) return ordered;
-    // Group by saga and sort each group by sagaOrder ascending (1, 2, 3...)
+
     const sagaGroups = new Map<string, Book[]>();
     const individuals: Book[] = [];
+
     ordered.forEach((book) => {
       if (book.hasSaga && book.saga) {
         if (!sagaGroups.has(book.saga)) sagaGroups.set(book.saga, []);
@@ -168,23 +225,31 @@ export default function Shelves() {
         individuals.push(book);
       }
     });
-    sagaGroups.forEach((books, saga) => {
-      sagaGroups.set(saga, [...books].sort((a, b) => {
-        const aOrder = parseFloat(a.sagaOrder || "9999") || 9999;
-        const bOrder = parseFloat(b.sagaOrder || "9999") || 9999;
-        return aOrder - bOrder;
-      }));
+
+    sagaGroups.forEach((booksInSaga, saga) => {
+      sagaGroups.set(
+        saga,
+        [...booksInSaga].sort((a, b) => {
+          const aOrder = parseFloat(a.sagaOrder || "9999") || 9999;
+          const bOrder = parseFloat(b.sagaOrder || "9999") || 9999;
+          return aOrder - bOrder;
+        })
+      );
     });
+
     return [...Array.from(sagaGroups.values()).flat(), ...individuals];
   }, [orderedIds, finishedBooks, groupBySaga]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+
     if (over && active.id !== over.id) {
       setOrderedIds((prev) => {
         const oldIndex = prev.indexOf(String(active.id));
@@ -209,14 +274,19 @@ export default function Shelves() {
     <div className="space-y-6">
       <div className="flex items-end justify-between">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">📖 Mi Estantería</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
+            📖 Mi Estantería
+          </h2>
           <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
-            <span className="font-semibold text-foreground">{finishedBooks.length}</span> libro{finishedBooks.length !== 1 ? "s" : ""} leído{finishedBooks.length !== 1 ? "s" : ""}
+            <span className="font-semibold text-foreground">{finishedBooks.length}</span>{" "}
+            libro{finishedBooks.length !== 1 ? "s" : ""} leído
+            {finishedBooks.length !== 1 ? "s" : ""}
             <span className="mx-2 opacity-30">·</span>
             <span className="opacity-60 hidden sm:inline">arrastra para reorganizar</span>
             <span className="opacity-60 sm:hidden">mantén pulsado para mover</span>
           </p>
         </div>
+
         <div className="flex items-center gap-3">
           <button
             onClick={() => setGroupBySaga(!groupBySaga)}
@@ -228,6 +298,7 @@ export default function Shelves() {
           >
             {groupBySaga ? "📚 Agrupado por saga" : "📚 Agrupar por saga"}
           </button>
+
           <span className="text-right text-xs text-muted-foreground/50 hidden sm:block">
             {shelves.length} estante{shelves.length !== 1 ? "s" : ""}
           </span>
@@ -242,38 +313,48 @@ export default function Shelves() {
             </div>
             <div className="absolute -top-1 -right-1 text-xl">✨</div>
           </div>
+
           <div className="space-y-1.5">
-            <p className="text-xl font-semibold font-display text-foreground">Tu estantería te espera</p>
+            <p className="text-xl font-semibold font-display text-foreground">
+              Tu estantería te espera
+            </p>
             <p className="text-sm text-muted-foreground font-display max-w-xs mx-auto">
               "No hay mejor amigo que un libro, ni mejor compañero que una buena historia."
             </p>
           </div>
+
           <p className="text-xs text-muted-foreground/60 font-display">
-            Marca libros como <span className="text-emerald-500 font-medium">Terminado</span> y aparecerán aquí automáticamente
+            Marca libros como <span className="text-emerald-500 font-medium">Terminado</span> y
+            aparecerán aquí automáticamente
           </p>
         </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
           <SortableContext items={orderedIds} strategy={rectSortingStrategy}>
-            <div
-              className="relative rounded-xl overflow-hidden"
-              style={{
-                background: "rgba(0, 0, 0, 0.2)",
-                padding: "0",
-                border: "none",
-              }}
-            >
-              
-              
-              
-              <div className="relative mt-3 rounded-sm overflow-hidden" style={{ background: "transparent" }}>
+            <div className="relative">
+              <div
+                className="absolute top-3 bottom-0 left-0 w-3 sm:w-4"
+                style={{ background: "rgba(255,255,255,0.04)" }}
+              />
+              <div
+                className="absolute top-3 bottom-0 right-0 w-3 sm:w-4"
+                style={{ background: "rgba(255,255,255,0.04)" }}
+              />
+
+              <div
+                className="relative mt-3 rounded-xl overflow-hidden border border-white/10 backdrop-blur-sm"
+                style={{ background: "rgba(5, 10, 20, 0.28)" }}
+              >
                 <div className="space-y-0 py-1 px-1 sm:px-1">
                   {shelves.map((row, rowIndex) => (
-                    <ShelfRow key={rowIndex} row={row} rowIndex={rowIndex} />
+                    <ShelfRow key={rowIndex} row={row} />
                   ))}
                 </div>
               </div>
-              
             </div>
           </SortableContext>
         </DndContext>
@@ -283,34 +364,50 @@ export default function Shelves() {
         <EditBookDialog
           book={editingBook}
           open={!!editingBook}
-          onOpenChange={(open) => { if (!open) setEditingBook(null); }}
-          onSave={(id, data) => { updateBook(id, data); setEditingBook(null); }}
+          onOpenChange={(open) => {
+            if (!open) setEditingBook(null);
+          }}
+          onSave={(id, data) => {
+            updateBook(id, data);
+            setEditingBook(null);
+          }}
         />
       )}
     </div>
   );
 }
 
-function ShelfRow({ row, rowIndex }: { row: Book[]; rowIndex: number }) {
+function ShelfRow({ row }: { row: Book[] }) {
   return (
     <div className="relative">
       <div
         className="flex items-end gap-[2px] sm:gap-[3px] px-3 sm:px-5 pt-4 pb-0 min-h-[80px] sm:min-h-[100px] relative overflow-x-auto"
-        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.0), rgba(0,0,0,0.1))", scrollbarWidth: "none" }}
+        style={{ background: "transparent", scrollbarWidth: "none" }}
       >
         <style>{`div::-webkit-scrollbar { display: none; }`}</style>
         {row.map((book) => (
           <SortableBook key={book.id} book={book} />
         ))}
       </div>
+
       <div
         className="h-[16px] sm:h-[20px]"
         style={{
-          background: "linear-gradient(to bottom, #a16207 0%, #92400e 30%, #78350f 60%, #5c2408 100%)",
-          boxShadow: "0 5px 15px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,180,80,0.25)",
+          background:
+            "linear-gradient(to bottom, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.07) 100%)",
+          boxShadow:
+            "0 6px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)",
+          borderTop: "1px solid rgba(255,255,255,0.08)",
         }}
       />
-      <div className="h-[4px] sm:h-[6px]" />
+
+      <div
+        className="h-[4px] sm:h-[6px]"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.0) 100%)",
+        }}
+      />
     </div>
   );
 }
