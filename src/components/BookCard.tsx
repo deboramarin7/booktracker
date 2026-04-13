@@ -47,7 +47,7 @@ export function BookCard({ book, onUpdate, onDelete, onMoveToWishlist, index }: 
   return (
     <>
       <div
-        className="group relative rounded-xl border border-border/40 bg-card overflow-hidden card-interactive hover:border-primary/30 animate-fade-in"
+        className="group relative rounded-2xl border border-border/30 bg-card overflow-hidden animate-fade-in transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:border-primary/40"
         style={{ animationDelay: `${index * 30}ms` }}
       >
         {/* Status indicator bar */}
@@ -58,7 +58,7 @@ export function BookCard({ book, onUpdate, onDelete, onMoveToWishlist, index }: 
 
         <div className="flex gap-4 p-4">
           {/* Cover - larger, with overlay on hover */}
-          <div className="relative flex-shrink-0 w-[88px] h-[130px] rounded-lg overflow-hidden shadow-md ring-1 ring-border/20">
+          <div className="relative flex-shrink-0 w-[100px] h-[150px] rounded-xl overflow-hidden shadow-lg ring-1 ring-border/20">
             <BookCoverImage
               src={book.coverUrl}
               alt={book.title}
@@ -102,7 +102,7 @@ export function BookCard({ book, onUpdate, onDelete, onMoveToWishlist, index }: 
           <div className="flex min-w-0 flex-1 flex-col">
             {/* Title & Author */}
             <div className="mb-2">
-              <h3 className="truncate text-base font-semibold leading-tight font-display">{book.title}</h3>
+              <h3 className="truncate text-lg font-bold leading-tight font-display">{book.title}</h3>
               <p className="truncate text-sm text-muted-foreground">{book.author}</p>
             </div>
 
@@ -210,7 +210,7 @@ export function BookCard({ book, onUpdate, onDelete, onMoveToWishlist, index }: 
         </div>
 
         {/* Bottom strip — format + Ver más */}
-        <div className="px-4 pb-3 flex items-center justify-between gap-1">
+        <div className="px-4 pb-4 flex items-center justify-between gap-1">
           <div className="flex flex-wrap gap-1">
             {book.format && (
               <span className={cn(
