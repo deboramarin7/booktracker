@@ -268,7 +268,7 @@ export default function Dashboard() {
       {/* ═══ HEADER ═══ */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold font-display">Dashboard</h2>
+          <h2 className="text-2xl font-bold font-display">📊 Dashboard</h2>
           <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
             <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
             <SelectContent>
