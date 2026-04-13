@@ -406,9 +406,9 @@ export default function Dashboard() {
                   <p className="text-sm font-semibold font-body text-foreground mb-4">Libros por mes</p>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={monthlyBarData} barSize={24}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                      <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" width={24} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" opacity={0.3} />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.7)" }} stroke="rgba(255,255,255,0.15)" />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "rgba(255,255,255,0.7)" }} stroke="rgba(255,255,255,0.15)" width={24} />
                       <Tooltip
                         contentStyle={{
                           borderRadius: "10px",
@@ -418,7 +418,7 @@ export default function Dashboard() {
                         }}
                         formatter={(value: number) => [`${value} libros`, ""]}
                       />
-                      <Bar dataKey="libros" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="libros" fill="#7DD3FC" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -483,9 +483,9 @@ export default function Dashboard() {
                   <p className="text-sm font-semibold font-body text-foreground mb-4">Evolución mes a mes</p>
                   <ResponsiveContainer width="100%" height={260}>
                     <LineChart data={evolutionData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                      <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" width={24} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" opacity={0.3} />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "rgba(255,255,255,0.7)" }} stroke="rgba(255,255,255,0.15)" />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "rgba(255,255,255,0.7)" }} stroke="rgba(255,255,255,0.15)" width={24} />
                       <Tooltip
                         contentStyle={{
                           borderRadius: "10px",
