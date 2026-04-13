@@ -280,3 +280,28 @@ img {
   background-color: rgba(5, 12, 25, 0.97) !important;
   border: 1px solid var(--night-panel-border) !important;
 }
+
+/* ── Night theme: difuminar fondo de estrellas ── */
+[data-theme="night"] body {
+  background-size: 120%;
+}
+
+[data-theme="night"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Contenido por encima del blur */
+[data-theme="night"] #root > div > div,
+[data-theme="night"] main,
+[data-theme="night"] aside,
+[data-theme="night"] header {
+  position: relative;
+  z-index: 1;
+}
