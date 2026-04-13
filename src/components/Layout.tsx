@@ -1,6 +1,7 @@
 import { createContext, useContext, useState } from "react";
-import { Outlet, NavLink, Link } from "react-router-dom";
-import { BookOpen, Menu, Moon, Sun, Sparkles } from "lucide-react";
+import { Outlet, NavLink } from "react-router-dom";
+import { BookOpen, Menu, Moon, Sun, Sparkles, Palette } from "lucide-react";
+import { ThemeSelector } from "@/components/ThemeSelector";
 import { useBooks } from "@/hooks/useBooks";
 import type { Book } from "@/hooks/useBooks";
 import { useWishlist } from "@/hooks/useWishlist";
@@ -39,39 +40,38 @@ export default function Layout() {
   const { addItem: addWishItem } = useWishlist();
   const { dark, setDark } = useTheme();
   const [searchEditBook, setSearchEditBook] = useState<Book | null>(null);
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
 
   const menuBg = dark ? "hsl(220, 16%, 12%)" : "hsl(220, 14%, 98%)";
   const menuText = dark ? "hsl(220, 10%, 92%)" : "hsl(220, 15%, 12%)";
   const menuHoverBg = dark ? "hsl(220, 12%, 20%)" : "hsl(220, 10%, 91%)";
 
   const navLinks = [
-    { to: "/biblioteca", label: "📚 Biblioteca" },
-    { to: "/autores-sagas", label: "✍️ Autores" },
-    { to: "/wishlist", label: "💜 Wish List" },
-    { to: "/estanterias", label: "📖 Estantería" },
-    { to: "/reading-habits", label: "📅 Hábitos" },
-    { to: "/logros", label: "🎯 Logros" },
-    { to: "/dashboard", label: "📊 Dashboard" },
+    { to: "/", label: "Mi Biblioteca", end: true },
+    { to: "/autores-sagas", label: "Autores y Sagas" },
+    { to: "/wishlist", label: "Wish List" },
+    { to: "/estanterias", label: "Estanterías" },
+    { to: "/reading-habits", label: "Hábitos" },
+    { to: "/logros", label: "Logros" },
+    { to: "/dashboard", label: "Dashboard" },
     { to: "/wrapped", label: "Wrapped ✨" },
-    { to: "/ayuda", label: "Ayuda" },
   ];
 
   return (
     <BooksContext.Provider value={{ books, loading, addBook, addBooksInBatch, updateBook, deleteBook, addWishItem }}>
       <div className="min-h-screen">
-        <header className="sticky top-0 z-10 backdrop-blur-xl" style={{ background: "linear-gradient(180deg, hsl(var(--card)/0.97) 0%, hsl(var(--card)/0.92) 100%)", borderBottom: "1px solid hsl(var(--border)/0.5)", boxShadow: "0 1px 40px rgba(0,0,0,0.15)" }}>
+        <header className="border-b border-border/40 bg-card/90 backdrop-blur-xl sticky top-0 z-10">
           <div className="container flex items-center justify-between py-3">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-3 group">
-              <div className="relative flex items-center justify-center w-9 h-9 rounded-xl shrink-0" style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.2), hsl(var(--primary)/0.05))", border: "1px solid hsl(var(--primary)/0.3)" }}>
-                <BookOpen className="h-5 w-5 text-primary" />
-                <Sparkles className="h-2.5 w-2.5 text-amber-400 absolute -top-1 -right-1" />
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <BookOpen className="h-7 w-7 text-primary" />
+                <Sparkles className="h-3 w-3 text-warm-gold absolute -top-1 -right-1.5" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold tracking-tight font-display text-foreground leading-none">Book Tracker</h1>
-                <p className="text-[10px] text-muted-foreground font-display tracking-widest uppercase leading-none mt-0.5">Tu diario lector</p>
-              </div>
-            </Link>
+              <h1 className="text-2xl font-bold tracking-tight font-display text-foreground">
+                Book Tracker
+              </h1>
+            </div>
 
             {/* Desktop nav */}
             <nav className="hidden md:flex gap-1 items-center">
@@ -92,11 +92,27 @@ export default function Layout() {
                 </NavLink>
               ))}
               <GlobalSearch books={books} onSelectBook={setSearchEditBook} />
+              <div className="relative ml-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setThemeMenuOpen(!themeMenuOpen)}
+                  className="hover:bg-primary/10 hover:text-primary transition-colors"
+                  title="Cambiar tema"
+                >
+                  <Palette className="h-4 w-4" />
+                </Button>
+                {themeMenuOpen && (
+                  <div className="absolute right-0 top-10 w-52 rounded-xl border border-border bg-card shadow-xl p-2 z-50">
+                    <ThemeSelector />
+                  </div>
+                )}
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setDark(!dark)}
-                className="ml-1 hover:bg-warm-gold/10 hover:text-warm-gold transition-colors"
+                className="hover:bg-warm-gold/10 hover:text-warm-gold transition-colors"
               >
                 {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
@@ -127,6 +143,10 @@ export default function Layout() {
                   <div className="flex items-center gap-2 mb-8 px-4">
                     <BookOpen className="h-5 w-5 text-primary" />
                     <span className="font-display text-lg font-semibold" style={{ color: menuText }}>Menú</span>
+                  </div>
+                  <div className="px-2 mb-4">
+                    <p className="text-xs text-muted-foreground mb-2 px-2 font-display uppercase tracking-wide">Tema</p>
+                    <ThemeSelector />
                   </div>
                   <nav className="flex flex-col gap-1 px-2">
                     {navLinks.map((link) => (
