@@ -25,11 +25,11 @@ const SHELF_ORDER_KEY = "book-tracker-shelf-order";
 
 function getBooksPerShelf() {
   const w = window.innerWidth;
-  if (w < 480) return 7;
-  if (w < 640) return 9;
-  if (w < 768) return 11;
-  if (w < 1024) return 14;
-  return 17;
+  if (w < 480) return 4;
+  if (w < 640) return 6;
+  if (w < 768) return 8;
+  if (w < 1024) return 11;
+  return 14;
 }
 
 function loadOrder(): string[] {
@@ -75,6 +75,7 @@ function SortableBook({ book }: { book: Book }) {
         <div
           ref={setNodeRef}
           style={style}
+          style={{ width: "78px", height: "118px" }}
           className={`relative group shrink-0 cursor-grab active:cursor-grabbing touch-none select-none ${
             isDragging ? "scale-110 rotate-2" : "transition-all duration-200 hover:-translate-y-3 hover:z-20"
           }`}
@@ -295,7 +296,7 @@ function ShelfRow({ row, rowIndex }: { row: Book[]; rowIndex: number }) {
   return (
     <div className="relative">
       <div
-        className="flex items-end gap-[2px] sm:gap-[3px] px-3 sm:px-5 pt-4 pb-0 min-h-[80px] sm:min-h-[100px] relative overflow-x-auto"
+        className="flex items-end gap-[8px] sm:gap-[10px] px-3 sm:px-5 pt-4 pb-0 min-h-[80px] sm:min-h-[100px] relative overflow-x-auto"
         style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.0), rgba(0,0,0,0.1))", scrollbarWidth: "none" }}
       >
         <style>{`div::-webkit-scrollbar { display: none; }`}</style>
@@ -304,7 +305,7 @@ function ShelfRow({ row, rowIndex }: { row: Book[]; rowIndex: number }) {
         ))}
       </div>
       <div
-        className="h-[10px] sm:h-[14px]"
+        className="h-[16px] sm:h-[20px]"
         style={{
           background: "linear-gradient(to bottom, #a16207 0%, #92400e 30%, #78350f 60%, #5c2408 100%)",
           boxShadow: "0 5px 15px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,180,80,0.25)",
