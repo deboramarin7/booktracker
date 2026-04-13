@@ -120,6 +120,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
 
 export default function Layout() {
   const { books, loading, addBook, addBooksInBatch, updateBook, deleteBook } = useBooks();
+  const { themeId } = useTheme();
   const { addItem: addWishItem } = useWishlist();
   const [searchEditBook, setSearchEditBook] = useState<Book | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
