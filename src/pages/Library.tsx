@@ -50,6 +50,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: string, data: Partial<Omit<Book, "id" | "addedAt">>) => void; onDelete: (id: string) => void }) {
   const [editing, setEditing] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
 
   const statusBadge = () => {
     switch (book.status) {
@@ -66,7 +67,7 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
 
   return (
     <>
-      <div className="group cursor-pointer" onClick={() => setEditing(true)}>
+      <div className="group cursor-pointer" onClick={() => setShowDetail(true)}>
         <div className="aspect-[2/3] rounded-[var(--radius)] overflow-hidden bg-muted mb-2 book-3d relative">
           <BookCoverImage
             src={book.coverUrl}
@@ -78,7 +79,13 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
           <div className="absolute top-2 left-2">
             {statusBadge()}
           </div>
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
+            <button
+              onClick={(e) => { e.stopPropagation(); setEditing(true); }}
+              className="w-7 h-7 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center text-white transition-colors"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
             <button
               onClick={(e) => { e.stopPropagation(); if (window.confirm(`¿Eliminar "${book.title}"? Esta acción no se puede deshacer.`)) onDelete(book.id); }}
               className="w-7 h-7 rounded-full bg-red-500/80 hover:bg-red-500 flex items-center justify-center text-white transition-colors"
@@ -110,6 +117,64 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
       </div>
       {editing && (
         <EditBookDialog book={book} open={editing} onOpenChange={setEditing} onSave={onUpdate} />
+      )}
+
+      {showDetail && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowDetail(false)}>
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 space-y-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex gap-4">
+              <div className="w-20 h-28 rounded-xl overflow-hidden shrink-0 shadow-md">
+                <BookCoverImage src={book.coverUrl} alt={book.title} title={book.title} className="w-full h-full object-cover" iconClassName="h-8 w-8" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-lg font-display leading-tight text-foreground">{book.title}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{book.author}</p>
+                {book.hasSaga && book.saga && (
+                  <p className="text-xs text-primary mt-1">{book.saga} #{book.sagaOrder}</p>
+                )}
+                {book.rating > 0 && (
+                  <div className="flex gap-0.5 mt-2">
+                    {[1,2,3,4,5].map(i => (
+                      <Star key={i} className={`h-4 w-4 ${i <= book.rating ? "text-accent fill-accent" : "text-muted-foreground/20"}`} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* Details grid */}
+            <div className="grid grid-cols-2 gap-2 text-sm border-t border-border/40 pt-3">
+              {book.genre && <><span className="text-muted-foreground">Género</span><span className="text-foreground font-medium">{book.genre}</span></>}
+              {book.format && <><span className="text-muted-foreground">Formato</span><span className="text-foreground font-medium">{book.format}</span></>}
+              {book.totalPages > 0 && <><span className="text-muted-foreground">Páginas</span><span className="text-foreground font-medium">{book.totalPages}</span></>}
+              {book.price && <><span className="text-muted-foreground">Precio</span><span className="text-foreground font-medium">{book.price}€</span></>}
+              {book.source && <><span className="text-muted-foreground">Procedencia</span><span className="text-foreground font-medium">{book.source}</span></>}
+              {(book.startDate || book.endDate) && (
+                <><span className="text-muted-foreground">Fechas</span>
+                <span className="text-foreground font-medium text-xs">
+                  {book.startDate && new Date(book.startDate + "T12:00:00").toLocaleDateString("es-ES", {day:"2-digit",month:"2-digit",year:"2-digit"})}
+                  {book.startDate && book.endDate && " → "}
+                  {book.endDate && new Date(book.endDate + "T12:00:00").toLocaleDateString("es-ES", {day:"2-digit",month:"2-digit",year:"2-digit"})}
+                </span></>
+              )}
+            </div>
+            {book.notes && (
+              <div className="border-t border-border/40 pt-3">
+                <p className="text-xs text-muted-foreground mb-1">Notas</p>
+                <p className="text-sm text-foreground leading-relaxed">{book.notes}</p>
+              </div>
+            )}
+            {/* Actions */}
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => { setShowDetail(false); setEditing(true); }} className="flex-1 flex items-center justify-center gap-2 h-9 rounded-[var(--radius)] border border-border/50 text-sm font-medium hover:bg-muted/50 transition-colors text-foreground">
+                <Pencil className="h-3.5 w-3.5" /> Editar
+              </button>
+              <button onClick={() => setShowDetail(false)} className="flex-1 h-9 rounded-[var(--radius)] bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
