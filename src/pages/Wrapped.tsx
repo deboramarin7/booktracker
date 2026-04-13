@@ -298,14 +298,14 @@ export default function Wrapped() {
             Tu año lector · {selectedYear}
           </p>
           <div className="space-y-2">
-            <h2 className="text-[120px] sm:text-[160px] font-bold text-white leading-none font-display">
+            <h2 className="text-[160px] sm:text-[220px] font-black text-white leading-[0.85] font-display">
               <AnimatedNumber value={yearBooks.length} />
             </h2>
             <p className="text-xl text-white/60">libros terminados</p>
           </div>
           <div className="flex justify-center gap-1">
-            {yearBooks.slice(0, 8).map((b, i) => (
-              <div key={b.id} className="w-8 h-12 rounded-sm overflow-hidden opacity-60 hover:opacity-100 transition-opacity" style={{ animationDelay: `${i * 100}ms` }}>
+            {yearBooks.slice(0, 6).map((b, i) => (
+              <div key={b.id} className="w-14 h-20 rounded-lg overflow-hidden shadow-xl ring-1 ring-white/20 hover:opacity-100 transition-opacity" style={{ animationDelay: `${i * 100}ms` }}>
                 {b.coverUrl ? (
                   <img src={b.coverUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
@@ -332,7 +332,7 @@ export default function Wrapped() {
             <BookOpen className="h-8 w-8 text-emerald-400" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-7xl sm:text-8xl font-bold text-white leading-none font-display">
+            <h2 className="text-[120px] sm:text-[160px] font-black text-white leading-[0.85] font-display">
               <AnimatedNumber value={totalPages} />
             </h2>
             <p className="text-xl text-white/60">páginas leídas</p>
@@ -644,7 +644,7 @@ export default function Wrapped() {
         useCORS: true,
         allowTaint: false,
         backgroundColor: null,
-        scale: 1,
+        scale: 2,
         logging: false,
         width: 1080,
         height: 1920,
