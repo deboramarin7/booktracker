@@ -47,7 +47,7 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["Cormorant Garamond", "Georgia", "serif"],
+        sans: ["Inter", "sans-serif"],
         serif: ["Cormorant Garamond", "Georgia", "serif"],
         display: ["Cormorant Garamond", "Georgia", "serif"],
         body: ["Cormorant Garamond", "Georgia", "serif"],
