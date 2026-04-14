@@ -95,36 +95,36 @@ export function useBooks() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchItems = useCallback(async () => {
-  if (!userId) {
-    setItems([]);
+  const fetchBooks = useCallback(async () => {
+    if (!userId) {
+      setBooks([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from("books")
+      .select("*")
+      .eq("user_id", userId)
+      .order("added_at", { ascending: false });
+
+    if (error) {
+      toast({
+        title: "Error cargando libros",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      const loaded = (data as DbBook[]).map(dbToBook);
+      setBooks(loaded);
+    }
+
     setLoading(false);
-    return;
-  }
-  setLoading(true);
+  }, [toast, userId]);
 
-  const { data, error } = await supabase
-    .from("books")
-    .select("*")
-    .eq("user_id", userId)
-    .order("added_at", { ascending: false });
-
-  console.log("BOOKS DATA:", data);
-  console.log("BOOKS ERROR:", error);
-
-  if (error) {
-    toast({
-      title: "Error cargando libros",
-      description: error.message,
-      variant: "destructive",
-    });
-  } else {
-    const loaded = (data as DbBook[]).map(dbToBook);
-    setBooks(loaded);
-  }
-
-  setLoading(false);
-}, [toast, userId]);
+  useEffect(() => { fetchBooks(); }, [fetchBooks]);
 
   const addBook = async (data: Omit<Book, "id" | "addedAt">) => {
     const now = new Date().toISOString();
@@ -154,11 +154,10 @@ export function useBooks() {
     }).select().single();
 
     if (error) {
-      toast({ title: "Error añadiendo libro", description: error.message, variant: "destructive" });
+      toast({ title: "Error anadiendo libro", description: error.message, variant: "destructive" });
       throw error;
     } else if (inserted) {
       setBooks((prev) => [dbToBook(inserted as DbBook), ...prev]);
-      // Auto-remove from wishlist when adding to library
       await supabase.from("wishlist")
         .delete()
         .eq("user_id", userId)
@@ -247,7 +246,6 @@ export function useBooks() {
     if (data.status !== undefined) updateData.status = data.status;
     if (data.tags !== undefined) updateData.tags = data.tags;
 
-    // Auto-set dates
     if (data.status === "reading" && currentBook?.status !== "reading" && !data.startDate) {
       updateData.start_date = today;
     }
