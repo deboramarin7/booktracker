@@ -183,12 +183,12 @@ export default function Layout() {
 
         {/* Mobile Header */}
         <header className="lg:hidden sticky top-0 z-40 flex h-14 items-center justify-between px-4 border-b border-border bg-card/95 backdrop-blur-sm">
-          <Link to="/biblioteca" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+          <Link to="/biblioteca" className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ background: "var(--primary)" }}>
               <BookOpen className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-semibold font-display text-base">Book Tracker</span>
+            <span className="font-semibold font-display text-base text-foreground">Book Tracker</span>
           </Link>
           <div className="flex items-center gap-1">
             <GlobalSearch books={books} onSelectBook={setSearchEditBook} />
