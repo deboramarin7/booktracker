@@ -411,6 +411,7 @@ export default function Wrapped() {
     finally { setIsExporting(false); setIsSaving(false); }
   }
 
+
   const exportSlide = (
     <div
       ref={exportRef}
@@ -434,8 +435,7 @@ export default function Wrapped() {
       </div>
     </div>
   );
-
-    return (
+  return (
     <>
     <div className="min-h-screen flex flex-col" style={{ background: "#020812" }}>
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
@@ -496,7 +496,7 @@ export default function Wrapped() {
         </div>
       </div>
     </div>
-    {exportSlide}
+      {exportSlide}
     </>
   );
 }
