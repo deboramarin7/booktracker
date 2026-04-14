@@ -1,50 +1,64 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { ThemeProvider } from "@/hooks/useTheme";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Layout from "./components/Layout";
+import Auth from "./pages/Auth";
 import Library from "./pages/Library";
-import Home from "./pages/Home";
 import AuthorsSagas from "./pages/AuthorsSagas";
-import Dashboard from "./pages/Dashboard";
-import WishList from "./pages/WishList";
+import Wishlist from "./pages/Wishlist";
+import Shelves from "./pages/Shelves";
 import ReadingHabits from "./pages/ReadingHabits";
 import Achievements from "./pages/Achievements";
+import Dashboard from "./pages/Dashboard";
 import Wrapped from "./pages/Wrapped";
-import Shelves from "./pages/Shelves";
-import NotFound from "./pages/NotFound";
 import Help from "./pages/Help";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <ThemeProvider>
-        <BrowserRouter>
+function ProtectedRoutes() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#020812" }}>
+        <div className="w-8 h-8 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) return <Navigate to="/auth" replace />;
+
+  return (
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Navigate to="/biblioteca" replace />} />
+        <Route path="biblioteca" element={<Library />} />
+        <Route path="autores-sagas" element={<AuthorsSagas />} />
+        <Route path="wishlist" element={<Wishlist />} />
+        <Route path="estanterias" element={<Shelves />} />
+        <Route path="reading-habits" element={<ReadingHabits />} />
+        <Route path="logros" element={<Achievements />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="wrapped" element={<Wrapped />} />
+        <Route path="ayuda" element={<Help />} />
+      </Route>
+    </Routes>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
           <Routes>
-            <Route element={<Layout />}>
-              <Route index element={<Navigate to="/biblioteca" replace />} />
-              <Route path="/biblioteca" element={<Library />} />
-              <Route path="/autores-sagas" element={<AuthorsSagas />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/wishlist" element={<WishList />} />
-              <Route path="/reading-habits" element={<ReadingHabits />} />
-              <Route path="/logros" element={<Achievements />} />
-              <Route path="/wrapped" element={<Wrapped />} />
-              <Route path="/estanterias" element={<Shelves />} />
-              <Route path="/ayuda" element={<Help />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/*" element={<ProtectedRoutes />} />
           </Routes>
-        </BrowserRouter>
-      </ThemeProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+        </AuthProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
