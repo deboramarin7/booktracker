@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 async function fetchCoverForBook(title: string, author: string): Promise<string | null> {
@@ -90,6 +91,8 @@ function wishToExtra(item: Omit<WishItem, "id">): string {
 }
 
 export function useWishlist() {
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
   const { toast } = useToast();
   const [items, setItems] = useState<WishItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,7 +111,7 @@ export function useWishlist() {
           .from("wishlist")
           .update({ cover_url: cover })
           .eq("id", item.id)
-          .is("user_id", null);
+          .eq("user_id", userId);
         setItems((prev) =>
           prev.map((i) => (i.id === item.id ? { ...i, coverUrl: cover } : i))
         );
@@ -123,7 +126,7 @@ export function useWishlist() {
     const { data, error } = await supabase
       .from("wishlist")
       .select("*")
-      .is("user_id", null)
+      .eq("user_id", userId)
       .order("added_at", { ascending: false });
 
     if (error) {
@@ -140,7 +143,7 @@ export function useWishlist() {
 
   const addItem = async (data: Omit<WishItem, "id">) => {
     const { data: inserted, error } = await supabase.from("wishlist").insert({
-      user_id: null,
+      user_id: userId,
       title: data.title,
       author: data.author,
       cover_url: data.coverUrl || null,
@@ -164,7 +167,7 @@ export function useWishlist() {
       priority: data.priority,
       total_pages: data.totalPages || 0,
       notes: wishToExtra(data),
-    }).eq("id", id).is("user_id", null).select().single();
+    }).eq("id", id).eq("user_id", userId).select().single();
 
     if (error) {
       toast({ title: "Error actualizando", description: error.message, variant: "destructive" });
@@ -178,7 +181,7 @@ export function useWishlist() {
       .from("wishlist")
       .delete()
       .eq("id", id)
-      .is("user_id", null);
+      .eq("user_id", userId);
     if (error) {
       toast({ title: "Error eliminando", description: error.message, variant: "destructive" });
     } else {
