@@ -34,6 +34,7 @@ export default function Auth() {
     if (isLogin) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setError(error.message);
+      else navigate("/biblioteca");
     } else {
       const { error } = await supabase.auth.signUp({
         email,
@@ -41,7 +42,7 @@ export default function Auth() {
         options: { emailRedirectTo: "https://mybooktracker.net/auth/callback" }
       });
       if (error) setError(error.message);
-      else setMessage("¡Revisa tu email para confirmar tu cuenta!");
+      else setMessage("Revisa tu email para confirmar tu cuenta!");
     }
     setLoading(false);
   };
@@ -65,7 +66,7 @@ export default function Auth() {
         <div className="rounded-3xl border border-white/10 p-6"
           style={{ background: "rgba(5,10,20,0.45)", backdropFilter: "blur(32px)", WebkitBackdropFilter: "blur(32px)", boxShadow: "0 8px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)" }}>
           <h2 className="text-white font-bold text-lg mb-6 text-center">
-            {isLogin ? "Iniciar sesión" : "Crear cuenta"}
+            {isLogin ? "Iniciar sesion" : "Crear cuenta"}
           </h2>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -83,7 +84,7 @@ export default function Auth() {
             </div>
 
             <div>
-              <label className="text-white/60 text-xs mb-1 block">Contraseña</label>
+              <label className="text-white/60 text-xs mb-1 block">Contrasena</label>
               <input
                 type="password"
                 value={password}
@@ -109,10 +110,10 @@ export default function Auth() {
           </form>
 
           <p className="text-center text-white/40 text-xs mt-4">
-            {isLogin ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}{" "}
+            {isLogin ? "No tienes cuenta?" : "Ya tienes cuenta?"}{" "}
             <button onClick={() => { setIsLogin(!isLogin); setError(null); setMessage(null); }}
               className="text-emerald-400 hover:text-emerald-300 transition-colors">
-              {isLogin ? "Regístrate" : "Inicia sesión"}
+              {isLogin ? "Registrate" : "Inicia sesion"}
             </button>
           </p>
         </div>
