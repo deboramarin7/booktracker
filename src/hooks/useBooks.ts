@@ -96,7 +96,10 @@ export function useBooks() {
   const [loading, setLoading] = useState(true);
 
   const fetchBooks = useCallback(async () => {
+  console.log("FETCH BOOKS userId:", userId);
+
   if (!userId) {
+    console.log("NO USER ID");
     setBooks([]);
     setLoading(false);
     return;
@@ -109,6 +112,9 @@ export function useBooks() {
     .select("*")
     .eq("user_id", userId)
     .order("added_at", { ascending: false });
+
+  console.log("BOOKS DATA:", data);
+  console.log("BOOKS ERROR:", error);
 
   if (error) {
     toast({
@@ -123,10 +129,6 @@ export function useBooks() {
 
   setLoading(false);
 }, [toast, userId]);
-
-useEffect(() => {
-  fetchBooks();
-}, [fetchBooks]);
 
   const addBook = async (data: Omit<Book, "id" | "addedAt">) => {
     const now = new Date().toISOString();
