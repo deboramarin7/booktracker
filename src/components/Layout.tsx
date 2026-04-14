@@ -1,9 +1,11 @@
 import { createContext, useContext, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { Outlet, NavLink, Link, useNavigate } from "react-router-dom";
 import {
   BookOpen, Library, Users, Heart, BookMarked, CalendarDays,
   Trophy, Sparkles, Palette, Sun, Moon, Menu, X, Search,
   TrendingUp, HelpCircle, Zap
+  LogOut,
 } from "lucide-react";
 import { useBooks } from "@/hooks/useBooks";
 import type { Book } from "@/hooks/useBooks";
@@ -66,6 +68,7 @@ function NavItem({ to, label, icon, onClick }: { to: string; label: string; icon
 }
 
 function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
+  const { signOut, user } = useAuth();
   const { dark, setDark, themeId } = useTheme();
   const [themeOpen, setThemeOpen] = useState(false);
 
@@ -184,7 +187,18 @@ export default function Layout() {
             }}
           />
         )}
+      
+      <div className="border-t border-white/5 pt-2 mt-2">
+        <div className="px-3 py-1 text-[10px] text-white/25 truncate">{user?.email}</div>
+        <button
+          onClick={signOut}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all"
+        >
+          <LogOut size={16} />
+          <span>Cerrar sesión</span>
+        </button>
       </div>
+    </div>
     </BooksContext.Provider>
   );
 }
