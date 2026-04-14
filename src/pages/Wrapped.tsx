@@ -307,7 +307,7 @@ export default function Wrapped() {
 
   const stats = useMemo(() => {
     const totalBooks   = yearBooks.length;
-    const totalPages   = yearBooks.reduce((s,b) => s + (b.pages||0), 0);
+    const totalPages   = yearBooks.reduce((s,b) => s + (b.pageCount||b.numPages||b.pages||0), 0);
     const totalAuthors = new Set(yearBooks.map(b => b.author)).size;
     const totalGenres  = new Set(yearBooks.filter(b => b.genre).map(b => b.genre)).size;
     const monthCount: number[] = Array(12).fill(0);
@@ -350,7 +350,7 @@ export default function Wrapped() {
   const slides = useMemo(() => [
     { id: "intro" }, { id: "pages" }, { id: "month" }, { id: "genre" },
     { id: "author" }, ...(stats.bookOfYear ? [{ id: "book" }] : []),
-    { id: "rhythm" }, { id: "final" },
+    { id: "final" },
   ], [stats.bookOfYear]);
 
   const totalSlides = slides.length;
@@ -407,7 +407,7 @@ export default function Wrapped() {
     if (id === "genre")  return <SlideGenre genreData={stats.genreData} />;
     if (id === "author") return <SlideTopAuthor author={stats.topAuthor} books={yearBooks} />;
     if (id === "book")   return stats.bookOfYear ? <SlideBookOfYear book={stats.bookOfYear} /> : null;
-    if (id === "rhythm") return <SlideRhythm stats={stats} />;
+
     if (id === "final")  return <SlideFinal stats={stats} />;
     return null;
   };
