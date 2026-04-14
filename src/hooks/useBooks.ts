@@ -96,23 +96,37 @@ export function useBooks() {
   const [loading, setLoading] = useState(true);
 
   const fetchBooks = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("books")
-      .select("*")
-      .eq("user_id", userId)
-      .order("added_at", { ascending: false });
-
-    if (error) {
-      toast({ title: "Error cargando libros", description: error.message, variant: "destructive" });
-    } else {
-      const loaded = (data as DbBook[]).map(dbToBook);
-      setBooks(loaded);
-    }
+  if (!userId) {
+    setBooks([]);
     setLoading(false);
-  }, [toast]);
+    return;
+  }
 
-  useEffect(() => { fetchBooks(); }, [fetchBooks]);
+  setLoading(true);
+
+  const { data, error } = await supabase
+    .from("books")
+    .select("*")
+    .eq("user_id", userId)
+    .order("added_at", { ascending: false });
+
+  if (error) {
+    toast({
+      title: "Error cargando libros",
+      description: error.message,
+      variant: "destructive",
+    });
+  } else {
+    const loaded = (data as DbBook[]).map(dbToBook);
+    setBooks(loaded);
+  }
+
+  setLoading(false);
+}, [toast, userId]);
+
+useEffect(() => {
+  fetchBooks();
+}, [fetchBooks]);
 
   const addBook = async (data: Omit<Book, "id" | "addedAt">) => {
     const now = new Date().toISOString();
