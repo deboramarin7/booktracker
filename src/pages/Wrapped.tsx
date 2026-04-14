@@ -383,42 +383,37 @@ export default function Wrapped() {
     setIsSaving(true);
     try {
       if (!(window as any).html2canvas) {
-        await new Promise<void>((res,rej) => {
+        await new Promise<void>((res, rej) => {
           const s = document.createElement("script");
           s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
           s.onload = () => res(); s.onerror = () => rej();
           document.head.appendChild(s);
         });
       }
-      // Crear canvas offline con fondo incluido para stories 9:16
-      const W = 1080, H = 1920;
-      const offscreen = document.createElement("div");
-      offscreen.style.cssText = `position:fixed;left:-9999px;top:0;width:${W}px;height:${H}px;overflow:hidden;background:#020812;`;
-      // Fondo nebulosa
-      const bg = document.createElement("img");
-      bg.src = "/nebulosa.png";
-      bg.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.85;";
-      offscreen.appendChild(bg);
-      // Clonar el contenido del slide actual
-      const slideContent = captureRef.current?.querySelector(".flex-1")?.cloneNode(true) as HTMLElement;
-      if (slideContent) {
-        slideContent.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;";
-        offscreen.appendChild(slideContent);
-      }
-      document.body.appendChild(offscreen);
-      await new Promise(res => setTimeout(res, 300));
-      const canvas = await (window as any).html2canvas(offscreen, { 
-        useCORS: true, scale: 1, width: W, height: H,
-        backgroundColor: "#020812"
+      // Capturar el contenedor principal tal como se ve — sin cambiar nada
+      const el = captureRef.current;
+      if (!el) return;
+      const canvas = await (window as any).html2canvas(el, {
+        useCORS: true,
+        allowTaint: true,
+        scale: 2,
+        backgroundColor: "#020812",
+        width: el.offsetWidth,
+        height: el.offsetHeight,
+        windowWidth: window.innerWidth,
+        windowHeight: window.innerHeight,
+        x: 0,
+        y: 0,
+        scrollX: 0,
+        scrollY: 0,
       });
-      document.body.removeChild(offscreen);
       const a = document.createElement("a");
       a.href = canvas.toDataURL("image/png");
       a.download = `wrapped-${selectedYear}.png`;
       a.click();
     } catch(e) { console.error(e); }
     setIsSaving(false);
-  };
+  }
 
   const renderSlide = () => {
     const id = slides[currentSlide]?.id;
