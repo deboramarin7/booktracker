@@ -74,7 +74,7 @@ function SlideIntro({ totalBooks, year, books }: { totalBooks: number; year: num
     <div className="flex flex-col items-center justify-center h-full gap-6 px-6 py-10 text-center">
       <p className="text-xs font-semibold tracking-[0.4em] text-emerald-400/80 uppercase">Tu año lector · {year}</p>
       <GlowNumber value={totalBooks} color="emerald" />
-      <p className="text-2xl text-white/70 font-light -mt-4">libros terminados</p>
+      <p className="text-2xl text-white/70 font-light mt-3">libros terminados</p>
       {covers.length > 0 && (
         <div className="flex gap-3 mt-4 items-end">
           {covers.map((b, i) => (
