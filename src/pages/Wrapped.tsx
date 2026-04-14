@@ -540,7 +540,7 @@ export default function Wrapped() {
             Género favorito
           </p>
           {topGenre ? (
-            <div className="space-y-4">
+            <div className="wrapped-theme space-y-4">
               <h2 className="text-4xl sm:text-6xl font-bold text-white leading-tight font-display">
                 {topGenre[0]}
               </h2>
