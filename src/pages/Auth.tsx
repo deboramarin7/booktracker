@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, BookOpen } from "lucide-react";
+import { BookOpen } from "lucide-react";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -9,6 +10,20 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  // Handle email confirmation callback
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && (hash.includes('access_token') || hash.includes('type=signup'))) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          window.history.replaceState(null, '', '/');
+          navigate('/biblioteca', { replace: true });
+        }
+      });
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +45,7 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "#020812" }}>
       <div className="fixed inset-0 pointer-events-none">
-        <img src="/login.png" alt="" className="w-full h-full object-fill" style={{ opacity: 0.85 }}
+        <img src="/nebulosa.png" alt="" className="w-full h-full object-cover" style={{ opacity: 0.85 }}
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
       </div>
 
