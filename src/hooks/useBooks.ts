@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 
@@ -80,6 +81,8 @@ function dbToBook(db: DbBook): Book {
 }
 
 export function useBooks() {
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
   const { toast } = useToast();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
@@ -89,7 +92,7 @@ export function useBooks() {
     const { data, error } = await supabase
       .from("books")
       .select("*")
-      .is("user_id", null)
+      .eq("user_id", userId)
       .order("added_at", { ascending: false });
 
     if (error) {
@@ -109,7 +112,7 @@ export function useBooks() {
     const endDate = data.status === "finished" ? data.endDate || now.split("T")[0] : data.endDate;
 
     const { data: inserted, error } = await supabase.from("books").insert({
-      user_id: null,
+      user_id: userId,
       title: data.title,
       author: data.author,
       cover_url: data.coverUrl || null,
@@ -138,7 +141,7 @@ export function useBooks() {
       // Auto-remove from wishlist when adding to library
       await supabase.from("wishlist")
         .delete()
-        .is("user_id", null)
+        .eq("user_id", userId)
         .ilike("title", data.title.trim())
         .ilike("author", data.author.trim());
     }
@@ -157,7 +160,7 @@ export function useBooks() {
         const endDate = data.status === "finished" ? data.endDate || now.split("T")[0] : data.endDate;
 
         return {
-          user_id: null,
+          user_id: userId,
           title: data.title,
           author: data.author,
           cover_url: data.coverUrl || null,
@@ -239,7 +242,7 @@ export function useBooks() {
       .from("books")
       .update(updateData)
       .eq("id", id)
-      .is("user_id", null)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -255,7 +258,7 @@ export function useBooks() {
       .from("books")
       .delete()
       .eq("id", id)
-      .is("user_id", null);
+      .eq("user_id", userId);
     if (error) {
       toast({ title: "Error eliminando libro", description: error.message, variant: "destructive" });
     } else {
