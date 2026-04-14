@@ -294,14 +294,15 @@ export default function LibraryPage() {
   return (
     <div className="space-y-8">
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-3xl sm:text-4xl tracking-tighter font-light font-display flex items-center gap-3">
-            <Library className="h-8 w-8 sm:h-9 sm:w-9 text-primary" />
-            Mi Biblioteca
+      <div className="space-y-3">
+        {/* Row 1: Title + Year */}
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl sm:text-4xl tracking-tighter font-light font-display flex items-center gap-2 sm:gap-3">
+            <Library className="h-6 w-6 sm:h-9 sm:w-9 text-primary flex-shrink-0" />
+            <span className="truncate">Mi Biblioteca</span>
           </h1>
           <Select value={yearFilter} onValueChange={setYearFilter}>
-            <SelectTrigger className="h-9 w-28 text-sm font-medium rounded-[var(--radius)] border-border/50">
+            <SelectTrigger className="h-8 sm:h-9 w-24 sm:w-28 text-sm font-medium rounded-[var(--radius)] border-border/50 flex-shrink-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -312,27 +313,30 @@ export default function LibraryPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center border border-border/40 rounded-[var(--radius)] overflow-hidden">
+        {/* Row 2: View modes + Actions */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center border border-border/40 rounded-[var(--radius)] overflow-hidden flex-shrink-0">
             <button onClick={() => setViewMode("covers")}
-              className={`px-3 py-2 transition-colors ${viewMode === "covers" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 transition-colors ${viewMode === "covers" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}
               title="Vista portadas">
               <Image className="h-4 w-4" />
             </button>
             <button onClick={() => setViewMode("grid")}
-              className={`px-3 py-2 transition-colors ${viewMode === "grid" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 transition-colors ${viewMode === "grid" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}
               title="Vista detalle">
               <LayoutGrid className="h-4 w-4" />
             </button>
             <button onClick={() => setViewMode("spine")}
-              className={`px-3 py-2 transition-colors ${viewMode === "spine" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 transition-colors ${viewMode === "spine" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}
               title="Vista lomos">
               <AlignJustify className="h-4 w-4" />
             </button>
           </div>
-          <ImportBooksDialog onImport={addBooksInBatch} onImportWishlist={handleImportWishlist} />
-          <ExportBooksButton books={books} />
-          <AddBookDialog onAdd={addBook} onAddToWishlist={addItem} />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <ImportBooksDialog onImport={addBooksInBatch} onImportWishlist={handleImportWishlist} />
+            <ExportBooksButton books={books} />
+            <AddBookDialog onAdd={addBook} onAddToWishlist={addItem} />
+          </div>
         </div>
       </div>
 
@@ -402,23 +406,23 @@ export default function LibraryPage() {
       )}
 
       {/* FILTROS */}
-      <div className="flex flex-wrap gap-3 items-center">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 items-center">
         <Select value={genreFilter} onValueChange={setGenreFilter}>
-          <SelectTrigger className="w-[160px] h-9 text-sm rounded-[var(--radius)]"><SelectValue placeholder="Genero" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm rounded-[var(--radius)]"><SelectValue placeholder="Genero" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos los generos</SelectItem>
             {GENRES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={formatFilter} onValueChange={setFormatFilter}>
-          <SelectTrigger className="w-[150px] h-9 text-sm rounded-[var(--radius)]"><SelectValue placeholder="Formato" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[150px] h-9 text-sm rounded-[var(--radius)]"><SelectValue placeholder="Formato" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos los formatos</SelectItem>
             {FORMATS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
-          <SelectTrigger className="w-[200px] h-9 text-sm rounded-[var(--radius)]"><SelectValue placeholder="Ordenar por" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[200px] h-9 text-sm rounded-[var(--radius)] col-span-2 sm:col-span-1"><SelectValue placeholder="Ordenar por" /></SelectTrigger>
           <SelectContent>
             {SORT_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
           </SelectContent>
