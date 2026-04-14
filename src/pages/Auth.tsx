@@ -44,7 +44,7 @@ export default function Auth() {
         </div>
 
         <div className="rounded-3xl border border-white/10 p-6"
-          style={{ background: "rgba(5,10,20,0.75)", backdropFilter: "blur(20px)" }}>
+          style={{ background: "rgba(5,10,20,0.45)", backdropFilter: "blur(32px)", WebkitBackdropFilter: "blur(32px)", boxShadow: "0 8px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)" }}>
           <h2 className="text-white font-bold text-lg mb-6 text-center">
             {isLogin ? "Iniciar sesión" : "Crear cuenta"}
           </h2>
@@ -58,7 +58,7 @@ export default function Auth() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full px-4 py-2.5 rounded-xl text-white text-sm outline-none border border-white/10 focus:border-emerald-500/50 transition-colors"
-                style={{ background: "rgba(255,255,255,0.06)" }}
+                style={{ background: "rgba(255,255,255,0.06)", colorScheme: "dark" }}
                 placeholder="tu@email.com"
               />
             </div>
@@ -71,7 +71,7 @@ export default function Auth() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="w-full px-4 py-2.5 rounded-xl text-white text-sm outline-none border border-white/10 focus:border-emerald-500/50 transition-colors"
-                style={{ background: "rgba(255,255,255,0.06)" }}
+                style={{ background: "rgba(255,255,255,0.06)", colorScheme: "dark" }}
                 placeholder="••••••••"
               />
             </div>
