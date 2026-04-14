@@ -307,7 +307,7 @@ export default function Wrapped() {
 
   const stats = useMemo(() => {
     const totalBooks   = yearBooks.length;
-    const totalPages   = yearBooks.reduce((s,b) => s + (b.pageCount||b.numPages||b.pages||0), 0);
+    const totalPages   = yearBooks.reduce((s,b) => s + (b.totalPages||0), 0);
     const totalAuthors = new Set(yearBooks.map(b => b.author)).size;
     const totalGenres  = new Set(yearBooks.filter(b => b.genre).map(b => b.genre)).size;
     const monthCount: number[] = Array(12).fill(0);
