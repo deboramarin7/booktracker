@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Layout from "./components/Layout";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
 import Library from "./pages/Library";
 import AuthorsSagas from "./pages/AuthorsSagas";
 import WishList from "./pages/WishList";
@@ -53,6 +54,7 @@ function App() {
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/" element={<ProtectedRoutes />} />
             <Route path="/*" element={<ProtectedRoutes />} />
           </Routes>
