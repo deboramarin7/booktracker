@@ -95,13 +95,20 @@ function SlideIntro({ totalBooks, year, books }: { totalBooks: number; year: num
 }
 
 function SlidePages({ totalPages }: { totalPages: number }) {
+  const novels = Math.round(totalPages / 250);
   return (
     <div className="flex flex-col items-center justify-center h-full gap-6 px-6 py-10 text-center">
       <div className="p-4 rounded-2xl border border-emerald-500/20" style={{ background: "rgba(16,185,129,0.08)" }}>
         <BookOpen className="text-emerald-400" size={32} />
       </div>
       <GlowNumber value={totalPages.toLocaleString("es-ES")} color="emerald" />
-      <p className="text-2xl text-white/70 font-light -mt-4">páginas leídas</p>
+      <p className="text-2xl text-white/70 font-light mt-2">páginas leídas</p>
+      <div className="flex gap-4 mt-2">
+        <GlassCard className="px-5 py-3 text-center">
+          <p className="text-2xl font-bold text-white">≈ {novels}</p>
+          <p className="text-xs text-white/50 mt-1">novelas estándar</p>
+        </GlassCard>
+      </div>
     </div>
   );
 }
@@ -383,7 +390,28 @@ export default function Wrapped() {
           document.head.appendChild(s);
         });
       }
-      const canvas = await (window as any).html2canvas(captureRef.current, { useCORS: true, scale: 2 });
+      // Crear canvas offline con fondo incluido para stories 9:16
+      const W = 1080, H = 1920;
+      const offscreen = document.createElement("div");
+      offscreen.style.cssText = `position:fixed;left:-9999px;top:0;width:${W}px;height:${H}px;overflow:hidden;background:#020812;`;
+      // Fondo nebulosa
+      const bg = document.createElement("img");
+      bg.src = "/nebulosa.png";
+      bg.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.85;";
+      offscreen.appendChild(bg);
+      // Clonar el contenido del slide actual
+      const slideContent = captureRef.current?.querySelector(".flex-1")?.cloneNode(true) as HTMLElement;
+      if (slideContent) {
+        slideContent.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;";
+        offscreen.appendChild(slideContent);
+      }
+      document.body.appendChild(offscreen);
+      await new Promise(res => setTimeout(res, 300));
+      const canvas = await (window as any).html2canvas(offscreen, { 
+        useCORS: true, scale: 1, width: W, height: H,
+        backgroundColor: "#020812"
+      });
+      document.body.removeChild(offscreen);
       const a = document.createElement("a");
       a.href = canvas.toDataURL("image/png");
       a.download = `wrapped-${selectedYear}.png`;
