@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/select";
 import {
   ChevronLeft, ChevronRight, Sparkles, BookOpen, Star,
-  Flame, Trophy, BarChart2, Users, Layers, ImageDown, Zap,
+  Flame, Trophy, BarChart2, Users, Layers, Zap,
 } from "lucide-react";
 
 function getYear(book: { endDate?: string; startDate?: string; addedAt: string }): number {
@@ -292,7 +292,6 @@ export default function Wrapped() {
   const [isAnimating, setIsAnimating] = useState(false);
   const touchStartX = useRef<number|null>(null);
   const captureRef = useRef<HTMLDivElement>(null);
-  const [isSaving, setIsSaving] = useState(false);
 
   const years = useMemo(() => {
     const s = new Set(books.map(b => getYear(b)));
@@ -379,41 +378,6 @@ export default function Wrapped() {
     touchStartX.current = null;
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      if (!(window as any).html2canvas) {
-        await new Promise<void>((res, rej) => {
-          const s = document.createElement("script");
-          s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-          s.onload = () => res(); s.onerror = () => rej();
-          document.head.appendChild(s);
-        });
-      }
-      // Capturar el contenedor principal tal como se ve — sin cambiar nada
-      const el = captureRef.current;
-      if (!el) return;
-      const canvas = await (window as any).html2canvas(el, {
-        useCORS: true,
-        allowTaint: true,
-        scale: 2,
-        backgroundColor: "#020812",
-        width: el.offsetWidth,
-        height: el.offsetHeight,
-        windowWidth: window.innerWidth,
-        windowHeight: window.innerHeight,
-        x: 0,
-        y: 0,
-        scrollX: 0,
-        scrollY: 0,
-      });
-      const a = document.createElement("a");
-      a.href = canvas.toDataURL("image/png");
-      a.download = `wrapped-${selectedYear}.png`;
-      a.click();
-    } catch(e) { console.error(e); }
-    setIsSaving(false);
-  }
 
   const renderSlide = () => {
     const id = slides[currentSlide]?.id;
@@ -449,12 +413,6 @@ export default function Wrapped() {
             {years.map(y => <SelectItem key={y} value={String(y)} className="text-white/80">{y}</SelectItem>)}
           </SelectContent>
         </Select>
-        <button onClick={handleSave} disabled={isSaving}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-white/80 border border-white/15 hover:border-white/30 hover:text-white transition-all"
-          style={{ background: "rgba(255,255,255,0.06)", backdropFilter: "blur(8px)" }}>
-          <ImageDown size={13} />
-          {isSaving ? "..." : "Guardar"}
-        </button>
       </div>
 
       <div ref={captureRef} className="relative flex-1 flex flex-col overflow-hidden" style={{ zIndex: 1 }}
