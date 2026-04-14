@@ -5,7 +5,7 @@ import Layout from "./components/Layout";
 import Auth from "./pages/Auth";
 import Library from "./pages/Library";
 import AuthorsSagas from "./pages/AuthorsSagas";
-import Wishlist from "./pages/Wishlist";
+import WishList from "./pages/WishList";
 import Shelves from "./pages/Shelves";
 import ReadingHabits from "./pages/ReadingHabits";
 import Achievements from "./pages/Achievements";
@@ -34,7 +34,7 @@ function ProtectedRoutes() {
         <Route index element={<Navigate to="/biblioteca" replace />} />
         <Route path="biblioteca" element={<Library />} />
         <Route path="autores-sagas" element={<AuthorsSagas />} />
-        <Route path="wishlist" element={<Wishlist />} />
+        <Route path="wishlist" element={<WishList />} />
         <Route path="estanterias" element={<Shelves />} />
         <Route path="reading-habits" element={<ReadingHabits />} />
         <Route path="logros" element={<Achievements />} />
