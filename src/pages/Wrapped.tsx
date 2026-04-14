@@ -1,1004 +1,492 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useBooksContext } from "@/components/Layout";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  BookOpen,
-  Star,
-  Trophy,
-  ChevronLeft,
-  ChevronRight,
-  Sparkles,
-  Layers,
-  Heart,
-  Flame,
-  X,
-  ImageDown,
+  ChevronLeft, ChevronRight, Sparkles, BookOpen, Star,
+  Flame, Trophy, BarChart2, Users, Layers, ImageDown, Zap,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
-function getYearFromBook(book: {
-  endDate?: string;
-  startDate?: string;
-  addedAt: string;
-}): number {
-  const dateStr = book.endDate || book.startDate || book.addedAt;
-  if (!dateStr) return new Date().getFullYear();
-  const d = new Date(dateStr);
+function getYear(book: { endDate?: string; startDate?: string; addedAt: string }): number {
+  const d = new Date(book.endDate || book.startDate || book.addedAt);
   return isNaN(d.getTime()) ? new Date().getFullYear() : d.getFullYear();
 }
 
-const MONTH_NAMES = [
-  "Enero",
-  "Febrero",
-  "Marzo",
-  "Abril",
-  "Mayo",
-  "Junio",
-  "Julio",
-  "Agosto",
-  "Septiembre",
-  "Octubre",
-  "Noviembre",
-  "Diciembre",
-];
+const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+                 "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
-function AnimatedNumber({
-  value,
-  suffix = "",
-  delay = 0,
-}: {
-  value: number;
-  suffix?: string;
-  delay?: number;
-}) {
-  const [display, setDisplay] = useState(0);
-  const [started, setStarted] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setStarted(true), delay);
-    return () => clearTimeout(t);
-  }, [delay]);
-
-  useEffect(() => {
-    if (!started) return;
-
-    const duration = 1800;
-    const startTime = Date.now();
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 4);
-      setDisplay(Math.round(value * eased));
-      if (progress < 1) requestAnimationFrame(animate);
-    };
-
-    animate();
-  }, [value, started]);
-
+function GlowNumber({ value, color = "emerald" }: { value: number | string; color?: string }) {
+  const colors: Record<string, string> = {
+    emerald: "#10b981", purple: "#a855f7", rose: "#f43f5e", amber: "#f59e0b", blue: "#3b82f6",
+  };
+  const hex = colors[color] || colors.emerald;
   return (
-    <span>
-      {display.toLocaleString()}
-      {suffix}
+    <span className="font-black leading-none tracking-tighter select-none" style={{
+      fontSize: "clamp(80px, 22vw, 160px)", color: "#fff",
+      textShadow: `0 0 40px ${hex}cc, 0 0 80px ${hex}88, 0 0 120px ${hex}44`,
+      fontVariantNumeric: "tabular-nums",
+    }}>
+      {value}
     </span>
+  );
+}
+
+function GradientText({ children, from, to }: { children: React.ReactNode; from: string; to: string }) {
+  return (
+    <span className="font-bold bg-clip-text text-transparent"
+      style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}>
+      {children}
+    </span>
+  );
+}
+
+function GlassCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`rounded-3xl border border-white/10 ${className}`}
+      style={{ background: "rgba(5,10,20,0.55)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
+      {children}
+    </div>
+  );
+}
+
+function BookCover({ src, alt, size = 80 }: { src?: string; alt: string; size?: number }) {
+  return (
+    <div className="rounded-xl overflow-hidden flex-shrink-0 border border-white/10"
+      style={{ width: size, height: size * 1.5, background: "linear-gradient(135deg,#1a2a1a,#0d1117)", boxShadow: "0 8px 32px rgba(0,0,0,0.6)" }}>
+      {src ? <img src={src} alt={alt} className="w-full h-full object-cover" />
+           : <div className="w-full h-full flex items-center justify-center"><BookOpen className="text-emerald-500/40" style={{ width: size * 0.35, height: size * 0.35 }} /></div>}
+    </div>
   );
 }
 
 function StarRating({ rating }: { rating: number }) {
   return (
-    <div className="flex gap-1 justify-center">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Star
-          key={i}
-          className={`h-6 w-6 transition-all duration-500 ${
-            i <= Math.round(rating)
-              ? "text-amber-400 fill-amber-400 scale-110"
-              : "text-white/20"
-          }`}
-          style={{ transitionDelay: `${i * 100}ms` }}
-        />
-      ))}
+    <div className="flex gap-1">
+      {[1,2,3,4,5].map(i => <Star key={i} className={i <= Math.round(rating) ? "fill-amber-400 text-amber-400" : "text-white/20"} size={18} />)}
     </div>
   );
 }
 
-function WrappedSlide({
-  children,
-  index,
-  currentSlide,
-  gradient = "from-emerald-950 via-gray-950 to-gray-950",
-}: {
-  children: React.ReactNode;
-  index: number;
-  currentSlide: number;
-  gradient?: string;
-}) {
-  const isActive = index === currentSlide;
-  const isPast = index < currentSlide;
-
-  if (Math.abs(index - currentSlide) > 1) return null;
-
+function SlideIntro({ totalBooks, year, books }: { totalBooks: number; year: number; books: any[] }) {
+  const covers = books.slice(0, 6);
   return (
-    <div
-      className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-        isActive
-          ? "opacity-100 translate-y-0 scale-100"
-          : isPast
-          ? "opacity-0 -translate-y-8 scale-[0.97] pointer-events-none"
-          : "opacity-0 translate-y-8 scale-[0.97] pointer-events-none"
-      }`}
-    >
-      <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
-      <div className="absolute inset-0 bg-black/30" />
-      <div className="relative z-10 w-full max-w-2xl mx-auto px-8 text-center pt-24 pb-32">
-        {children}
+    <div className="flex flex-col items-center justify-center h-full gap-6 px-6 py-10 text-center">
+      <p className="text-xs font-semibold tracking-[0.4em] text-emerald-400/80 uppercase">Tu año lector · {year}</p>
+      <GlowNumber value={totalBooks} color="emerald" />
+      <p className="text-2xl text-white/70 font-light -mt-4">libros terminados</p>
+      {covers.length > 0 && (
+        <div className="flex gap-3 mt-4 items-end">
+          {covers.map((b, i) => (
+            <div key={b.id} className="transition-transform duration-300 hover:scale-110" style={{ transform: `rotate(${(i - 2.5) * 4}deg)` }}>
+              <BookCover src={b.coverUrl} alt={b.title} size={52} />
+            </div>
+          ))}
+          {books.length > 6 && (
+            <div className="rounded-xl flex items-center justify-center text-white/60 font-bold text-sm border border-white/10 flex-shrink-0"
+              style={{ width: 52, height: 78, background: "rgba(255,255,255,0.05)" }}>
+              +{books.length - 6}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SlidePages({ totalPages }: { totalPages: number }) {
+  const novels = Math.round(totalPages / 250);
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-6 px-6 py-10 text-center">
+      <div className="p-4 rounded-2xl border border-emerald-500/20" style={{ background: "rgba(16,185,129,0.08)" }}>
+        <BookOpen className="text-emerald-400" size={32} />
+      </div>
+      <GlowNumber value={totalPages.toLocaleString("es-ES")} color="emerald" />
+      <p className="text-2xl text-white/70 font-light mt-2">páginas leídas</p>
+      <div className="flex gap-4 mt-2">
+        <GlassCard className="px-5 py-3 text-center">
+          <p className="text-2xl font-bold text-white">≈ {novels}</p>
+          <p className="text-xs text-white/50 mt-1">novelas estándar</p>
+        </GlassCard>
       </div>
     </div>
   );
 }
 
-function GlowOrb({
-  color = "emerald",
-  size = "lg",
-  position = "top-left",
-}: {
-  color?: string;
-  size?: "sm" | "md" | "lg";
-  position?: string;
-}) {
-  const sizes = { sm: "w-32 h-32", md: "w-48 h-48", lg: "w-72 h-72" };
-  const positions: Record<string, string> = {
-    "top-left": "top-0 left-0 -translate-x-1/3 -translate-y-1/3",
-    "top-right": "top-0 right-0 translate-x-1/3 -translate-y-1/3",
-    "bottom-left": "bottom-0 left-0 -translate-x-1/3 translate-y-1/3",
-    "bottom-right": "bottom-0 right-0 translate-x-1/3 translate-y-1/3",
-    center: "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
-  };
-  const colors: Record<string, string> = {
-    emerald: "bg-emerald-500/15",
-    amber: "bg-amber-500/10",
-    purple: "bg-purple-500/10",
-    rose: "bg-rose-500/10",
-  };
-
+function SlideBestMonth({ monthData }: { monthData: { name: string; count: number; monthly: { name: string; count: number }[] } }) {
+  const max = Math.max(...monthData.monthly.map(m => m.count), 1);
+  const colors = ["#10b981","#a855f7","#f43f5e","#3b82f6","#f59e0b","#06b6d4","#10b981","#a855f7","#f43f5e","#3b82f6","#f59e0b","#06b6d4"];
   return (
-    <div
-      className={`absolute ${positions[position] || positions.center} ${
-        sizes[size]
-      } ${colors[color] || colors.emerald} rounded-full blur-3xl pointer-events-none`}
-    />
+    <div className="flex flex-col items-center justify-center h-full gap-5 px-6 py-10 text-center">
+      <div className="p-4 rounded-2xl border border-purple-500/20" style={{ background: "rgba(168,85,247,0.08)" }}>
+        <Trophy className="text-purple-400" size={32} />
+      </div>
+      <p className="text-sm font-semibold tracking-[0.3em] text-purple-400/80 uppercase">Mejor mes</p>
+      <GradientText from="#a855f7" to="#ec4899">
+        <span style={{ fontSize: "clamp(40px,12vw,72px)", fontWeight: 900, lineHeight: 1 }}>{monthData.name}</span>
+      </GradientText>
+      <p className="text-white/60 text-lg -mt-1">{monthData.count} libros ese mes</p>
+      <GlassCard className="w-full max-w-sm p-4 mt-2">
+        <div className="flex items-end gap-1.5 h-20 justify-center">
+          {monthData.monthly.map((m, i) => {
+            const h = max > 0 ? Math.max(4, (m.count / max) * 68) : 4;
+            return (
+              <div key={m.name} className="flex flex-col items-center gap-1 flex-1">
+                <div className="w-full rounded-t" style={{ height: h, background: m.name === monthData.name ? colors[i] : "rgba(255,255,255,0.12)" }} />
+                <span className="text-[8px] text-white/30">{m.name.substring(0,1)}</span>
+              </div>
+            );
+          })}
+        </div>
+      </GlassCard>
+    </div>
+  );
+}
+
+function SlideGenre({ genreData }: { genreData: [string, number][] }) {
+  const top = genreData[0];
+  const total = genreData.reduce((s, [, v]) => s + v, 0);
+  const gradients = ["linear-gradient(90deg,#10b981,#06b6d4)","linear-gradient(90deg,#a855f7,#ec4899)","linear-gradient(90deg,#f59e0b,#f97316)","linear-gradient(90deg,#3b82f6,#6366f1)","linear-gradient(90deg,#f43f5e,#ec4899)"];
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-5 px-6 py-10 text-center">
+      <div className="p-4 rounded-2xl border border-blue-500/20" style={{ background: "rgba(59,130,246,0.08)" }}>
+        <Layers className="text-blue-400" size={32} />
+      </div>
+      <p className="text-sm font-semibold tracking-[0.3em] text-blue-400/80 uppercase">Género favorito</p>
+      {top ? (
+        <>
+          <GradientText from="#3b82f6" to="#a855f7">
+            <span style={{ fontSize: "clamp(32px,10vw,60px)", fontWeight: 900, lineHeight: 1.1 }}>{top[0]}</span>
+          </GradientText>
+          <p className="text-white/50 -mt-2">{top[1]} libro{top[1] !== 1 ? "s" : ""}</p>
+          <GlassCard className="w-full max-w-sm p-4 mt-1 flex flex-col gap-3">
+            {genreData.slice(0, 5).map(([name, count], i) => (
+              <div key={name}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-white/80">{name}</span>
+                  <span className="text-white/40">{Math.round((count / total) * 100)}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${(count / total) * 100}%`, background: gradients[i] }} />
+                </div>
+              </div>
+            ))}
+          </GlassCard>
+        </>
+      ) : <p className="text-white/40">Sin datos de géneros</p>}
+    </div>
+  );
+}
+
+function SlideTopAuthor({ author, books }: { author: string; books: any[] }) {
+  const authorBooks = books.filter(b => b.author === author);
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-5 px-6 py-10 text-center">
+      <div className="p-4 rounded-2xl border border-rose-500/20" style={{ background: "rgba(244,63,94,0.08)" }}>
+        <Users className="text-rose-400" size={32} />
+      </div>
+      <p className="text-sm font-semibold tracking-[0.3em] text-rose-400/80 uppercase">Autor más leído</p>
+      <GradientText from="#f43f5e" to="#a855f7">
+        <span style={{ fontSize: "clamp(28px,8vw,52px)", fontWeight: 900, lineHeight: 1.1 }}>{author}</span>
+      </GradientText>
+      <p className="text-white/50 -mt-1">{authorBooks.length} libro{authorBooks.length !== 1 ? "s" : ""} este año</p>
+      <div className="flex gap-3 pb-2 max-w-full mt-1 justify-center flex-wrap">
+        {authorBooks.slice(0, 6).map(b => (
+          <div key={b.id} className="transition-transform hover:scale-105"><BookCover src={b.coverUrl} alt={b.title} size={56} /></div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SlideBookOfYear({ book }: { book: any }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-5 px-6 py-10 text-center">
+      <div className="p-4 rounded-2xl border border-amber-500/20" style={{ background: "rgba(245,158,11,0.08)" }}>
+        <Star className="text-amber-400" size={32} />
+      </div>
+      <p className="text-sm font-semibold tracking-[0.3em] text-amber-400/80 uppercase">Libro del año</p>
+      <div className="transition-transform hover:scale-105 duration-300"><BookCover src={book.coverUrl} alt={book.title} size={100} /></div>
+      <div className="flex flex-col items-center gap-1 max-w-xs">
+        <p className="text-xl font-bold text-white leading-tight">{book.title}</p>
+        <p className="text-white/50 text-sm">{book.author}</p>
+        <div className="mt-2"><StarRating rating={book.rating} /></div>
+      </div>
+    </div>
+  );
+}
+
+function SlideRhythm({ stats }: { stats: any }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-5 px-6 py-10 text-center">
+      <div className="p-4 rounded-2xl border border-cyan-500/20" style={{ background: "rgba(6,182,212,0.08)" }}>
+        <Zap className="text-cyan-400" size={32} />
+      </div>
+      <p className="text-sm font-semibold tracking-[0.3em] text-cyan-400/80 uppercase">Ritmo lector</p>
+      <div className="flex gap-3 mt-1 flex-wrap justify-center">
+        <GlassCard className="px-5 py-4 text-center">
+          <GradientText from="#06b6d4" to="#3b82f6">
+            <span className="text-4xl font-black">{stats.daysPerBook}</span>
+          </GradientText>
+          <p className="text-xs text-white/40 mt-1">días por libro</p>
+        </GlassCard>
+        <GlassCard className="px-5 py-4 text-center">
+          <GradientText from="#10b981" to="#06b6d4">
+            <span className="text-4xl font-black">{stats.streak}</span>
+          </GradientText>
+          <p className="text-xs text-white/40 mt-1">días de racha</p>
+        </GlassCard>
+      </div>
+      {stats.fastest && (
+        <GlassCard className="w-full max-w-sm p-4 mt-1">
+          <p className="text-xs text-white/40 uppercase tracking-widest mb-2">Libro más rápido</p>
+          <div className="flex items-center gap-3">
+            <BookCover src={stats.fastest.coverUrl} alt={stats.fastest.title} size={44} />
+            <div className="text-left">
+              <p className="text-white font-semibold text-sm leading-tight">{stats.fastest.title}</p>
+              <p className="text-white/40 text-xs mt-0.5">{stats.fastest.days} días</p>
+            </div>
+          </div>
+        </GlassCard>
+      )}
+    </div>
+  );
+}
+
+function SlideFinal({ stats }: { stats: any }) {
+  const msgs = ["¡Eres una máquina lectora! 🔥","Las historias te han elegido. ✨","Otro año, otra vida leída. 📚","Los libros son tus mejores amigos. 🌟"];
+  const msg = msgs[stats.totalBooks % msgs.length];
+  const grid = [
+    { icon: BookOpen,  label: "Libros",   value: stats.totalBooks, color: "#10b981" },
+    { icon: BarChart2, label: "Páginas",  value: stats.totalPages.toLocaleString("es-ES"), color: "#a855f7" },
+    { icon: Users,     label: "Autores",  value: stats.totalAuthors, color: "#f43f5e" },
+    { icon: Layers,    label: "Géneros",  value: stats.totalGenres, color: "#f59e0b" },
+  ];
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-6 px-6 py-10 text-center">
+      <Sparkles className="text-emerald-400" size={36} />
+      <GradientText from="#10b981" to="#a855f7">
+        <span className="text-3xl font-black">Tu {stats.year} en números</span>
+      </GradientText>
+      <div className="grid grid-cols-2 gap-3 w-full max-w-sm mt-1">
+        {grid.map(({ icon: Icon, label, value, color }) => (
+          <GlassCard key={label} className="p-4 text-center">
+            <Icon size={20} style={{ color }} className="mx-auto mb-2" />
+            <p className="text-2xl font-black text-white">{value}</p>
+            <p className="text-xs text-white/40 mt-0.5">{label}</p>
+          </GlassCard>
+        ))}
+      </div>
+      <GlassCard className="px-6 py-4 max-w-sm mt-1">
+        <p className="text-white/80 text-base leading-relaxed">{msg}</p>
+      </GlassCard>
+    </div>
   );
 }
 
 export default function Wrapped() {
   const { books } = useBooksContext();
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const [animDir, setAnimDir] = useState<"left"|"right">("right");
+  const [isAnimating, setIsAnimating] = useState(false);
+  const touchStartX = useRef<number|null>(null);
+  const captureRef = useRef<HTMLDivElement>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const years = useMemo(() => {
-    const s = new Set<number>();
+    const s = new Set(books.map(b => getYear(b)));
     s.add(new Date().getFullYear());
-    books.forEach((b) => s.add(getYearFromBook(b)));
-    return Array.from(s).sort((a, b) => b - a);
+    return Array.from(s).sort((a,b) => b-a);
   }, [books]);
 
-  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
-
   const yearBooks = useMemo(
-    () =>
-      books.filter(
-        (b) => b.status === "finished" && getYearFromBook(b) === selectedYear
-      ),
+    () => books.filter(b => b.status === "finished" && getYear(b) === selectedYear),
     [books, selectedYear]
   );
 
-  const totalPages = useMemo(
-    () => yearBooks.reduce((s, b) => s + b.totalPages, 0),
-    [yearBooks]
-  );
-
-  const uniqueAuthors = useMemo(
-    () => new Set(yearBooks.map((b) => b.author)).size,
-    [yearBooks]
-  );
-
-  const uniqueGenres = useMemo(
-    () => new Set(yearBooks.filter((b) => b.genre).map((b) => b.genre)).size,
-    [yearBooks]
-  );
-
-  const topAuthor = useMemo(() => {
-    const map: Record<string, number> = {};
-    yearBooks.forEach((b) => {
-      map[b.author] = (map[b.author] || 0) + 1;
+  const stats = useMemo(() => {
+    const totalBooks   = yearBooks.length;
+    const totalPages   = yearBooks.reduce((s,b) => s + (b.totalPages||0), 0);
+    const totalAuthors = new Set(yearBooks.map(b => b.author)).size;
+    const totalGenres  = new Set(yearBooks.filter(b => b.genre).map(b => b.genre)).size;
+    const monthCount: number[] = Array(12).fill(0);
+    yearBooks.forEach(b => {
+      const d = new Date(b.endDate||b.startDate||b.addedAt);
+      if (!isNaN(d.getTime())) monthCount[d.getMonth()]++;
     });
-    return Object.entries(map).sort((a, b) => b[1] - a[1])[0] || null;
-  }, [yearBooks]);
-
-  const topGenre = useMemo(() => {
-    const map: Record<string, number> = {};
-    yearBooks.forEach((b) => {
-      if (b.genre) map[b.genre] = (map[b.genre] || 0) + 1;
-    });
-    return Object.entries(map).sort((a, b) => b[1] - a[1])[0] || null;
-  }, [yearBooks]);
-
-  const avgRating = useMemo(() => {
-    const rated = yearBooks.filter((b) => b.rating > 0);
-    return rated.length > 0
-      ? rated.reduce((s, b) => s + b.rating, 0) / rated.length
-      : 0;
-  }, [yearBooks]);
-
-  const topRatedBook = useMemo(() => {
-    const rated = yearBooks
-      .filter((b) => b.rating > 0)
-      .sort((a, b) => b.rating - a.rating);
-    return rated[0] || null;
-  }, [yearBooks]);
-
-  const bestMonth = useMemo(() => {
-    const map: Record<number, number> = {};
-    yearBooks.forEach((b) => {
-      const d = new Date(b.endDate || b.startDate || b.addedAt);
-      map[d.getMonth()] = (map[d.getMonth()] || 0) + 1;
-    });
-    const entries = Object.entries(map).sort(
-      (a, b) => Number(b[1]) - Number(a[1])
-    );
-    return entries[0]
-      ? {
-          month: MONTH_NAMES[Number(entries[0][0])],
-          count: Number(entries[0][1]),
-        }
-      : null;
-  }, [yearBooks]);
-
-  const readingTimeStats = useMemo(() => {
-    const withDates = yearBooks.filter((b) => b.startDate && b.endDate);
-    if (!withDates.length) return null;
-
-    const times = withDates.map((b) => {
-      const days = Math.max(
-        1,
-        Math.ceil(
-          (new Date(b.endDate!).getTime() - new Date(b.startDate!).getTime()) /
-            86400000
-        )
-      );
-      return { book: b, days };
-    });
-
-    const avg = times.reduce((s, t) => s + t.days, 0) / times.length;
-    const fastest = times.reduce((min, t) => (t.days < min.days ? t : min), times[0]);
-
-    return { avg: Math.round(avg), fastest };
-  }, [yearBooks]);
-
-  const monthlyData = useMemo(() => {
-    return MONTH_NAMES.map(
-      (_, i) =>
-        yearBooks.filter(
-          (b) =>
-            new Date(b.endDate || b.startDate || b.addedAt).getMonth() === i
-        ).length
-    );
-  }, [yearBooks]);
-
-  const maxMonthly = Math.max(...monthlyData, 1);
-
-  const maxStreak = useMemo(() => {
-    const dates = yearBooks
-      .map((b) => b.endDate || b.startDate)
-      .filter(Boolean)
-      .map((d) => new Date(d!).toISOString().split("T")[0])
-      .sort();
-
-    if (!dates.length) return 0;
-
-    const unique = [...new Set(dates)];
-    let max = 1;
-    let current = 1;
-
-    for (let i = 1; i < unique.length; i++) {
-      const prev = new Date(unique[i - 1]);
-      const curr = new Date(unique[i]);
-      const diff = (curr.getTime() - prev.getTime()) / 86400000;
-
-      if (diff <= 30) {
-        current++;
-        max = Math.max(max, current);
-      } else {
-        current = 1;
-      }
+    const monthly = MONTHS.map((name,i) => ({ name, count: monthCount[i] }));
+    const bestMonthIdx = monthCount.indexOf(Math.max(...monthCount));
+    const bestMonth = { name: MONTHS[bestMonthIdx], count: monthCount[bestMonthIdx], monthly };
+    const genreMap: Record<string,number> = {};
+    yearBooks.forEach(b => { if (b.genre) genreMap[b.genre] = (genreMap[b.genre]||0)+1; });
+    const genreData = Object.entries(genreMap).sort((a,b) => b[1]-a[1]) as [string,number][];
+    const authorMap: Record<string,number> = {};
+    yearBooks.forEach(b => { authorMap[b.author] = (authorMap[b.author]||0)+1; });
+    const topAuthor = Object.entries(authorMap).sort((a,b) => b[1]-a[1])[0]?.[0] || "";
+    const bookOfYear = [...yearBooks].filter(b => b.rating>0).sort((a,b) => b.rating-a.rating)[0] || yearBooks[0];
+    let daysPerBook = 0;
+    if (totalBooks > 0) {
+      const totalDays = yearBooks.reduce((s,b) => {
+        const start = new Date(b.startDate||b.addedAt);
+        const end   = new Date(b.endDate||b.addedAt);
+        return s + Math.max(1, Math.round((end.getTime()-start.getTime())/86400000));
+      }, 0);
+      daysPerBook = Math.round(totalDays/totalBooks);
     }
+    const fastest = yearBooks.map(b => {
+      const start = new Date(b.startDate||b.addedAt);
+      const end   = new Date(b.endDate||b.addedAt);
+      return { ...b, days: Math.max(1, Math.round((end.getTime()-start.getTime())/86400000)) };
+    }).sort((a,b) => a.days-b.days)[0];
+    const readDays = new Set<string>();
+    yearBooks.forEach(b => {
+      const d = new Date(b.endDate||b.addedAt);
+      if (!isNaN(d.getTime())) readDays.add(d.toISOString().slice(0,10));
+    });
+    return { totalBooks, totalPages, totalAuthors, totalGenres, monthly, bestMonth, genreData, topAuthor, bookOfYear, daysPerBook, fastest, streak: readDays.size, year: selectedYear };
+  }, [yearBooks, selectedYear]);
 
-    return max;
-  }, [yearBooks]);
+  const slides = useMemo(() => [
+    { id: "intro" }, { id: "pages" }, { id: "month" }, { id: "genre" },
+    { id: "author" }, ...(stats.bookOfYear ? [{ id: "book" }] : []),
+    { id: "final" },
+  ], [stats.bookOfYear]);
 
-  const totalSlides = yearBooks.length > 0 ? 8 : 1;
-  const isStoryExport = isExporting;
+  const totalSlides = slides.length;
 
-  const next = useCallback(
-    () => setCurrentSlide((s) => Math.min(s + 1, totalSlides - 1)),
-    [totalSlides]
-  );
-
-  const prev = useCallback(() => setCurrentSlide((s) => Math.max(s - 1, 0)), []);
+  const goTo = useCallback((idx: number, dir: "left"|"right") => {
+    if (isAnimating || idx < 0 || idx >= totalSlides) return;
+    setAnimDir(dir);
+    setIsAnimating(true);
+    setTimeout(() => { setCurrentSlide(idx); setIsAnimating(false); }, 250);
+  }, [isAnimating, totalSlides]);
 
   useEffect(() => {
-    setCurrentSlide(0);
-  }, [selectedYear]);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " ") {
-        e.preventDefault();
-        next();
-      }
-      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-        e.preventDefault();
-        prev();
-      }
-      if (e.key === "Escape") setIsFullscreen(false);
+    const h = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") goTo(currentSlide+1, "right");
+      if (e.key === "ArrowLeft")  goTo(currentSlide-1, "left");
     };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [currentSlide, goTo]);
 
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [next, prev]);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartRef.current = {
-      x: e.touches[0].clientX,
-      y: e.touches[0].clientY,
-    };
+  const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const onTouchEnd   = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 50) dx < 0 ? goTo(currentSlide+1,"right") : goTo(currentSlide-1,"left");
+    touchStartX.current = null;
   };
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
-
-    const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
-    const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
-
-    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 50) {
-      if (dy < 0) next();
-      else prev();
-    } else if (Math.abs(dx) > 50) {
-      if (dx < 0) next();
-      else prev();
-    }
-
-    touchStartRef.current = null;
-  };
-
-  const wrappedContent = (
-    <div
-      ref={containerRef}
-      className={`relative overflow-hidden select-none ${
-        isExporting
-          ? "fixed inset-0 z-[9999]"
-          : isFullscreen
-          ? "fixed inset-0 z-50"
-          : "rounded-2xl"
-      }`}
-      style={
-        isExporting
-          ? {
-              width: "1080px",
-              height: "1920px",
-              top: 0,
-              left: 0,
-              margin: 0,
-              borderRadius: 0,
-            }
-          : {
-              minHeight: isFullscreen ? "100vh" : "80vh",
-            }
-      }
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          backgroundImage: "url('/nebulosa.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        }}
-      />
-      <div className="absolute inset-0 z-0 bg-black/20" />
-
-      <WrappedSlide
-        index={0}
-        currentSlide={currentSlide}
-        gradient="from-slate-950/60 via-emerald-950/30 to-slate-950/60"
-      >
-        <GlowOrb color="emerald" size="lg" position="center" />
-        <div className={isStoryExport ? "space-y-8 pt-8" : "space-y-8"}>
-          <p className="text-xs tracking-[0.45em] text-emerald-400/85 uppercase">
-            Tu año lector · {selectedYear}
-          </p>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="h-44 w-44 rounded-full bg-emerald-400/15 blur-3xl" />
-            </div>
-            <h2
-              className={`relative font-black text-white font-display ${
-                isStoryExport
-                  ? "text-[180px] leading-[0.9] mb-6"
-                  : "text-[170px] sm:text-[280px] leading-[0.8]"
-              }`}
-              style={{
-                textShadow: `
-                  0 0 12px rgba(255,255,255,0.9),
-                  0 0 24px rgba(16,185,129,0.7),
-                  0 0 48px rgba(16,185,129,0.5)
-                `,
-              }}
-            >
-              <AnimatedNumber value={yearBooks.length} />
-            </h2>
-          </div>
-
-          <p className="text-xl sm:text-2xl text-white/65 font-body">
-            libros terminados
-          </p>
-
-          <div className="flex justify-center gap-2 pt-2 flex-wrap">
-            {yearBooks.slice(0, 5).map((b) => (
-              <div
-                key={b.id}
-                className={`overflow-hidden ring-1 ring-white/10 shadow-2xl shadow-black/30 ${
-                  isStoryExport
-                    ? "w-20 h-28 rounded-2xl"
-                    : "w-16 h-24 sm:w-20 sm:h-28 rounded-2xl"
-                }`}
-              >
-                {b.coverUrl ? (
-                  <img
-                    src={b.coverUrl}
-                    alt={b.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-emerald-900/30 flex items-center justify-center">
-                    <BookOpen className="h-5 w-5 text-emerald-400/40" />
-                  </div>
-                )}
-              </div>
-            ))}
-            {yearBooks.length > 5 && (
-              <div
-                className={`bg-white/5 border border-white/10 flex items-center justify-center text-white/50 text-lg font-semibold ${
-                  isStoryExport
-                    ? "w-20 h-28 rounded-2xl"
-                    : "w-16 h-24 sm:w-20 sm:h-28 rounded-2xl"
-                }`}
-              >
-                +{yearBooks.length - 5}
-              </div>
-            )}
-          </div>
-        </div>
-      </WrappedSlide>
-
-      <WrappedSlide
-        index={1}
-        currentSlide={currentSlide}
-        gradient="from-slate-950/60 via-emerald-950/30 to-slate-950/60"
-      >
-        <GlowOrb color="emerald" size="md" position="top-right" />
-
-        <div className={isStoryExport ? "space-y-8 pt-8" : "space-y-8"}>
-          <div className="inline-flex p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-            <BookOpen className="h-8 w-8 text-emerald-400" />
-          </div>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="h-44 w-44 rounded-full bg-emerald-400/15 blur-3xl" />
-            </div>
-
-            <h2
-              className={`relative font-black text-white font-display ${
-                isStoryExport
-                  ? "text-[150px] leading-[0.95] mb-8"
-                  : "text-[145px] sm:text-[220px] leading-[0.8]"
-              }`}
-              style={{
-                textShadow: `
-                  0 0 12px rgba(255,255,255,0.9),
-                  0 0 24px rgba(16,185,129,0.7),
-                  0 0 48px rgba(16,185,129,0.5)
-                `,
-              }}
-            >
-              <AnimatedNumber value={totalPages} />
-            </h2>
-          </div>
-
-          <p className="text-xl sm:text-2xl text-white/70 font-body">
-            páginas leídas
-          </p>
-
-          <div className="inline-flex px-6 py-4 rounded-[28px] bg-white/10 border border-white/10 backdrop-blur-md">
-            <div className="text-center">
-              <p className="text-3xl font-bold text-white">
-                ≈ {Math.round(totalPages / 250)}
-              </p>
-              <p className="text-sm text-white/60 font-body">novelas estándar</p>
-            </div>
-          </div>
-        </div>
-      </WrappedSlide>
-
-      <WrappedSlide
-        index={2}
-        currentSlide={currentSlide}
-        gradient="from-slate-950/60 via-purple-950/30 to-slate-950/60"
-      >
-        <GlowOrb color="purple" size="lg" position="bottom-left" />
-        <div className="space-y-8">
-          <div className="inline-flex p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20">
-            <Trophy className="h-8 w-8 text-purple-400" />
-          </div>
-          <p className="text-purple-300/80 text-sm uppercase tracking-[0.3em]">
-            Tu mejor mes
-          </p>
-
-          {bestMonth ? (
-            <div className="space-y-3">
-              <h2 className="text-5xl sm:text-7xl font-bold text-white leading-none font-display">
-                {bestMonth.month}
-              </h2>
-              <p className="text-2xl text-purple-300 font-semibold">
-                {bestMonth.count} {bestMonth.count === 1 ? "libro" : "libros"}
-              </p>
-            </div>
-          ) : (
-            <p className="text-white/40">Sin datos suficientes</p>
-          )}
-
-          <div className="flex items-end justify-center gap-1 h-24 pt-2">
-            {monthlyData.map((count, i) => (
-              <div key={i} className="flex flex-col items-center gap-1 flex-1 max-w-[24px]">
-                <div
-                  className="w-full rounded-t transition-all duration-700 bg-gradient-to-t from-purple-500/70 to-purple-300/90"
-                  style={{
-                    height: `${Math.max(count > 0 ? 6 : 2, (count / maxMonthly) * 70)}px`,
-                    transitionDelay: `${i * 50}ms`,
-                  }}
-                />
-                <span className="text-[7px] text-white/30">
-                  {MONTH_NAMES[i].slice(0, 1)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </WrappedSlide>
-
-      <WrappedSlide
-        index={3}
-        currentSlide={currentSlide}
-        gradient="from-slate-950/60 via-emerald-950/25 to-slate-950/60"
-      >
-        <GlowOrb color="emerald" size="md" position="top-left" />
-        <div className="space-y-8">
-          <div className="inline-flex p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-            <Layers className="h-8 w-8 text-emerald-400" />
-          </div>
-          <p className="text-emerald-300/80 text-sm uppercase tracking-[0.3em]">
-            Género favorito
-          </p>
-          {topGenre ? (
-            <div className="space-y-4">
-              <h2 className="text-4xl sm:text-6xl font-bold text-white leading-tight font-display">
-                {topGenre[0]}
-              </h2>
-              <p className="text-lg text-emerald-300">
-                {topGenre[1]} {topGenre[1] === 1 ? "libro" : "libros"} leídos
-              </p>
-            </div>
-          ) : (
-            <p className="text-white/40">Sin datos de género</p>
-          )}
-        </div>
-      </WrappedSlide>
-
-      <WrappedSlide
-        index={4}
-        currentSlide={currentSlide}
-        gradient="from-slate-950/60 via-amber-950/25 to-slate-950/60"
-      >
-        <GlowOrb color="amber" size="lg" position="bottom-right" />
-        <div className="space-y-8">
-          <div className="inline-flex p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-            <Sparkles className="h-8 w-8 text-amber-400" />
-          </div>
-          <p className="text-amber-300/80 text-sm uppercase tracking-[0.3em]">
-            Autor más leído
-          </p>
-
-          {topAuthor ? (
-            <div className="space-y-5">
-              <h2 className="text-3xl sm:text-5xl font-bold text-white leading-tight font-display">
-                {topAuthor[0]}
-              </h2>
-              <p className="text-lg text-amber-300">
-                {topAuthor[1]} {topAuthor[1] === 1 ? "libro" : "libros"}
-              </p>
-
-              <div className="flex justify-center gap-2 flex-wrap">
-                {yearBooks
-                  .filter((b) => b.author === topAuthor[0])
-                  .slice(0, 4)
-                  .map((b) => (
-                    <div
-                      key={b.id}
-                      className="w-14 h-20 sm:w-16 sm:h-24 rounded-xl overflow-hidden ring-1 ring-white/10 shadow-lg"
-                    >
-                      {b.coverUrl ? (
-                        <img
-                          src={b.coverUrl}
-                          alt={b.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-amber-900/30 flex items-center justify-center">
-                          <BookOpen className="h-4 w-4 text-amber-400/30" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            </div>
-          ) : (
-            <p className="text-white/40">Sin datos</p>
-          )}
-        </div>
-      </WrappedSlide>
-
-      <WrappedSlide
-        index={5}
-        currentSlide={currentSlide}
-        gradient="from-slate-950/60 via-amber-950/30 to-slate-950/60"
-      >
-        <GlowOrb color="amber" size="lg" position="center" />
-        <div className="space-y-6">
-          <div className="inline-flex p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-            <Star className="h-8 w-8 text-amber-400 fill-amber-400" />
-          </div>
-          <p className="text-amber-300/80 text-sm uppercase tracking-[0.3em]">
-            Libro del año
-          </p>
-
-          {topRatedBook ? (
-            <div className="space-y-4">
-              <div className="flex justify-center">
-                {topRatedBook.coverUrl ? (
-                  <img
-                    src={topRatedBook.coverUrl}
-                    alt={topRatedBook.title}
-                    className="w-40 h-56 object-cover rounded-2xl shadow-2xl shadow-amber-500/20 ring-1 ring-white/10"
-                  />
-                ) : (
-                  <div className="w-40 h-56 rounded-2xl bg-amber-900/20 flex items-center justify-center ring-1 ring-white/10">
-                    <BookOpen className="h-12 w-12 text-amber-400/30" />
-                  </div>
-                )}
-              </div>
-
-              <h3 className="text-2xl sm:text-3xl font-bold text-white font-display">
-                {topRatedBook.title}
-              </h3>
-              <p className="text-white/50">{topRatedBook.author}</p>
-              <StarRating rating={topRatedBook.rating} />
-            </div>
-          ) : (
-            <p className="text-white/40">Valora tus libros para ver tu favorito</p>
-          )}
-        </div>
-      </WrappedSlide>
-
-      <WrappedSlide
-        index={6}
-        currentSlide={currentSlide}
-        gradient="from-slate-950/60 via-rose-950/25 to-slate-950/60"
-      >
-        <GlowOrb color="rose" size="md" position="top-right" />
-        <div className="space-y-8">
-          <div className="inline-flex p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20">
-            <Flame className="h-8 w-8 text-rose-400" />
-          </div>
-          <p className="text-rose-300/80 text-sm uppercase tracking-[0.3em]">
-            Tu ritmo
-          </p>
-
-          <div className="space-y-6">
-            {readingTimeStats && (
-              <div className="space-y-1">
-                <h2 className="text-6xl sm:text-7xl font-bold text-white font-display">
-                  <AnimatedNumber value={readingTimeStats.avg} />
-                </h2>
-                <p className="text-white/50">días de media por libro</p>
-                <p className="text-sm text-rose-300/60 pt-2">
-                  ⚡ Más rápido:{" "}
-                  <span className="text-white/70">
-                    {readingTimeStats.fastest.book.title}
-                  </span>{" "}
-                  en {readingTimeStats.fastest.days} días
-                </p>
-              </div>
-            )}
-
-            {maxStreak > 1 && (
-              <div className="pt-2 border-t border-white/5 space-y-1">
-                <p className="text-3xl font-bold text-white font-display">
-                  <AnimatedNumber value={maxStreak} delay={400} /> meses
-                </p>
-                <p className="text-white/50 text-sm">racha máxima leyendo</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </WrappedSlide>
-
-      <WrappedSlide
-        index={7}
-        currentSlide={currentSlide}
-        gradient="from-slate-950/60 via-emerald-950/35 to-slate-950/60"
-      >
-        <GlowOrb color="emerald" size="lg" position="center" />
-        <div className="space-y-8">
-          <div className="inline-flex p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-            <Heart className="h-8 w-8 text-emerald-400 fill-emerald-400" />
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white font-display">
-            Tu {selectedYear} en libros
-          </h2>
-
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { value: yearBooks.length, label: "Libros" },
-              { value: totalPages, label: "Páginas" },
-              { value: uniqueAuthors, label: "Autores" },
-              { value: uniqueGenres, label: "Géneros" },
-            ].map((stat, i) => (
-              <div
-                key={stat.label}
-                className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm"
-              >
-                <p className="text-3xl font-bold text-emerald-400 font-display">
-                  <AnimatedNumber value={stat.value} delay={i * 150} />
-                </p>
-                <p className="text-xs text-white/40">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-
-          {avgRating > 0 && (
-            <p className="text-white/50 text-sm">
-              Valoración media:{" "}
-              <span className="text-amber-400 font-semibold">
-                {avgRating.toFixed(1)} ★
-              </span>
-            </p>
-          )}
-
-          <p className="text-white/35 text-sm">Sigue leyendo ✨</p>
-        </div>
-      </WrappedSlide>
-
-      {isFullscreen && !isExporting && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsFullscreen(false)}
-          className="absolute top-4 right-4 z-20 rounded-full bg-white/5 hover:bg-white/10 text-white/60 border border-white/10"
-        >
-          <X className="h-5 w-5" />
-        </Button>
-      )}
-    </div>
-  );
-
-  const handleDownload = async () => {
-    if (!containerRef.current) return;
-    setIsDownloading(true);
-    setIsExporting(true);
-
-    await new Promise((r) => setTimeout(r, 500));
-
+  const handleSave = async () => {
+    setIsSaving(true);
     try {
       if (!(window as any).html2canvas) {
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement("script");
-          script.src =
-            "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
-          script.onload = () => resolve();
-          script.onerror = reject;
-          document.head.appendChild(script);
+        await new Promise<void>((res, rej) => {
+          const s = document.createElement("script");
+          s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+          s.onload = () => res(); s.onerror = () => rej();
+          document.head.appendChild(s);
         });
       }
-
-      const h2c = (window as any).html2canvas;
-      const canvas = await h2c(containerRef.current, {
+      // Capturar el contenedor principal tal como se ve — sin cambiar nada
+      const el = captureRef.current;
+      if (!el) return;
+      const canvas = await (window as any).html2canvas(el, {
         useCORS: true,
-        allowTaint: false,
-        backgroundColor: "#020617",
+        allowTaint: true,
         scale: 2,
-        logging: false,
-        width: 1080,
-        height: 1920,
-        windowWidth: 1080,
-        windowHeight: 1920,
+        backgroundColor: "#020812",
+        width: el.offsetWidth,
+        height: el.offsetHeight,
+        windowWidth: window.innerWidth,
+        windowHeight: window.innerHeight,
         x: 0,
         y: 0,
         scrollX: 0,
         scrollY: 0,
       });
-
-      const link = document.createElement("a");
-      link.download = `wrapped-${selectedYear}-slide${currentSlide + 1}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsExporting(false);
-      setIsDownloading(false);
-    }
-  };
-
-  if (yearBooks.length === 0) {
-    return (
-      <div className="space-y-8">
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold font-display flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-accent" /> Tu Wrapped
-          </h2>
-          <Select
-            value={String(selectedYear)}
-            onValueChange={(v) => setSelectedYear(Number(v))}
-          >
-            <SelectTrigger className="w-28">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((y) => (
-                <SelectItem key={y} value={String(y)}>
-                  {y}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mb-6">
-            <BookOpen className="h-10 w-10 text-emerald-500/40" />
-          </div>
-          <p className="text-xl font-display text-muted-foreground">
-            No hay libros terminados en {selectedYear}
-          </p>
-          <p className="text-sm text-muted-foreground/60 mt-2">
-            ¡Empieza a leer para generar tu resumen!
-          </p>
-        </div>
-      </div>
-    );
+      const a = document.createElement("a");
+      a.href = canvas.toDataURL("image/png");
+      a.download = `wrapped-${selectedYear}.png`;
+      a.click();
+    } catch(e) { console.error(e); }
+    setIsSaving(false);
   }
 
+  const renderSlide = () => {
+    const id = slides[currentSlide]?.id;
+    if (id === "intro")  return <SlideIntro totalBooks={stats.totalBooks} year={selectedYear} books={yearBooks} />;
+    if (id === "pages")  return <SlidePages totalPages={stats.totalPages} />;
+    if (id === "month")  return <SlideBestMonth monthData={stats.bestMonth} />;
+    if (id === "genre")  return <SlideGenre genreData={stats.genreData} />;
+    if (id === "author") return <SlideTopAuthor author={stats.topAuthor} books={yearBooks} />;
+    if (id === "book")   return stats.bookOfYear ? <SlideBookOfYear book={stats.bookOfYear} /> : null;
+
+    if (id === "final")  return <SlideFinal stats={stats} />;
+    return null;
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold font-display flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-accent" /> Wrapped {selectedYear}
-          </h2>
-
-          <Select
-            value={String(selectedYear)}
-            onValueChange={(v) => {
-              setSelectedYear(Number(v));
-              setCurrentSlide(0);
-            }}
-          >
-            <SelectTrigger className="w-28">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((y) => (
-                <SelectItem key={y} value={String(y)}>
-                  {y}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsFullscreen(true)}
-          >
-            Pantalla completa
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownload}
-            disabled={isDownloading}
-            className="gap-2"
-          >
-            <ImageDown className="h-4 w-4" />
-            {isDownloading ? "Guardando..." : "Guardar imagen"}
-          </Button>
-        </div>
+    <div className="min-h-screen flex flex-col" style={{ background: "#020812" }}>
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+        <img src="/nebulosa.png" alt="" className="w-full h-full object-cover" style={{ opacity: 0.85 }}
+          onError={(e) => { (e.target as HTMLImageElement).style.display="none"; }} />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 50% 40%, rgba(16,185,129,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(168,85,247,0.12) 0%, transparent 40%), radial-gradient(circle at 20% 80%, rgba(244,114,182,0.10) 0%, transparent 40%)" }} />
       </div>
 
-      {wrappedContent}
-
-      {!isExporting && (
-        <div className="flex items-center justify-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={prev}
-            disabled={currentSlide === 0}
-            className="rounded-full h-10 w-10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-20 border border-white/10"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-
-          <div className="flex gap-1.5">
-            {Array.from({ length: totalSlides }).map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentSlide(i)}
-                className={`h-1.5 rounded-full transition-all duration-500 ${
-                  i === currentSlide
-                    ? "w-6 bg-emerald-400"
-                    : i < currentSlide
-                    ? "w-1.5 bg-white/30"
-                    : "w-1.5 bg-white/10"
-                }`}
-              />
-            ))}
-          </div>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={next}
-            disabled={currentSlide === totalSlides - 1}
-            className="rounded-full h-10 w-10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-20 border border-white/10"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </Button>
+      <div className="relative flex items-center justify-between px-4 py-3 flex-shrink-0" style={{ zIndex: 10, background: "rgba(2,8,18,0.6)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex items-center gap-2">
+          <Sparkles className="text-emerald-400" size={18} />
+          <span className="font-bold text-white text-sm tracking-wide">Wrapped {selectedYear}</span>
         </div>
-      )}
+        <Select value={String(selectedYear)} onValueChange={v => { setSelectedYear(Number(v)); setCurrentSlide(0); }}>
+          <SelectTrigger className="w-24 h-8 text-xs border-white/20 text-white" style={{ background: "rgba(255,255,255,0.08)", backdropFilter: "blur(8px)" }}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent style={{ background: "#0d1117", border: "1px solid rgba(255,255,255,0.1)" }}>
+            {years.map(y => <SelectItem key={y} value={String(y)} className="text-white/80">{y}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <button onClick={handleSave} disabled={isSaving}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-white/80 border border-white/15 hover:border-white/30 hover:text-white transition-all"
+          style={{ background: "rgba(255,255,255,0.06)", backdropFilter: "blur(8px)" }}>
+          <ImageDown size={13} />
+          {isSaving ? "..." : "Guardar"}
+        </button>
+      </div>
 
-      {!isExporting && currentSlide < totalSlides - 1 && (
-        <p className="text-center text-xs text-muted-foreground/40 font-body">
-          Desliza o usa ← → para navegar
-        </p>
-      )}
+      <div ref={captureRef} className="relative flex-1 flex flex-col overflow-hidden" style={{ zIndex: 1 }}
+        onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+        <div className="flex-1" style={{
+          opacity: isAnimating ? 0 : 1,
+          transform: isAnimating ? `translateX(${animDir === "right" ? "-30px" : "30px"})` : "translateX(0)",
+          transition: "opacity 0.25s ease, transform 0.25s ease",
+        }}>
+          {renderSlide()}
+        </div>
+        <div className="flex justify-center gap-1.5 pb-2">
+          {slides.map((_,i) => (
+            <button key={i} onClick={() => goTo(i, i > currentSlide ? "right" : "left")}
+              className="rounded-full transition-all duration-300"
+              style={{ width: i === currentSlide ? 24 : 6, height: 6, background: i === currentSlide ? "#10b981" : "rgba(255,255,255,0.2)" }} />
+          ))}
+        </div>
+        <div className="flex items-center justify-between px-4 pb-4 gap-3">
+          <button onClick={() => goTo(currentSlide-1,"left")} disabled={currentSlide===0}
+            className="w-12 h-12 rounded-full flex items-center justify-center border border-white/15 text-white hover:border-white/30 disabled:opacity-30 transition-all"
+            style={{ background: "rgba(255,255,255,0.06)", backdropFilter: "blur(8px)" }}>
+            <ChevronLeft size={20} />
+          </button>
+          <p className="text-xs text-white/30 text-center">Desliza o usa ← → para navegar</p>
+          <button onClick={() => goTo(currentSlide+1,"right")} disabled={currentSlide===totalSlides-1}
+            className="w-12 h-12 rounded-full flex items-center justify-center border border-white/15 text-white hover:border-white/30 disabled:opacity-30 transition-all"
+            style={{ background: "rgba(255,255,255,0.06)", backdropFilter: "blur(8px)" }}>
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
