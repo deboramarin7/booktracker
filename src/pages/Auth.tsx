@@ -35,7 +35,11 @@ export default function Auth() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setError(error.message);
     } else {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: "https://mybooktracker.net/auth/callback" }
+      });
       if (error) setError(error.message);
       else setMessage("¡Revisa tu email para confirmar tu cuenta!");
     }
