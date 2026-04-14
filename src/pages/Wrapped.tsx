@@ -95,7 +95,6 @@ function SlideIntro({ totalBooks, year, books }: { totalBooks: number; year: num
 }
 
 function SlidePages({ totalPages }: { totalPages: number }) {
-  const novels = Math.round(totalPages / 250);
   return (
     <div className="flex flex-col items-center justify-center h-full gap-6 px-6 py-10 text-center">
       <div className="p-4 rounded-2xl border border-emerald-500/20" style={{ background: "rgba(16,185,129,0.08)" }}>
@@ -103,12 +102,6 @@ function SlidePages({ totalPages }: { totalPages: number }) {
       </div>
       <GlowNumber value={totalPages.toLocaleString("es-ES")} color="emerald" />
       <p className="text-2xl text-white/70 font-light -mt-4">páginas leídas</p>
-      <div className="flex gap-4 mt-2">
-        <GlassCard className="px-5 py-3 text-center">
-          <p className="text-2xl font-bold text-white">≈ {novels}</p>
-          <p className="text-xs text-white/50 mt-1">novelas estándar</p>
-        </GlassCard>
-      </div>
     </div>
   );
 }
