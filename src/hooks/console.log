@@ -1,0 +1,13 @@
+useEffect(() => {
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    console.log("SESSION INITIAL:", session);
+    setUserId(session?.user?.id ?? null);
+  });
+
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+    console.log("AUTH CHANGE:", session);
+    setUserId(session?.user?.id ?? null);
+  });
+
+  return () => subscription.unsubscribe();
+}, []);
