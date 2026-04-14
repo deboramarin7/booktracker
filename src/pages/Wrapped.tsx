@@ -135,7 +135,7 @@ function WrappedSlide({
       }`}
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient}`} />
-      <div className="absolute inset-0 bg-black/25 backdrop-blur-[6px]" />
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-[6px]" />
       <div className="relative z-10 w-full max-w-2xl mx-auto px-8 text-center">
         {children}
       </div>
@@ -206,10 +206,12 @@ export default function Wrapped() {
     () => yearBooks.reduce((s, b) => s + b.totalPages, 0),
     [yearBooks]
   );
+
   const uniqueAuthors = useMemo(
     () => new Set(yearBooks.map((b) => b.author)).size,
     [yearBooks]
   );
+
   const uniqueGenres = useMemo(
     () => new Set(yearBooks.filter((b) => b.genre).map((b) => b.genre)).size,
     [yearBooks]
@@ -330,6 +332,7 @@ export default function Wrapped() {
     () => setCurrentSlide((s) => Math.min(s + 1, totalSlides - 1)),
     [totalSlides]
   );
+
   const prev = useCallback(() => setCurrentSlide((s) => Math.max(s - 1, 0)), []);
 
   useEffect(() => {
@@ -398,51 +401,89 @@ export default function Wrapped() {
       <WrappedSlide
         index={0}
         currentSlide={currentSlide}
-        gradient="from-gray-950 via-emerald-950/50 to-gray-950"
+        gradient="from-slate-950 via-emerald-950/50 to-slate-950"
       >
         <GlowOrb color="emerald" size="lg" position="center" />
         <div className="space-y-8">
-          <p className="text-xs tracking-[0.4em] text-emerald-400 mb-6 font-body uppercase">
+          <p className="text-xs tracking-[0.45em] text-emerald-400/85 uppercase">
             Tu año lector · {selectedYear}
           </p>
 
-          <h2 className="text-[230px] sm:text-[300px] font-black text-white leading-[0.8] font-display">
-            <AnimatedNumber value={yearBooks.length} />
-          </h2>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-44 w-44 rounded-full bg-emerald-400/15 blur-3xl" />
+            </div>
+            <h2 className="relative text-[170px] sm:text-[280px] font-black text-white leading-[0.8] font-display">
+              <AnimatedNumber value={yearBooks.length} />
+            </h2>
+          </div>
 
-          <p className="text-lg text-white/55 mt-4 font-body">libros terminados</p>
+          <p className="text-xl sm:text-2xl text-white/65 font-body">
+            libros terminados
+          </p>
+
+          <div className="flex justify-center gap-2 pt-2 flex-wrap">
+            {yearBooks.slice(0, 5).map((b) => (
+              <div
+                key={b.id}
+                className="w-16 h-24 sm:w-20 sm:h-28 rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl shadow-black/30"
+              >
+                {b.coverUrl ? (
+                  <img
+                    src={b.coverUrl}
+                    alt={b.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-emerald-900/30 flex items-center justify-center">
+                    <BookOpen className="h-5 w-5 text-emerald-400/40" />
+                  </div>
+                )}
+              </div>
+            ))}
+            {yearBooks.length > 5 && (
+              <div className="w-16 h-24 sm:w-20 sm:h-28 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/50 text-lg font-semibold">
+                +{yearBooks.length - 5}
+              </div>
+            )}
+          </div>
         </div>
       </WrappedSlide>
 
       <WrappedSlide
         index={1}
         currentSlide={currentSlide}
-        gradient="from-gray-950 via-emerald-950/40 to-gray-950"
+        gradient="from-slate-950 via-emerald-950/35 to-slate-950"
       >
         <GlowOrb color="emerald" size="md" position="top-right" />
         <div className="space-y-8">
-          <div className="flex flex-col items-center gap-6">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
-              <BookOpen className="h-8 w-8 text-emerald-400" />
-            </div>
+          <div className="inline-flex p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+            <BookOpen className="h-8 w-8 text-emerald-400" />
+          </div>
 
-            <h2 className="text-[190px] sm:text-[240px] font-black text-white leading-[0.8] font-display">
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-40 w-40 rounded-full bg-emerald-400/10 blur-3xl" />
+            </div>
+            <h2 className="relative text-[145px] sm:text-[220px] font-black text-white leading-[0.8] font-display">
               <AnimatedNumber value={totalPages} />
             </h2>
-
-            <p className="text-xl text-white/60 font-body">páginas leídas</p>
-
-            <p className="text-sm text-white/40 font-body">
-              ≈ {Math.round(totalPages / 250)} novelas estándar
-            </p>
           </div>
+
+          <p className="text-xl sm:text-2xl text-white/65 font-body">
+            páginas leídas
+          </p>
+
+          <p className="text-sm sm:text-base text-white/40 font-body">
+            ≈ {Math.round(totalPages / 250)} novelas estándar
+          </p>
         </div>
       </WrappedSlide>
 
       <WrappedSlide
         index={2}
         currentSlide={currentSlide}
-        gradient="from-gray-950 via-purple-950/30 to-gray-950"
+        gradient="from-slate-950 via-purple-950/35 to-slate-950"
       >
         <GlowOrb color="purple" size="lg" position="bottom-left" />
         <div className="space-y-8">
@@ -452,9 +493,10 @@ export default function Wrapped() {
           <p className="text-purple-300/80 text-sm uppercase tracking-[0.3em]">
             Tu mejor mes
           </p>
+
           {bestMonth ? (
             <div className="space-y-3">
-              <h2 className="text-5xl sm:text-6xl font-bold text-white leading-none font-display">
+              <h2 className="text-5xl sm:text-7xl font-bold text-white leading-none font-display">
                 {bestMonth.month}
               </h2>
               <p className="text-2xl text-purple-300 font-semibold">
@@ -464,13 +506,14 @@ export default function Wrapped() {
           ) : (
             <p className="text-white/40">Sin datos suficientes</p>
           )}
-          <div className="flex items-end justify-center gap-1 h-20 pt-4">
+
+          <div className="flex items-end justify-center gap-1 h-24 pt-2">
             {monthlyData.map((count, i) => (
               <div key={i} className="flex flex-col items-center gap-1 flex-1 max-w-[24px]">
                 <div
-                  className="w-full rounded-t transition-all duration-700 bg-gradient-to-t from-purple-500/60 to-purple-400/80"
+                  className="w-full rounded-t transition-all duration-700 bg-gradient-to-t from-purple-500/70 to-purple-300/90"
                   style={{
-                    height: `${Math.max(count > 0 ? 6 : 2, (count / maxMonthly) * 60)}px`,
+                    height: `${Math.max(count > 0 ? 6 : 2, (count / maxMonthly) * 70)}px`,
                     transitionDelay: `${i * 50}ms`,
                   }}
                 />
@@ -486,7 +529,7 @@ export default function Wrapped() {
       <WrappedSlide
         index={3}
         currentSlide={currentSlide}
-        gradient="from-gray-950 via-emerald-950/30 to-gray-950"
+        gradient="from-slate-950 via-emerald-950/28 to-slate-950"
       >
         <GlowOrb color="emerald" size="md" position="top-left" />
         <div className="space-y-8">
@@ -498,7 +541,7 @@ export default function Wrapped() {
           </p>
           {topGenre ? (
             <div className="space-y-4">
-              <h2 className="text-4xl sm:text-5xl font-bold text-white leading-tight font-display">
+              <h2 className="text-4xl sm:text-6xl font-bold text-white leading-tight font-display">
                 {topGenre[0]}
               </h2>
               <p className="text-lg text-emerald-300">
@@ -514,7 +557,7 @@ export default function Wrapped() {
       <WrappedSlide
         index={4}
         currentSlide={currentSlide}
-        gradient="from-gray-950 via-amber-950/20 to-gray-950"
+        gradient="from-slate-950 via-amber-950/22 to-slate-950"
       >
         <GlowOrb color="amber" size="lg" position="bottom-right" />
         <div className="space-y-8">
@@ -524,14 +567,39 @@ export default function Wrapped() {
           <p className="text-amber-300/80 text-sm uppercase tracking-[0.3em]">
             Autor más leído
           </p>
+
           {topAuthor ? (
-            <div className="space-y-4">
-              <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight font-display">
+            <div className="space-y-5">
+              <h2 className="text-3xl sm:text-5xl font-bold text-white leading-tight font-display">
                 {topAuthor[0]}
               </h2>
               <p className="text-lg text-amber-300">
                 {topAuthor[1]} {topAuthor[1] === 1 ? "libro" : "libros"}
               </p>
+
+              <div className="flex justify-center gap-2 flex-wrap">
+                {yearBooks
+                  .filter((b) => b.author === topAuthor[0])
+                  .slice(0, 4)
+                  .map((b) => (
+                    <div
+                      key={b.id}
+                      className="w-14 h-20 sm:w-16 sm:h-24 rounded-xl overflow-hidden ring-1 ring-white/10 shadow-lg"
+                    >
+                      {b.coverUrl ? (
+                        <img
+                          src={b.coverUrl}
+                          alt={b.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-amber-900/30 flex items-center justify-center">
+                          <BookOpen className="h-4 w-4 text-amber-400/30" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
             </div>
           ) : (
             <p className="text-white/40">Sin datos</p>
@@ -542,7 +610,7 @@ export default function Wrapped() {
       <WrappedSlide
         index={5}
         currentSlide={currentSlide}
-        gradient="from-gray-950 via-amber-950/30 to-gray-950"
+        gradient="from-slate-950 via-amber-950/30 to-slate-950"
       >
         <GlowOrb color="amber" size="lg" position="center" />
         <div className="space-y-6">
@@ -552,6 +620,7 @@ export default function Wrapped() {
           <p className="text-amber-300/80 text-sm uppercase tracking-[0.3em]">
             Libro del año
           </p>
+
           {topRatedBook ? (
             <div className="space-y-4">
               <div className="flex justify-center">
@@ -559,15 +628,16 @@ export default function Wrapped() {
                   <img
                     src={topRatedBook.coverUrl}
                     alt={topRatedBook.title}
-                    className="w-36 h-52 object-cover rounded-xl shadow-2xl shadow-amber-500/20 ring-1 ring-white/10"
+                    className="w-40 h-56 object-cover rounded-2xl shadow-2xl shadow-amber-500/20 ring-1 ring-white/10"
                   />
                 ) : (
-                  <div className="w-36 h-52 rounded-xl bg-amber-900/20 flex items-center justify-center ring-1 ring-white/10">
+                  <div className="w-40 h-56 rounded-2xl bg-amber-900/20 flex items-center justify-center ring-1 ring-white/10">
                     <BookOpen className="h-12 w-12 text-amber-400/30" />
                   </div>
                 )}
               </div>
-              <h3 className="text-2xl font-bold text-white font-display">
+
+              <h3 className="text-2xl sm:text-3xl font-bold text-white font-display">
                 {topRatedBook.title}
               </h3>
               <p className="text-white/50">{topRatedBook.author}</p>
@@ -582,7 +652,7 @@ export default function Wrapped() {
       <WrappedSlide
         index={6}
         currentSlide={currentSlide}
-        gradient="from-gray-950 via-rose-950/20 to-gray-950"
+        gradient="from-slate-950 via-rose-950/22 to-slate-950"
       >
         <GlowOrb color="rose" size="md" position="top-right" />
         <div className="space-y-8">
@@ -592,15 +662,24 @@ export default function Wrapped() {
           <p className="text-rose-300/80 text-sm uppercase tracking-[0.3em]">
             Tu ritmo
           </p>
+
           <div className="space-y-6">
             {readingTimeStats && (
               <div className="space-y-1">
-                <h2 className="text-6xl font-bold text-white font-display">
+                <h2 className="text-6xl sm:text-7xl font-bold text-white font-display">
                   <AnimatedNumber value={readingTimeStats.avg} />
                 </h2>
                 <p className="text-white/50">días de media por libro</p>
+                <p className="text-sm text-rose-300/60 pt-2">
+                  ⚡ Más rápido:{" "}
+                  <span className="text-white/70">
+                    {readingTimeStats.fastest.book.title}
+                  </span>{" "}
+                  en {readingTimeStats.fastest.days} días
+                </p>
               </div>
             )}
+
             {maxStreak > 1 && (
               <div className="pt-2 border-t border-white/5 space-y-1">
                 <p className="text-3xl font-bold text-white font-display">
@@ -616,16 +695,17 @@ export default function Wrapped() {
       <WrappedSlide
         index={7}
         currentSlide={currentSlide}
-        gradient="from-gray-950 via-emerald-950/40 to-gray-950"
+        gradient="from-slate-950 via-emerald-950/40 to-slate-950"
       >
         <GlowOrb color="emerald" size="lg" position="center" />
         <div className="space-y-8">
           <div className="inline-flex p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
             <Heart className="h-8 w-8 text-emerald-400 fill-emerald-400" />
           </div>
-          <h2 className="text-3xl font-bold text-white font-display">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white font-display">
             Tu {selectedYear} en libros
           </h2>
+
           <div className="grid grid-cols-2 gap-3">
             {[
               { value: yearBooks.length, label: "Libros" },
@@ -635,7 +715,7 @@ export default function Wrapped() {
             ].map((stat, i) => (
               <div
                 key={stat.label}
-                className="p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm"
+                className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm"
               >
                 <p className="text-3xl font-bold text-emerald-400 font-display">
                   <AnimatedNumber value={stat.value} delay={i * 150} />
@@ -644,6 +724,7 @@ export default function Wrapped() {
               </div>
             ))}
           </div>
+
           {avgRating > 0 && (
             <p className="text-white/50 text-sm">
               Valoración media:{" "}
@@ -652,6 +733,8 @@ export default function Wrapped() {
               </span>
             </p>
           )}
+
+          <p className="text-white/35 text-sm">Sigue leyendo ✨</p>
         </div>
       </WrappedSlide>
 
@@ -761,6 +844,7 @@ export default function Wrapped() {
           <h2 className="text-2xl font-bold font-display flex items-center gap-2">
             <Sparkles className="h-6 w-6 text-accent" /> Wrapped {selectedYear}
           </h2>
+
           <Select
             value={String(selectedYear)}
             onValueChange={(v) => {
@@ -781,16 +865,26 @@ export default function Wrapped() {
           </Select>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleDownload}
-          disabled={isDownloading}
-          className="gap-2"
-        >
-          <ImageDown className="h-4 w-4" />
-          {isDownloading ? "Guardando..." : "Guardar imagen"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsFullscreen(true)}
+          >
+            Pantalla completa
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="gap-2"
+          >
+            <ImageDown className="h-4 w-4" />
+            {isDownloading ? "Guardando..." : "Guardar imagen"}
+          </Button>
+        </div>
       </div>
 
       {wrappedContent}
