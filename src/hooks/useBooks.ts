@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 
@@ -81,8 +80,17 @@ function dbToBook(db: DbBook): Book {
 }
 
 export function useBooks() {
-  const { user } = useAuth();
-  const userId = user?.id ?? null;
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
   const { toast } = useToast();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
