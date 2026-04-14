@@ -95,16 +95,12 @@ export function useBooks() {
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchBooks = useCallback(async () => {
-  console.log("FETCH BOOKS userId:", userId);
-
+  const fetchItems = useCallback(async () => {
   if (!userId) {
-    console.log("NO USER ID");
-    setBooks([]);
+    setItems([]);
     setLoading(false);
     return;
   }
-
   setLoading(true);
 
   const { data, error } = await supabase
