@@ -186,18 +186,3 @@ export default function Layout() {
             }}
           />
         )}
-      
-      <div className="border-t border-white/5 pt-2 mt-2">
-        <div className="px-3 py-1 text-[10px] text-white/25 truncate">{user?.email}</div>
-        <button
-          onClick={signOut}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all"
-        >
-          <LogOut size={16} />
-          <span>Cerrar sesión</span>
-        </button>
-      </div>
-    </div>
-    </BooksContext.Provider>
-  );
-}
