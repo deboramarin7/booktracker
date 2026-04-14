@@ -125,7 +125,7 @@ body {
 /* 1. FONDO */
 [data-theme="night"] body {
   background-image: url('https://images.unsplash.com/photo-1634156541649-f418858f5b62?fm=jpg&q=60&w=3000&auto=format&fit=crop');
-  background-size: 120%;
+  background-size: cover;
   background-position: center;
   background-attachment: fixed;
   background-repeat: no-repeat;
