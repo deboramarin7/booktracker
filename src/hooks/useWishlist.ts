@@ -130,8 +130,13 @@ export function useWishlist() {
   }, []);
 
   const fetchItems = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase
+  if (!userId) {
+    setItems([]);
+    setLoading(false);
+    return;
+  }
+  setLoading(true);
+  const { data, error } = await supabase
       .from("wishlist")
       .select("*")
       .eq("user_id", userId)
