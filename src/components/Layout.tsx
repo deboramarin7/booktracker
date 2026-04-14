@@ -14,6 +14,8 @@ import { useTheme } from "@/hooks/useTheme";
 import { ThemeSelector } from "@/components/ThemeSelector";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { EditBookDialog } from "@/components/EditBookDialog";
+import { ProfileDialog } from "@/components/ProfileDialog";
+import { useProfile } from "@/hooks/useProfile";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
@@ -68,74 +70,98 @@ function NavItem({ to, label, icon, onClick }: { to: string; label: string; icon
 
 function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   const { signOut, user } = useAuth();
+  const { profile } = useProfile();
   const { dark, setDark, themeId } = useTheme();
   const [themeOpen, setThemeOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const displayName = profile.displayName || user?.email?.split("@")[0] || "";
+  const initials = profile.displayName
+    ? profile.displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+    : user?.email?.charAt(0).toUpperCase() || "?";
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Logo */}
-      <div className="flex h-16 items-center gap-3 px-6 border-b border-border shrink-0">
-        <div className="relative flex items-center justify-center w-9 h-9 rounded-xl shrink-0"
-          style={{ background: "var(--primary)", opacity: 0.9 }}>
-          <BookOpen className="h-5 w-5 text-primary-foreground" />
-        </div>
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight font-display leading-none">Book Tracker</h1>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mt-0.5">Tu diario lector</p>
-        </div>
-      </div>
-
-      {/* Nav */}
-      <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
-        {navLinks.map((link) => (
-          <NavItem key={link.to} {...link} onClick={onNavClick} />
-        ))}
-      </nav>
-
-      {/* Bottom: Tema + Dark mode */}
-      <div className="border-t border-border px-3 py-4 space-y-1 shrink-0">
-        <button
-          onClick={() => setThemeOpen(!themeOpen)}
-          className="w-full flex items-center gap-3 rounded-[var(--radius)] px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-        >
-          <Palette className="h-5 w-5" />
-          Tema
-        </button>
-
-        {themeOpen && (
-          <div className="px-1 pb-2">
-            <ThemeSelector />
+    <>
+      <div className="flex h-full flex-col">
+        {/* Logo */}
+        <div className="flex h-16 items-center gap-3 px-6 border-b border-border shrink-0">
+          <div className="relative flex items-center justify-center w-9 h-9 rounded-xl shrink-0"
+            style={{ background: "var(--primary)", opacity: 0.9 }}>
+            <BookOpen className="h-5 w-5 text-primary-foreground" />
           </div>
-        )}
-
-        <button
-          onClick={() => setDark(!dark)}
-          className="w-full flex items-center gap-3 rounded-[var(--radius)] px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-        >
-          {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          {dark ? "Modo Claro" : "Modo Oscuro"}
-        </button>
-      </div>
-
-      {/* Perfil y cerrar sesion */}
-      <div className="border-t border-border px-3 py-4 shrink-0">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-            <span className="text-sm font-semibold text-primary">
-              {user?.email?.charAt(0).toUpperCase() || "?"}
-            </span>
+          <div>
+            <h1 className="text-lg font-semibold tracking-tight font-display leading-none">Book Tracker</h1>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mt-0.5">Tu diario lector</p>
           </div>
-          <p className="text-xs text-muted-foreground truncate flex-1">{user?.email}</p>
         </div>
-        <button
-          onClick={signOut}
-          className="w-full flex items-center gap-3 rounded-[var(--radius)] px-3 py-2 text-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all"
-        >
-          <LogOut className="h-4 w-4" />
-          <span>Cerrar sesion</span>
-        </button>
+
+        {/* Nav */}
+        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+          {navLinks.map((link) => (
+            <NavItem key={link.to} {...link} onClick={onNavClick} />
+          ))}
+        </nav>
+
+        {/* Bottom: Tema + Dark mode */}
+        <div className="border-t border-border px-3 py-4 space-y-1 shrink-0">
+          <button
+            onClick={() => setThemeOpen(!themeOpen)}
+            className="w-full flex items-center gap-3 rounded-[var(--radius)] px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          >
+            <Palette className="h-5 w-5" />
+            Tema
+          </button>
+
+          {themeOpen && (
+            <div className="px-1 pb-2">
+              <ThemeSelector />
+            </div>
+          )}
+
+          <button
+            onClick={() => setDark(!dark)}
+            className="w-full flex items-center gap-3 rounded-[var(--radius)] px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          >
+            {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            {dark ? "Modo Claro" : "Modo Oscuro"}
+          </button>
+        </div>
+
+        {/* Perfil y cerrar sesion */}
+        <div className="border-t border-border px-3 py-4 shrink-0">
+          <button
+            onClick={() => setProfileOpen(true)}
+            className="w-full flex items-center gap-3 mb-3 p-2 rounded-[var(--radius)] hover:bg-muted transition-colors group"
+          >
+            {profile.avatarUrl ? (
+              <img
+                src={profile.avatarUrl}
+                alt={displayName}
+                className="w-9 h-9 rounded-full object-cover border border-border flex-shrink-0"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                <span className="text-sm font-semibold text-primary">{initials}</span>
+              </div>
+            )}
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
+            </div>
+          </button>
+          <button
+            onClick={signOut}
+            className="w-full flex items-center gap-3 rounded-[var(--radius)] px-3 py-2 text-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Cerrar sesion</span>
+          </button>
+        </div>
       </div>
-    </div>
+
+      {/* Profile Modal */}
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
+    </>
   );
 }
 
@@ -181,7 +207,6 @@ export default function Layout() {
 
         {/* Main Content */}
         <div className="lg:pl-64">
-          {/* Desktop top bar with search */}
           <div className="hidden lg:flex sticky top-0 z-30 h-14 items-center justify-end px-8 border-b border-border bg-background/95 backdrop-blur-sm">
             <GlobalSearch books={books} onSelectBook={setSearchEditBook} />
           </div>
