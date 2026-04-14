@@ -290,9 +290,11 @@ export default function Wrapped() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [animDir, setAnimDir] = useState<"left"|"right">("right");
   const [isAnimating, setIsAnimating] = useState(false);
-  const touchStartX = useRef<number|null>(null);
+  const touchStartX = useRef<number | null>(null);
   const captureRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const years = useMemo(() => {
     const s = new Set(books.map(b => getYear(b)));
@@ -381,6 +383,7 @@ export default function Wrapped() {
 
   const handleSave = async () => {
     setIsSaving(true);
+    setIsExporting(true);
     try {
       if (!(window as any).html2canvas) {
         await new Promise<void>((res, rej) => {
@@ -390,45 +393,50 @@ export default function Wrapped() {
           document.head.appendChild(s);
         });
       }
-      // Capturar el contenedor principal tal como se ve — sin cambiar nada
-      const el = captureRef.current;
+      await new Promise((r) => setTimeout(r, 350));
+      const el = exportRef.current;
       if (!el) return;
       const canvas = await (window as any).html2canvas(el, {
-        useCORS: true,
-        allowTaint: true,
-        scale: 2,
+        useCORS: true, allowTaint: true, scale: 2,
         backgroundColor: "#020812",
-        width: el.offsetWidth,
-        height: el.offsetHeight,
-        windowWidth: window.innerWidth,
-        windowHeight: window.innerHeight,
-        x: 0,
-        y: 0,
-        scrollX: 0,
-        scrollY: 0,
+        width: 1080, height: 1920,
+        windowWidth: 1080, windowHeight: 1920,
+        x: 0, y: 0, scrollX: 0, scrollY: 0,
       });
       const a = document.createElement("a");
       a.href = canvas.toDataURL("image/png");
-      a.download = `wrapped-${selectedYear}.png`;
+      a.download = `wrapped-${selectedYear}-slide-${currentSlide + 1}.png`;
       a.click();
     } catch(e) { console.error(e); }
-    setIsSaving(false);
+    finally { setIsExporting(false); setIsSaving(false); }
   }
 
-  const renderSlide = () => {
-    const id = slides[currentSlide]?.id;
-    if (id === "intro")  return <SlideIntro totalBooks={stats.totalBooks} year={selectedYear} books={yearBooks} />;
-    if (id === "pages")  return <SlidePages totalPages={stats.totalPages} />;
-    if (id === "month")  return <SlideBestMonth monthData={stats.bestMonth} />;
-    if (id === "genre")  return <SlideGenre genreData={stats.genreData} />;
-    if (id === "author") return <SlideTopAuthor author={stats.topAuthor} books={yearBooks} />;
-    if (id === "book")   return stats.bookOfYear ? <SlideBookOfYear book={stats.bookOfYear} /> : null;
+  const exportSlide = (
+    <div
+      ref={exportRef}
+      style={{
+        width: 1080, height: 1920,
+        position: "fixed",
+        left: isExporting ? 0 : -99999,
+        top: isExporting ? 0 : -99999,
+        overflow: "hidden",
+        background: "#020812",
+        zIndex: isExporting ? 9999 : -1,
+      }}
+    >
+      <div className="absolute inset-0">
+        <img src="/nebulosa.png" alt="" className="w-full h-full object-cover" style={{ opacity: 0.9 }} />
+        <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 50% 40%, rgba(16,185,129,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(168,85,247,0.12) 0%, transparent 40%), radial-gradient(circle at 20% 80%, rgba(244,114,182,0.10) 0%, transparent 40%)" }} />
+        <div className="absolute inset-0 bg-black/20" />
+      </div>
+      <div className="relative h-full w-full flex flex-col items-center justify-center" style={{ paddingTop: 180, paddingBottom: 220 }}>
+        {renderSlide()}
+      </div>
+    </div>
+  );
 
-    if (id === "final")  return <SlideFinal stats={stats} />;
-    return null;
-  };
-
-  return (
+    return (
+    <>
     <div className="min-h-screen flex flex-col" style={{ background: "#020812" }}>
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
         <img src="/nebulosa.png" alt="" className="w-full h-full object-cover" style={{ opacity: 0.85 }}
@@ -488,5 +496,7 @@ export default function Wrapped() {
         </div>
       </div>
     </div>
+    {exportSlide}
+    </>
   );
 }
