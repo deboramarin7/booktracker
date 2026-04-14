@@ -243,6 +243,17 @@ img.object-cover {
   position: relative;
 }
 
+.wrapped-theme::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: url('/nebulosa.png');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.92;
+}
+
 .wrapped-theme::before {
   content: "";
   position: fixed;
@@ -250,10 +261,10 @@ img.object-cover {
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(circle at 50% 38%, rgba(16, 185, 129, 0.18), transparent 22%),
-    radial-gradient(circle at 82% 20%, rgba(168, 85, 247, 0.14), transparent 24%),
-    radial-gradient(circle at 78% 78%, rgba(244, 114, 182, 0.12), transparent 22%),
-    radial-gradient(circle at 18% 28%, rgba(59, 130, 246, 0.10), transparent 20%);
+    radial-gradient(circle at 50% 38%, rgba(16, 185, 129, 0.12), transparent 22%),
+    radial-gradient(circle at 82% 20%, rgba(168, 85, 247, 0.10), transparent 24%),
+    radial-gradient(circle at 78% 78%, rgba(244, 114, 182, 0.08), transparent 22%),
+    radial-gradient(circle at 18% 28%, rgba(59, 130, 246, 0.08), transparent 20%);
   filter: blur(22px);
 }
 
