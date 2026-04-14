@@ -30,7 +30,7 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "#020812" }}>
       <div className="fixed inset-0 pointer-events-none">
-        <img src="/login.png" alt="" className="w-full h-full object-cover" style={{ opacity: 0.85 }}
+        <img src="/login.png" alt="" className="w-full h-full object-contain" style={{ opacity: 0.85 }}
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
       </div>
 
