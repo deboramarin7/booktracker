@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 async function fetchCoverForBook(title: string, author: string): Promise<string | null> {
@@ -91,8 +90,17 @@ function wishToExtra(item: Omit<WishItem, "id">): string {
 }
 
 export function useWishlist() {
-  const { user } = useAuth();
-  const userId = user?.id ?? null;
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
   const { toast } = useToast();
   const [items, setItems] = useState<WishItem[]>([]);
   const [loading, setLoading] = useState(true);
