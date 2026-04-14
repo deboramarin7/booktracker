@@ -39,11 +39,11 @@ const navLinks = [
   { to: "/biblioteca", label: "Biblioteca", icon: <Library className="h-5 w-5" /> },
   { to: "/autores-sagas", label: "Autores y Sagas", icon: <Users className="h-5 w-5" /> },
   { to: "/wishlist", label: "Wish List", icon: <Heart className="h-5 w-5" /> },
-  { to: "/estanterias", label: "Estantería", icon: <BookMarked className="h-5 w-5" /> },
-  { to: "/reading-habits", label: "Hábitos", icon: <CalendarDays className="h-5 w-5" /> },
+  { to: "/estanterias", label: "Estanteria", icon: <BookMarked className="h-5 w-5" /> },
+  { to: "/reading-habits", label: "Habitos", icon: <CalendarDays className="h-5 w-5" /> },
   { to: "/logros", label: "Logros", icon: <Trophy className="h-5 w-5" /> },
   { to: "/dashboard", label: "Dashboard", icon: <TrendingUp className="h-5 w-5" /> },
-  { to: "/wrapped", label: "Wrapped ✨", icon: <Sparkles className="h-5 w-5" /> },
+  { to: "/wrapped", label: "Wrapped", icon: <Sparkles className="h-5 w-5" /> },
   { to: "/ayuda", label: "Ayuda", icon: <HelpCircle className="h-5 w-5" /> },
 ];
 
@@ -116,6 +116,25 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
           {dark ? "Modo Claro" : "Modo Oscuro"}
         </button>
       </div>
+
+      {/* Perfil y cerrar sesion */}
+      <div className="border-t border-border px-3 py-4 shrink-0">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+            <span className="text-sm font-semibold text-primary">
+              {user?.email?.charAt(0).toUpperCase() || "?"}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground truncate flex-1">{user?.email}</p>
+        </div>
+        <button
+          onClick={signOut}
+          className="w-full flex items-center gap-3 rounded-[var(--radius)] px-3 py-2 text-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Cerrar sesion</span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -131,14 +150,12 @@ export default function Layout() {
     <BooksContext.Provider value={{ books, loading, addBook, addBooksInBatch, updateBook, deleteBook, addWishItem }}>
       <div className="min-h-screen bg-background">
 
-        
-
-        {/* ── Desktop Sidebar ── */}
+        {/* Desktop Sidebar */}
         <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-64 lg:overflow-y-auto lg:border-r border-border bg-card">
           <SidebarContent />
         </aside>
 
-        {/* ── Mobile Header ── */}
+        {/* Mobile Header */}
         <header className="lg:hidden sticky top-0 z-40 flex h-14 items-center justify-between px-4 border-b border-border bg-card/95 backdrop-blur-sm">
           <Link to="/biblioteca" className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -162,7 +179,7 @@ export default function Layout() {
           </div>
         </header>
 
-        {/* ── Main Content ── */}
+        {/* Main Content */}
         <div className="lg:pl-64">
           {/* Desktop top bar with search */}
           <div className="hidden lg:flex sticky top-0 z-30 h-14 items-center justify-end px-8 border-b border-border bg-background/95 backdrop-blur-sm">
@@ -186,8 +203,8 @@ export default function Layout() {
             }}
           />
         )}
-      
-    </div>
+
+      </div>
     </BooksContext.Provider>
   );
 }
