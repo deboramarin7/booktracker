@@ -413,9 +413,19 @@ export default function Wrapped() {
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="h-44 w-44 rounded-full bg-emerald-400/15 blur-3xl" />
             </div>
-            <h2 className="relative text-[170px] sm:text-[280px] font-black text-white leading-[0.8] font-display">
-              <AnimatedNumber value={yearBooks.length} />
-            </h2>
+            <h2
+  className="text-[190px] sm:text-[240px] font-black leading-[0.8] font-display bg-clip-text text-transparent"
+  style={{
+    backgroundImage: "linear-gradient(180deg, #ffffff 0%, #a7f3d0 60%, #10b981 100%)",
+    textShadow: `
+      0 0 20px rgba(16,185,129,0.6),
+      0 0 40px rgba(16,185,129,0.5),
+      0 0 80px rgba(16,185,129,0.4)
+    `
+  }}
+>
+  <AnimatedNumber value={yearBooks.length} />
+</h2>
           </div>
 
           <p className="text-xl sm:text-2xl text-white/65 font-body">
