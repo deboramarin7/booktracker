@@ -234,3 +234,48 @@ img.object-cover {
 .animate-fade-in {
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
+
+/* =========================
+   WRAPPED THEME
+   ========================= */
+
+.wrapped-theme {
+  position: relative;
+}
+
+.wrapped-theme::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(16, 185, 129, 0.18), transparent 22%),
+    radial-gradient(circle at 82% 20%, rgba(168, 85, 247, 0.14), transparent 24%),
+    radial-gradient(circle at 78% 78%, rgba(244, 114, 182, 0.12), transparent 22%),
+    radial-gradient(circle at 18% 28%, rgba(59, 130, 246, 0.10), transparent 20%);
+  filter: blur(22px);
+}
+
+.wrapped-theme .rounded-2xl,
+.wrapped-theme .rounded-3xl {
+  overflow: hidden;
+}
+
+.wrapped-theme button[role="combobox"],
+.wrapped-theme [data-radix-select-trigger] {
+  background: rgba(9, 18, 28, 0.55) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  backdrop-filter: blur(12px);
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 9999px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
+}
+
+.wrapped-theme button {
+  backdrop-filter: blur(10px);
+}
+
+.wrapped-theme img {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
