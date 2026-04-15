@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
-import { Camera, X, Check, Calendar, User } from "lucide-react";
+import { useTheme } from "@/hooks/useTheme";
+import { Camera, X, Check, Calendar, User, Palette, Sun, Moon } from "lucide-react";
 
 interface ProfileDialogProps {
   open: boolean;
@@ -11,6 +12,7 @@ interface ProfileDialogProps {
 export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
   const { user } = useAuth();
   const { profile, saveProfile, saving } = useProfile();
+  const { dark, setDark, themeId, setThemeId, themes } = useTheme();
   const [name, setName] = useState("");
   const [birthday, setBirthday] = useState("");
   const [avatarPreview, setAvatarPreview] = useState("");
@@ -28,7 +30,6 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Max 500KB for localStorage
     if (file.size > 500 * 1024) {
       alert("La imagen es demasiado grande. Maximo 500KB.");
       return;
@@ -37,8 +38,6 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const result = ev.target?.result as string;
-
-      // Resize to 200x200 max
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
@@ -46,13 +45,10 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext("2d")!;
-
-        // Center crop
         const minDim = Math.min(img.width, img.height);
         const sx = (img.width - minDim) / 2;
         const sy = (img.height - minDim) / 2;
         ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
-
         const compressed = canvas.toDataURL("image/jpeg", 0.7);
         setAvatarPreview(compressed);
       };
@@ -90,9 +86,9 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
       />
 
       {/* Dialog */}
-      <div className="relative bg-card border border-border rounded-[var(--radius)] shadow-2xl w-full max-w-sm overflow-hidden">
+      <div className="relative bg-card border border-border rounded-[var(--radius)] shadow-2xl w-full max-w-sm overflow-hidden max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-border">
+        <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-card z-10">
           <h2 className="text-lg font-semibold font-display">Editar Perfil</h2>
           <button
             onClick={() => onOpenChange(false)}
@@ -103,7 +99,7 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-5">
+        <div className="p-5 space-y-6">
           {/* Avatar */}
           <div className="flex flex-col items-center gap-3">
             <div className="relative group">
@@ -118,16 +114,12 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
                   <span className="text-2xl font-bold text-primary">{initials}</span>
                 </div>
               )}
-
-              {/* Overlay */}
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
               >
                 <Camera className="h-6 w-6 text-white" />
               </button>
-
-              {/* Remove button */}
               {avatarPreview && (
                 <button
                   onClick={handleRemoveAvatar}
@@ -137,7 +129,6 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
                 </button>
               )}
             </div>
-
             <input
               ref={fileInputRef}
               type="file"
@@ -145,7 +136,6 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
               onChange={handleFileChange}
               className="hidden"
             />
-
             <button
               onClick={() => fileInputRef.current?.click()}
               className="text-xs text-primary hover:underline"
@@ -188,10 +178,70 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
             <label className="text-xs text-muted-foreground">Email</label>
             <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
           </div>
+
+          {/* Separator */}
+          <div className="border-t border-border" />
+
+          {/* Theme Section */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Palette className="h-4 w-4 text-muted-foreground" />
+              Tema
+            </label>
+            <div className="space-y-2">
+              {Object.values(themes).map((theme) => (
+                <button
+                  key={theme.id}
+                  onClick={() => setThemeId(theme.id)}
+                  className={`w-full flex items-center justify-between rounded-[var(--radius)] px-3 py-2.5 text-sm transition-colors ${
+                    themeId === theme.id
+                      ? "bg-primary/15 text-primary border border-primary/30"
+                      : "hover:bg-muted text-muted-foreground border border-transparent"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <span>{theme.emoji}</span>
+                    <span>{theme.name}</span>
+                  </span>
+                  {themeId === theme.id && <Check className="h-4 w-4" />}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Dark Mode Toggle */}
+          {themeId !== "night" && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                {dark ? <Moon className="h-4 w-4 text-muted-foreground" /> : <Sun className="h-4 w-4 text-muted-foreground" />}
+                Modo
+              </label>
+              <div className="flex rounded-[var(--radius)] border border-border overflow-hidden">
+                <button
+                  onClick={() => setDark(false)}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm transition-colors ${
+                    !dark ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Sun className="h-4 w-4" />
+                  Claro
+                </button>
+                <button
+                  onClick={() => setDark(true)}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-sm transition-colors ${
+                    dark ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Moon className="h-4 w-4" />
+                  Oscuro
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 p-5 border-t border-border">
+        <div className="flex justify-end gap-2 p-5 border-t border-border sticky bottom-0 bg-card">
           <button
             onClick={() => onOpenChange(false)}
             className="px-4 py-2 text-sm rounded-[var(--radius)] border border-border hover:bg-muted transition-colors"
