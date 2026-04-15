@@ -67,10 +67,9 @@ function NavItem({ to, label, icon, onClick }: { to: string; label: string; icon
   );
 }
 
-function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
+function SidebarContent({ onNavClick, onProfileClick }: { onNavClick?: () => void; onProfileClick: () => void }) {
   const { signOut, user } = useAuth();
   const { profile } = useProfile();
-  const [profileOpen, setProfileOpen] = useState(false);
 
   const displayName = profile.displayName || user?.email?.split("@")[0] || "";
   const initials = profile.displayName
@@ -78,62 +77,57 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
     : user?.email?.charAt(0).toUpperCase() || "?";
 
   return (
-    <>
-      <div className="flex h-full flex-col">
-        {/* Logo */}
-        <div className="flex h-16 items-center gap-3 px-6 border-b border-border shrink-0">
-          <div className="relative flex items-center justify-center w-9 h-9 rounded-xl shrink-0"
-            style={{ background: "var(--primary)", opacity: 0.9 }}>
-            <BookOpen className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold tracking-tight font-display leading-none">Book Tracker</h1>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mt-0.5">Tu diario lector</p>
-          </div>
+    <div className="flex h-full flex-col">
+      {/* Logo */}
+      <div className="flex h-16 items-center gap-3 px-6 border-b border-border shrink-0">
+        <div className="relative flex items-center justify-center w-9 h-9 rounded-xl shrink-0"
+          style={{ background: "var(--primary)", opacity: 0.9 }}>
+          <BookOpen className="h-5 w-5 text-primary-foreground" />
         </div>
-
-        {/* Nav */}
-        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
-          {navLinks.map((link) => (
-            <NavItem key={link.to} {...link} onClick={onNavClick} />
-          ))}
-        </nav>
-
-        {/* Perfil y cerrar sesion */}
-        <div className="border-t border-border px-3 py-4 shrink-0">
-          <button
-            onClick={() => setProfileOpen(true)}
-            className="w-full flex items-center gap-3 mb-3 p-2 rounded-[var(--radius)] hover:bg-muted transition-colors group"
-          >
-            {profile.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt={displayName}
-                className="w-9 h-9 rounded-full object-cover border border-border flex-shrink-0"
-              />
-            ) : (
-              <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-sm font-semibold text-primary">{initials}</span>
-              </div>
-            )}
-            <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
-              <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
-            </div>
-          </button>
-          <button
-            onClick={signOut}
-            className="w-full flex items-center gap-3 rounded-[var(--radius)] px-3 py-2 text-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all"
-          >
-            <LogOut className="h-4 w-4" />
-            <span>Cerrar sesion</span>
-          </button>
+        <div>
+          <h1 className="text-lg font-semibold tracking-tight font-display leading-none">Book Tracker</h1>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mt-0.5">Tu diario lector</p>
         </div>
       </div>
 
-      {/* Profile Modal */}
-      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
-    </>
+      {/* Nav */}
+      <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
+        {navLinks.map((link) => (
+          <NavItem key={link.to} {...link} onClick={onNavClick} />
+        ))}
+      </nav>
+
+      {/* Perfil y cerrar sesion */}
+      <div className="border-t border-border px-3 py-4 shrink-0">
+        <button
+          onClick={onProfileClick}
+          className="w-full flex items-center gap-3 mb-3 p-2 rounded-[var(--radius)] hover:bg-muted transition-colors group"
+        >
+          {profile.avatarUrl ? (
+            <img
+              src={profile.avatarUrl}
+              alt={displayName}
+              className="w-9 h-9 rounded-full object-cover border border-border flex-shrink-0"
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+              <span className="text-sm font-semibold text-primary">{initials}</span>
+            </div>
+          )}
+          <div className="flex-1 min-w-0 text-left">
+            <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
+          </div>
+        </button>
+        <button
+          onClick={signOut}
+          className="w-full flex items-center gap-3 rounded-[var(--radius)] px-3 py-2 text-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Cerrar sesion</span>
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -143,6 +137,7 @@ export default function Layout() {
   const { addItem: addWishItem } = useWishlist();
   const [searchEditBook, setSearchEditBook] = useState<Book | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   return (
     <BooksContext.Provider value={{ books, loading, addBook, addBooksInBatch, updateBook, deleteBook, addWishItem }}>
@@ -150,7 +145,7 @@ export default function Layout() {
 
         {/* Desktop Sidebar */}
         <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-64 lg:overflow-y-auto lg:border-r border-border bg-card">
-          <SidebarContent />
+          <SidebarContent onProfileClick={() => setProfileOpen(true)} />
         </aside>
 
         {/* Mobile Header */}
@@ -171,7 +166,7 @@ export default function Layout() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-64 p-0 border-r border-border bg-card">
-                <SidebarContent onNavClick={() => setMobileOpen(false)} />
+                <SidebarContent onNavClick={() => setMobileOpen(false)} onProfileClick={() => { setMobileOpen(false); setProfileOpen(true); }} />
               </SheetContent>
             </Sheet>
           </div>
@@ -202,6 +197,10 @@ export default function Layout() {
         )}
 
       </div>
+
+      {/* Profile Modal - FUERA del sidebar para que se centre en pantalla */}
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
+
     </BooksContext.Provider>
   );
 }
