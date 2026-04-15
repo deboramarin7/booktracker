@@ -9,14 +9,20 @@ interface ProfileDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const PRESET_COLORS = [
+  "#8B5CF6", "#EC4899", "#EF4444", "#F97316", "#EAB308",
+  "#22C55E", "#14B8A6", "#3B82F6", "#6366F1", "#A855F7",
+];
+
 export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
   const { user } = useAuth();
   const { profile, saveProfile, saving } = useProfile();
-  const { dark, setDark, themeId, setThemeId, themes } = useTheme();
+  const { dark, setDark, themeId, setThemeId, themes, customColor, setCustomColor } = useTheme();
   const [name, setName] = useState("");
   const [birthday, setBirthday] = useState("");
   const [avatarPreview, setAvatarPreview] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const colorInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -71,11 +77,19 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const handleCustomColorChange = (color: string) => {
+    setCustomColor(color);
+    if (themeId !== "custom") setThemeId("custom");
+  };
+
   if (!open) return null;
 
   const initials = name
     ? name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : user?.email?.charAt(0).toUpperCase() || "?";
+
+  // Separate preset themes from custom
+  const presetThemes = Object.values(themes).filter((t) => t.id !== "custom");
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -86,7 +100,7 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
       />
 
       {/* Dialog */}
-      <div className="relative bg-card border border-border rounded-[var(--radius)] shadow-2xl w-full max-w-lg overflow-hidden">
+      <div className="relative bg-card border border-border rounded-[var(--radius)] shadow-2xl w-full max-w-md overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-border">
           <h2 className="text-lg font-semibold font-display">Editar Perfil</h2>
@@ -162,18 +176,18 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
           {/* Divider */}
           <div className="border-t border-border" />
 
-          {/* Theme - 3 compact buttons in a row */}
+          {/* Theme - 3 presets + custom in a row */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
               <Palette className="h-3.5 w-3.5" />
               Tema
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              {Object.values(themes).map((theme) => (
+            <div className="grid grid-cols-4 gap-2">
+              {presetThemes.map((theme) => (
                 <button
                   key={theme.id}
                   onClick={() => setThemeId(theme.id)}
-                  className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-[var(--radius)] text-xs transition-all ${
+                  className={`flex flex-col items-center gap-1 py-2 px-1 rounded-[var(--radius)] text-[11px] transition-all ${
                     themeId === theme.id
                       ? "bg-primary/15 text-primary ring-1 ring-primary/40"
                       : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -183,36 +197,87 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
                   <span className="truncate w-full text-center leading-tight">{theme.name.split(" ").pop()}</span>
                 </button>
               ))}
+              {/* Custom theme button */}
+              <button
+                onClick={() => setThemeId("custom")}
+                className={`flex flex-col items-center gap-1 py-2 px-1 rounded-[var(--radius)] text-[11px] transition-all ${
+                  themeId === "custom"
+                    ? "bg-primary/15 text-primary ring-1 ring-primary/40"
+                    : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <div
+                  className="w-5 h-5 rounded-full border-2 border-current"
+                  style={{ backgroundColor: customColor }}
+                />
+                <span className="truncate w-full text-center leading-tight">Custom</span>
+              </button>
             </div>
           </div>
 
-          {/* Dark/Light toggle - compact */}
-                      <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 flex-shrink-0">
-                {dark ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
-                Modo
-              </label>
-              <div className="flex-1 flex rounded-[var(--radius)] border border-border overflow-hidden">
-                <button
-                  onClick={() => setDark(false)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
-                    !dark ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Sun className="h-3.5 w-3.5" />
-                  Claro
-                </button>
-                <button
-                  onClick={() => setDark(true)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
-                    dark ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Moon className="h-3.5 w-3.5" />
-                  Oscuro
-                </button>
+          {/* Custom color picker (only when custom theme selected) */}
+          {themeId === "custom" && (
+            <div className="space-y-3 p-3 rounded-[var(--radius)] bg-muted/30 border border-border/50">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-muted-foreground flex-shrink-0">Color:</label>
+                <div className="flex gap-1.5 flex-wrap flex-1">
+                  {PRESET_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => handleCustomColorChange(color)}
+                      className={`w-6 h-6 rounded-full transition-all ${
+                        customColor === color ? "ring-2 ring-foreground ring-offset-2 ring-offset-card scale-110" : "hover:scale-110"
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                  {/* Custom color input */}
+                  <button
+                    onClick={() => colorInputRef.current?.click()}
+                    className="w-6 h-6 rounded-full border-2 border-dashed border-muted-foreground hover:border-foreground transition-colors flex items-center justify-center"
+                    title="Elegir color"
+                  >
+                    <span className="text-[10px]">+</span>
+                  </button>
+                  <input
+                    ref={colorInputRef}
+                    type="color"
+                    value={customColor}
+                    onChange={(e) => handleCustomColorChange(e.target.value)}
+                    className="sr-only"
+                  />
+                </div>
               </div>
             </div>
+          )}
+
+          {/* Dark/Light toggle */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 flex-shrink-0">
+              {dark ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
+              Modo
+            </label>
+            <div className="flex-1 flex rounded-[var(--radius)] border border-border overflow-hidden">
+              <button
+                onClick={() => setDark(false)}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
+                  !dark ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Sun className="h-3.5 w-3.5" />
+                Claro
+              </button>
+              <button
+                onClick={() => setDark(true)}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
+                  dark ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Moon className="h-3.5 w-3.5" />
+                Oscuro
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
