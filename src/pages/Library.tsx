@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { useBooks } from "@/hooks/useBooks";
 import { BookCard } from "@/components/BookCard";
 import { AddBookDialog } from "@/components/AddBookDialog";
-import { ImportBooksDialog, ExportBooksButton } from "@/components/ImportExportBooks";
+import { ExportBooksButton } from "@/components/ImportExportBooks";
 import { useWishlist, type WishItem } from "@/hooks/useWishlist";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -333,7 +333,6 @@ export default function LibraryPage() {
             </button>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <ImportBooksDialog onImport={addBooksInBatch} onImportWishlist={handleImportWishlist} />
             <ExportBooksButton books={books} />
             <AddBookDialog onAdd={addBook} onAddToWishlist={addItem} />
           </div>
