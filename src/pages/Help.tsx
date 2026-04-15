@@ -23,7 +23,9 @@ const sections: Section[] = [
     steps: [
       {
         title: "Añadir un libro",
-        text: "Haz clic en '+ Añadir libro' (esquina superior derecha). Puedes buscar por título, autor o ISBN usando el buscador automático — se rellenarán los datos solos. Si el libro no aparece, rellénalo a mano."
+        text: "Haz clic en '+ Añadir libro' (esquina superior derecha). Puedes buscar por título, autor o ISBN usando el buscador automático — se rellenarán los datos solos. Si el libro no aparece, rellénalo a mano.",
+              "El campo URL de portada se autorellena con la búsqueda, pero si no te gusta, puedes buscar la URL de la imagen de la portada y cambiarlo",
+              "El resto de campos como Género, Formato, Procedencia etc. es necesario que sean relleandos por ti"
       },
       {
         title: "Estados de lectura",
@@ -43,9 +45,9 @@ const sections: Section[] = [
       }
     ],
     tips: [
-      "Haz clic en 'Ver más' en cada tarjeta para ver precio, procedencia, saga, fechas y notas sin tener que editar.",
+      "Haz clic encima de la imagen de la portada para ver la ficha técnica del libro.",
       "Para editar un libro, pasa el ratón por encima de la portada y haz clic en el lápiz ✏️.",
-      "Para eliminar, pasa el ratón por la portada y haz clic en el 🗑️. Siempre se pedirá confirmación."
+      "Para eliminar, pasa el ratón por la portada y haz clic en el 🗑️."
     ]
   },
   {
@@ -56,7 +58,7 @@ const sections: Section[] = [
     steps: [
       {
         title: "Añadir a la Wish List",
-        text: "Puedes añadir libros directamente desde '+ Añadir libro' eligiendo el estado 'Quiero leer', o desde el botón '+ Añadir' dentro de la propia Wish List."
+        text: "Se añadem directamente desde '+ Añadir libro' en Mi Biblioteca eligiendo el estado 'Quiero leer'."
       },
       {
         title: "Agrupación por sagas",
@@ -64,16 +66,16 @@ const sections: Section[] = [
       },
       {
         title: "Estados de seguimiento",
-        text: "Cada libro de la Wish List tiene un estado: Buscar, Reservado, Comprado o Descartado. Úsalos para saber en qué punto estás con cada libro."
+        text: "Cada libro de la Wish List tiene un estado: Comprado, Buscar, En biblioteca y en Kindle. Úsalos para saber en qué punto estás con cada libro."
       },
       {
         title: "Mover a la biblioteca",
-        text: "Cuando termines un libro de la Wish List, puedes moverlo directamente a tu biblioteca haciendo clic en el botón correspondiente de la tarjeta."
+        text: "Cuando vayas a empezar un libro que esta en la Wishlist, le das a 'Empezar a leer' y automaticamente se añade a Mi Biblioteca con el estado 'Leyendo'."
       }
     ],
     tips: [
       "Filtra por saga, género, estado o prioridad (corazones) para encontrar rápidamente lo que buscas.",
-      "La prioridad va de 1 (baja) a 5 (alta). Úsala para ordenar qué leer primero."
+      "La prioridad va de 1 (baja) a 5 (alta). Usa los corazones de arriba a la derecha para buscar libros con esa prioridad."
     ]
   },
   {
@@ -84,7 +86,7 @@ const sections: Section[] = [
     steps: [
       {
         title: "Ver por autor",
-        text: "Todos los autores de tu biblioteca aparecen con sus libros agrupados. Haz clic en un autor para ver todos sus libros que has leído."
+        text: "Todos los autores de tu biblioteca aparecen con sus libros agrupados."
       },
       {
         title: "Ver por saga",
@@ -124,19 +126,18 @@ const sections: Section[] = [
     steps: [
       {
         title: "Registrar una sesión",
-        text: "Haz clic en cualquier día del calendario para marcar que leíste ese día. Puedes añadir las páginas leídas y los minutos dedicados."
+        text: "Haz clic en cualquier día del calendario para marcar que leíste ese día."
       },
       {
         title: "Ver estadísticas",
-        text: "El calendario muestra con colores los días que leíste. Cuanto más oscuro el color, más páginas leíste ese día."
+        text: "Muestra los libros leídos, los que has emepzado y terminado en ese mes."
       },
-      {
-        title: "Objetivos mensuales",
-        text: "Puedes fijar un objetivo de días de lectura por mes y ver tu progreso en tiempo real."
-      }
+       {
+        title: "Calendario",
+        text: "El calendario muestra los dias que has leído y la portada del libro."
+      },
     ],
     tips: [
-      "Los hábitos se guardan en este dispositivo. Para sincronizar entre dispositivos, inicia sesión (próximamente).",
       "Consulta la pestaña 'Calendario' para ver el mapa de calor anual de tu lectura."
     ]
   },
@@ -158,10 +159,6 @@ const sections: Section[] = [
         title: "Retos personalizados",
         text: "Crea tus propios retos: leer X libros de un género, leer X páginas en un mes, etc."
       }
-    ],
-    tips: [
-      "Los logros y objetivos se guardan en este dispositivo. Para sincronizar entre dispositivos, inicia sesión (próximamente)."
-    ]
   },
   {
     id: "dashboard",
@@ -200,14 +197,9 @@ const sections: Section[] = [
         title: "Cambiar de año",
         text: "Usa el selector de año (junto al título) para ver el resumen de cualquier año en que hayas registrado libros."
       },
-      {
-        title: "Guardar imagen",
-        text: "Haz clic en 'Guardar imagen' para descargar el slide actual como PNG y compartirlo en Instagram Stories o WhatsApp."
-      }
     ],
     tips: [
       "El Wrapped solo muestra datos si tienes libros con estado 'Terminado' en el año seleccionado.",
-      "Cada slide se puede descargar por separado como imagen."
     ]
   },
   {
