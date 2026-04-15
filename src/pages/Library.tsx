@@ -297,9 +297,8 @@ export default function LibraryPage() {
       <div className="space-y-3">
         {/* Row 1: Title + Year */}
         <div className="flex items-center gap-3">
-          <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight flex items-center gap-2 sm:gap-3">
-            <Library className="h-6 w-6 sm:h-9 sm:w-9 text-primary flex-shrink-0" />
-            <span className="truncate">📚 Mi Biblioteca</span>
+           <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
+            📚 Mi Biblioteca
           </h2>
           <Select value={yearFilter} onValueChange={setYearFilter}>
             <SelectTrigger className="h-8 sm:h-9 w-24 sm:w-28 text-sm font-medium rounded-[var(--radius)] border-border/50 flex-shrink-0">
