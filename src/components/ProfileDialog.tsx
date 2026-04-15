@@ -86,7 +86,7 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
       />
 
       {/* Dialog */}
-      <div className="relative bg-card border border-border rounded-[var(--radius)] shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="relative bg-card border border-border rounded-[var(--radius)] shadow-2xl w-full max-w-lg overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-border">
           <h2 className="text-lg font-semibold font-display">Editar Perfil</h2>
