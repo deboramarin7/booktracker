@@ -187,8 +187,7 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
           </div>
 
           {/* Dark/Light toggle - compact */}
-          {themeId !== "night" && (
-            <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 flex-shrink-0">
                 {dark ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
                 Modo
@@ -214,7 +213,6 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
                 </button>
               </div>
             </div>
-          )}
         </div>
 
         {/* Footer */}
