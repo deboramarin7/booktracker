@@ -36,7 +36,6 @@ export interface ThemeDefinition {
   dark: ThemeColors;
 }
 
-// Generate a full theme from a single hex color
 function hexToHSL(hex: string): { h: number; s: number; l: number } {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
   const g = parseInt(hex.slice(3, 5), 16) / 255;
@@ -67,60 +66,72 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${f(0)}${f(8)}${f(4)}`;
 }
 
-export function generateCustomTheme(primaryHex: string): ThemeDefinition {
-  const { h, s } = hexToHSL(primaryHex);
+export function generateCustomTheme(accentHex: string, bgHex: string): ThemeDefinition {
+  const accent = hexToHSL(accentHex);
+  const bg = hexToHSL(bgHex);
+
+  // Determine if bg is dark or light
+  const bgIsDark = bg.l < 50;
+
+  // Text color: auto-contrast
+  const fgLight = bgIsDark
+    ? hslToHex(bg.h, Math.max(bg.s - 20, 5), 90)
+    : hslToHex(bg.h, Math.min(bg.s, 20), 10);
+
+  const fgDark = hslToHex(bg.h, Math.max(bg.s - 20, 5), 90);
+  const fgLightMode = hslToHex(bg.h, Math.min(bg.s, 20), 10);
 
   return {
     id: "custom",
     name: "Personalizado",
     emoji: "\ud83c\udfa8",
     light: {
-      "--background": hslToHex(h, Math.max(s - 30, 5), 97),
-      "--foreground": hslToHex(h, Math.min(s, 20), 10),
-      "--primary": primaryHex,
+      "--background": hslToHex(bg.h, Math.max(bg.s - 20, 5), 97),
+      "--foreground": fgLightMode,
+      "--primary": accentHex,
       "--primary-foreground": "#FFFFFF",
-      "--surface": hslToHex(h, Math.max(s - 20, 5), 95),
-      "--card": hslToHex(h, Math.max(s - 20, 5), 95),
-      "--card-foreground": hslToHex(h, Math.min(s, 20), 10),
-      "--border": hslToHex(h, Math.max(s - 25, 5), 88),
-      "--muted": hslToHex(h, Math.max(s - 25, 5), 88),
-      "--muted-foreground": hslToHex(h, Math.max(s - 15, 10), 40),
-      "--accent": hslToHex(h, Math.min(s + 10, 100), 40),
+      "--surface": hslToHex(bg.h, Math.max(bg.s - 15, 5), 95),
+      "--card": hslToHex(bg.h, Math.max(bg.s - 15, 5), 95),
+      "--card-foreground": fgLightMode,
+      "--border": hslToHex(bg.h, Math.max(bg.s - 20, 5), 88),
+      "--muted": hslToHex(bg.h, Math.max(bg.s - 20, 5), 88),
+      "--muted-foreground": hslToHex(bg.h, Math.max(bg.s - 10, 10), 40),
+      "--accent": hslToHex(accent.h, Math.min(accent.s + 10, 100), 40),
       "--accent-foreground": "#FFFFFF",
-      "--popover": hslToHex(h, Math.max(s - 20, 5), 95),
-      "--popover-foreground": hslToHex(h, Math.min(s, 20), 10),
-      "--secondary": hslToHex(h, Math.max(s - 25, 5), 88),
-      "--secondary-foreground": hslToHex(h, Math.min(s, 20), 10),
+      "--popover": hslToHex(bg.h, Math.max(bg.s - 15, 5), 95),
+      "--popover-foreground": fgLightMode,
+      "--secondary": hslToHex(bg.h, Math.max(bg.s - 20, 5), 88),
+      "--secondary-foreground": fgLightMode,
       "--destructive": "#DC2626",
       "--destructive-foreground": "#FFFFFF",
-      "--input": hslToHex(h, Math.max(s - 25, 5), 88),
-      "--ring": primaryHex,
+      "--input": hslToHex(bg.h, Math.max(bg.s - 20, 5), 88),
+      "--ring": accentHex,
       "--radius": "0.75rem",
       "--shelf-wood": "transparent",
       "--shelf-shadow": "transparent",
       "--book-shadow": "rgba(0,0,0,0.15)",
     },
     dark: {
-      "--background": hslToHex(h, Math.max(s - 20, 8), 6),
-      "--foreground": hslToHex(h, Math.max(s - 30, 5), 92),
-      "--primary": hslToHex(h, Math.min(s + 5, 90), 60),
-      "--primary-foreground": hslToHex(h, Math.max(s - 20, 8), 6),
-      "--surface": hslToHex(h, Math.max(s - 15, 8), 10),
-      "--card": hslToHex(h, Math.max(s - 15, 8), 10),
-      "--card-foreground": hslToHex(h, Math.max(s - 30, 5), 92),
-      "--border": hslToHex(h, Math.max(s - 15, 8), 16),
-      "--muted": hslToHex(h, Math.max(s - 15, 8), 16),
-      "--muted-foreground": hslToHex(h, Math.max(s - 10, 10), 55),
-      "--accent": hslToHex(h, Math.min(s + 10, 100), 55),
-      "--accent-foreground": hslToHex(h, Math.max(s - 20, 8), 6),
-      "--popover": hslToHex(h, Math.max(s - 15, 8), 10),
-      "--popover-foreground": hslToHex(h, Math.max(s - 30, 5), 92),
-      "--secondary": hslToHex(h, Math.max(s - 15, 8), 16),
-      "--secondary-foreground": hslToHex(h, Math.max(s - 30, 5), 92),
+      "--background": hslToHex(bg.h, Math.max(bg.s - 10, 8), Math.min(bg.l, 8)),
+      "--foreground": fgDark,
+      "--primary": hslToHex(accent.h, Math.min(accent.s + 5, 90), 60),
+      "--primary-foreground": hslToHex(bg.h, Math.max(bg.s - 10, 8), 6),
+      "--surface": hslToHex(bg.h, Math.max(bg.s - 5, 8), Math.min(bg.l + 4, 12)),
+      "--card": hslToHex(bg.h, Math.max(bg.s - 5, 8), Math.min(bg.l + 4, 12)),
+      "--card-foreground": fgDark,
+      "--border": hslToHex(bg.h, Math.max(bg.s - 5, 8), Math.min(bg.l + 10, 18)),
+      "--muted": hslToHex(bg.h, Math.max(bg.s - 5, 8), Math.min(bg.l + 10, 18)),
+      "--muted-foreground": hslToHex(bg.h, Math.max(bg.s - 5, 10), 55),
+      "--accent": hslToHex(accent.h, Math.min(accent.s + 10, 100), 55),
+      "--accent-foreground": hslToHex(bg.h, Math.max(bg.s - 10, 8), 6),
+      "--popover": hslToHex(bg.h, Math.max(bg.s - 5, 8), Math.min(bg.l + 4, 12)),
+      "--popover-foreground": fgDark,
+      "--secondary": hslToHex(bg.h, Math.max(bg.s - 5, 8), Math.min(bg.l + 10, 18)),
+      "--secondary-foreground": fgDark,
       "--destructive": "#DC2626",
       "--destructive-foreground": "#FFFFFF",
-      "--input": hslToHex(h, Math.max(s - 15, 8), 16),
-      "--ring": hslToHex(h, Math.min(s + 5, 90), 60),
+      "--input": hslToHex(bg.h, Math.max(bg.s - 5, 8), Math.min(bg.l + 10, 18)),
+      "--ring": hslToHex(accent.h, Math.min(accent.s + 5, 90), 60),
       "--radius": "0.75rem",
       "--shelf-wood": "transparent",
       "--shelf-shadow": "transparent",
@@ -131,9 +142,7 @@ export function generateCustomTheme(primaryHex: string): ThemeDefinition {
 
 const THEMES: Record<string, ThemeDefinition> = {
   cozy: {
-    id: "cozy",
-    name: "Biblioteca Acogedora",
-    emoji: "\ud83d\udcda",
+    id: "cozy", name: "Biblioteca Acogedora", emoji: "\ud83d\udcda",
     light: {
       "--background": "#F5EFEB", "--foreground": "#2C1E16", "--primary": "#D97757",
       "--primary-foreground": "#FFFFFF", "--surface": "#EAE0D8", "--card": "#EAE0D8",
@@ -158,9 +167,7 @@ const THEMES: Record<string, ThemeDefinition> = {
     },
   },
   night: {
-    id: "night",
-    name: "Rincon Nocturno",
-    emoji: "\ud83c\udf19",
+    id: "night", name: "Rincon Nocturno", emoji: "\ud83c\udf19",
     light: {
       "--background": "#F0F4F8", "--foreground": "#0A0A1A", "--primary": "#1E3A8A",
       "--primary-foreground": "#FFFFFF", "--surface": "#FFFFFF", "--card": "#FFFFFF",
@@ -185,9 +192,7 @@ const THEMES: Record<string, ThemeDefinition> = {
     },
   },
   editorial: {
-    id: "editorial",
-    name: "Galeria Editorial",
-    emoji: "\u2728",
+    id: "editorial", name: "Galeria Editorial", emoji: "\u2728",
     light: {
       "--background": "#FAFAFA", "--foreground": "#050505", "--primary": "#166534",
       "--primary-foreground": "#FFFFFF", "--surface": "#FFFFFF", "--card": "#FFFFFF",
@@ -220,8 +225,10 @@ interface ThemeContextType {
   setDark: (d: boolean) => void;
   themes: Record<string, ThemeDefinition>;
   currentTheme: ThemeDefinition;
-  customColor: string;
-  setCustomColor: (color: string) => void;
+  customAccent: string;
+  setCustomAccent: (color: string) => void;
+  customBg: string;
+  setCustomBg: (color: string) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -248,8 +255,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     () => localStorage.getItem("booktracker-theme") || "night"
   );
 
-  const [customColor, setCustomColorState] = useState(
-    () => localStorage.getItem("booktracker-custom-color") || "#8B5CF6"
+  const [customAccent, setCustomAccentState] = useState(
+    () => localStorage.getItem("booktracker-custom-accent") || "#8B5CF6"
+  );
+
+  const [customBg, setCustomBgState] = useState(
+    () => localStorage.getItem("booktracker-custom-bg") || "#1a1025"
   );
 
   const setDark = useCallback((d: boolean) => {
@@ -263,15 +274,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("booktracker-theme", id);
   }, []);
 
-  const setCustomColor = useCallback((color: string) => {
-    setCustomColorState(color);
-    localStorage.setItem("booktracker-custom-color", color);
+  const setCustomAccent = useCallback((color: string) => {
+    setCustomAccentState(color);
+    localStorage.setItem("booktracker-custom-accent", color);
   }, []);
 
-  // Build themes including custom
+  const setCustomBg = useCallback((color: string) => {
+    setCustomBgState(color);
+    localStorage.setItem("booktracker-custom-bg", color);
+  }, []);
+
   const allThemes: Record<string, ThemeDefinition> = {
     ...THEMES,
-    custom: generateCustomTheme(customColor),
+    custom: generateCustomTheme(customAccent, customBg),
   };
 
   useEffect(() => {
@@ -280,13 +295,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const vars = dark ? theme.dark : theme.light;
     applyVars(vars);
     document.documentElement.setAttribute("data-theme", themeId);
-  }, [dark, themeId, customColor]);
+  }, [dark, themeId, customAccent, customBg]);
 
   const currentTheme = allThemes[themeId] || allThemes.night;
 
   return (
     <ThemeContext.Provider
-      value={{ dark, setDark, themeId, setThemeId, themes: allThemes, currentTheme, customColor, setCustomColor }}
+      value={{ dark, setDark, themeId, setThemeId, themes: allThemes, currentTheme, customAccent, setCustomAccent, customBg, setCustomBg }}
     >
       {children}
     </ThemeContext.Provider>
