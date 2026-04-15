@@ -297,7 +297,7 @@ export default function LibraryPage() {
       <div className="space-y-3">
         {/* Row 1: Title + Year */}
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl sm:text-4xl tracking-tighter font-light font-display flex items-center gap-2 sm:gap-3">
+          <h1 className="text-2xl sm:text-4xl tracking-tighter font-bold font-display flex items-center gap-2 sm:gap-3">
             <Library className="h-6 w-6 sm:h-9 sm:w-9 text-primary flex-shrink-0" />
             <span className="truncate">Mi Biblioteca</span>
           </h1>
