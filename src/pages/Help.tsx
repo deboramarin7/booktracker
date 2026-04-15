@@ -153,10 +153,11 @@ const sections: Section[] = [
         title: "Objetivo anual",
         text: "Fija cuántos libros quieres leer este año y sigue tu progreso con la barra de porcentaje en Mi Biblioteca."
       },
-      {
+     {
         title: "Retos personalizados",
         text: "Crea tus propios retos: leer X libros de un género, leer X páginas en un mes, etc."
       }
+    ],
   },
   {
     id: "dashboard",
