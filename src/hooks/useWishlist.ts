@@ -150,11 +150,12 @@ export function useWishlist() {
       enrichMissingCovers(loaded);
     }
     setLoading(false);
-  }, [toast, enrichMissingCovers]);
+  }, [toast, enrichMissingCovers, userId]);
 
   useEffect(() => { fetchItems(); }, [fetchItems]);
 
   const addItem = async (data: Omit<WishItem, "id">) => {
+    if (!userId) return;  // ← AÑADE ESTA LÍNEA
     const { data: inserted, error } = await supabase.from("wishlist").insert({
       user_id: userId,
       title: data.title,
