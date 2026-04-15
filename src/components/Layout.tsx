@@ -3,15 +3,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { Outlet, NavLink, Link, useNavigate } from "react-router-dom";
 import {
   BookOpen, Library, Users, Heart, BookMarked, CalendarDays,
-  Trophy, Sparkles, Palette, Sun, Moon, Menu, X, Search,
-  TrendingUp, HelpCircle, Zap, LogOut,
+  Trophy, Sparkles, Menu, X,
+  TrendingUp, HelpCircle, LogOut,
 } from "lucide-react";
 import { useBooks } from "@/hooks/useBooks";
 import type { Book } from "@/hooks/useBooks";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { WishItem } from "@/hooks/useWishlist";
 import { useTheme } from "@/hooks/useTheme";
-import { ThemeSelector } from "@/components/ThemeSelector";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { EditBookDialog } from "@/components/EditBookDialog";
 import { ProfileDialog } from "@/components/ProfileDialog";
@@ -71,8 +70,6 @@ function NavItem({ to, label, icon, onClick }: { to: string; label: string; icon
 function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   const { signOut, user } = useAuth();
   const { profile } = useProfile();
-  const { dark, setDark, themeId } = useTheme();
-  const [themeOpen, setThemeOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
   const displayName = profile.displayName || user?.email?.split("@")[0] || "";
@@ -101,31 +98,6 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
             <NavItem key={link.to} {...link} onClick={onNavClick} />
           ))}
         </nav>
-
-        {/* Bottom: Tema + Dark mode */}
-        <div className="border-t border-border px-3 py-4 space-y-1 shrink-0">
-          <button
-            onClick={() => setThemeOpen(!themeOpen)}
-            className="w-full flex items-center gap-3 rounded-[var(--radius)] px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
-            <Palette className="h-5 w-5" />
-            Tema
-          </button>
-
-          {themeOpen && (
-            <div className="px-1 pb-2">
-              <ThemeSelector />
-            </div>
-          )}
-
-          <button
-            onClick={() => setDark(!dark)}
-            className="w-full flex items-center gap-3 rounded-[var(--radius)] px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
-            {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            {dark ? "Modo Claro" : "Modo Oscuro"}
-          </button>
-        </div>
 
         {/* Perfil y cerrar sesion */}
         <div className="border-t border-border px-3 py-4 shrink-0">
