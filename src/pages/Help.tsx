@@ -21,11 +21,9 @@ const sections: Section[] = [
     title: "Mi Biblioteca",
     description: "El corazón de la app. Aquí viven todos tus libros leídos, en progreso y pendientes.",
     steps: [
-      {
+       {
         title: "Añadir un libro",
-        text: "Haz clic en '+ Añadir libro' (esquina superior derecha). Puedes buscar por título, autor o ISBN usando el buscador automático — se rellenarán los datos solos. Si el libro no aparece, rellénalo a mano.",
-              "El campo URL de portada se autorellena con la búsqueda, pero si no te gusta, puedes buscar la URL de la imagen de la portada y cambiarlo",
-              "El resto de campos como Género, Formato, Procedencia etc. es necesario que sean relleandos por ti"
+        text: "Haz clic en '+ Añadir libro' (esquina superior derecha). Puedes buscar por título, autor o ISBN usando el buscador automático — se rellenarán los datos solos. Si el libro no aparece, rellénalo a mano. El campo URL de portada se autorellena con la búsqueda, pero si no te gusta, puedes buscar la URL de la imagen de la portada y cambiarlo. El resto de campos como Género, Formato, Procedencia etc. es necesario que sean rellenados por ti."
       },
       {
         title: "Estados de lectura",
