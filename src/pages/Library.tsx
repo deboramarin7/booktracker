@@ -30,12 +30,12 @@ function getBookYear(book: Book): number {
 type SortOption = "read-desc" | "read-asc" | "added-desc" | "added-asc" | "title-asc" | "title-desc" | "rating-desc" | "author-asc";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "read-desc", label: "Leídos recientemente" },
-  { value: "read-asc", label: "Leídos antes" },
-  { value: "added-desc", label: "Añadidos recientemente" },
-  { value: "added-asc", label: "Añadidos antes" },
-  { value: "title-asc", label: "Título A-Z" },
-  { value: "title-desc", label: "Título Z-A" },
+  { value: "read-desc", label: "Leidos recientemente" },
+  { value: "read-asc", label: "Leidos antes" },
+  { value: "added-desc", label: "Anadidos recientemente" },
+  { value: "added-asc", label: "Anadidos antes" },
+  { value: "title-asc", label: "Titulo A-Z" },
+  { value: "title-desc", label: "Titulo Z-A" },
   { value: "rating-desc", label: "Mejor valorados" },
   { value: "author-asc", label: "Autor A-Z" },
 ];
@@ -140,7 +140,7 @@ export default function LibraryPage() {
     }, 0);
   }, [finishedYearBooks]);
 
-  const physicalCount = useMemo(() => finishedYearBooks.filter((b) => b.format === "Físico").length, [finishedYearBooks]);
+  const physicalCount = useMemo(() => finishedYearBooks.filter((b) => b.format === "Fisico").length, [finishedYearBooks]);
   const digitalCount = useMemo(() => finishedYearBooks.filter((b) => b.format === "Digital").length, [finishedYearBooks]);
 
   const filtered = useMemo(() => {
@@ -181,9 +181,7 @@ export default function LibraryPage() {
   return (
     <div className="space-y-8">
 
-      {/* ══════════════════════════════════════════
-          HEADER — Título grande + Controles
-         ══════════════════════════════════════════ */}
+      {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-3xl sm:text-4xl tracking-tighter font-light font-display flex items-center gap-3">
@@ -226,40 +224,36 @@ export default function LibraryPage() {
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════
-          STATS RÁPIDAS — Más grandes y legibles
-         ══════════════════════════════════════════ */}
+      {/* STATS */}
       {!loading && yearBooks.length > 0 && (
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
           <span>
-            <span className="text-lg font-semibold text-foreground">{finishedYearBooks.length}</span> libros leídos
+            <span className="text-lg font-semibold text-foreground">{finishedYearBooks.length}</span> libros leidos
           </span>
-          <span className="text-border">·</span>
+          <span className="text-border">.</span>
           <span>
-            <span className="text-lg font-semibold text-foreground">{totalPages.toLocaleString()}</span> páginas
+            <span className="text-lg font-semibold text-foreground">{totalPages.toLocaleString()}</span> paginas
           </span>
           {totalSpent > 0 && (
             <>
-              <span className="text-border">·</span>
+              <span className="text-border">.</span>
               <span>
-                <span className="text-lg font-semibold text-foreground">{totalSpent.toFixed(2)}€</span> gastos
+                <span className="text-lg font-semibold text-foreground">{totalSpent.toFixed(2)}EUR</span> gastos
               </span>
             </>
           )}
           {physicalCount > 0 && (
             <>
-              <span className="text-border">·</span>
+              <span className="text-border">.</span>
               <span className="flex items-center gap-1.5">
-                <span className="text-base leading-none">📕</span>
-                <span className="text-lg font-semibold text-foreground">{physicalCount}</span> físico
+                <span className="text-lg font-semibold text-foreground">{physicalCount}</span> fisico
               </span>
             </>
           )}
           {digitalCount > 0 && (
             <>
-              <span className="text-border">·</span>
+              <span className="text-border">.</span>
               <span className="flex items-center gap-1.5">
-                <span className="text-base leading-none">📱</span>
                 <span className="text-lg font-semibold text-foreground">{digitalCount}</span> digital
               </span>
             </>
@@ -267,9 +261,7 @@ export default function LibraryPage() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════
-          OBJETIVO ANUAL — Tarjeta destacada
-         ══════════════════════════════════════════ */}
+      {/* OBJETIVO ANUAL */}
       {selectedYear && (
         <div className="rounded-[var(--radius)] border border-border/40 bg-card p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4 mb-4">
@@ -315,7 +307,7 @@ export default function LibraryPage() {
               <div className="flex items-end gap-8 mb-4">
                 <div>
                   <p className="text-4xl font-light tracking-tighter font-display text-foreground">{finishedYearBooks.length}</p>
-                  <p className="text-sm text-muted-foreground">Libros leídos</p>
+                  <p className="text-sm text-muted-foreground">Libros leidos</p>
                 </div>
                 <div>
                   <p className="text-4xl font-light tracking-tighter font-display text-muted-foreground/60">{currentGoal}</p>
@@ -324,7 +316,7 @@ export default function LibraryPage() {
                 <div className="ml-auto text-right">
                   <p className="text-3xl font-light tracking-tighter font-display text-primary">{goalPercent}%</p>
                   {finishedYearBooks.length >= currentGoal && (
-                    <p className="text-sm text-primary font-medium">¡Completado!</p>
+                    <p className="text-sm text-primary font-medium">Completado!</p>
                   )}
                 </div>
               </div>
@@ -337,22 +329,20 @@ export default function LibraryPage() {
             </>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Sin objetivo definido. Haz clic en "Fijar objetivo" para establecer cuántos libros quieres leer este año.
+              Sin objetivo definido. Haz clic en "Fijar objetivo" para establecer cuantos libros quieres leer este ano.
             </p>
           )}
         </div>
       )}
 
-      {/* ══════════════════════════════════════════
-          FILTROS — Más legibles con más padding
-         ══════════════════════════════════════════ */}
+      {/* FILTROS */}
       <div className="flex flex-wrap gap-3 items-center">
         <Select value={genreFilter} onValueChange={setGenreFilter}>
           <SelectTrigger className="w-[160px] h-9 text-sm rounded-[var(--radius)]">
-            <SelectValue placeholder="Género" />
+            <SelectValue placeholder="Genero" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos los géneros</SelectItem>
+            <SelectItem value="all">Todos los generos</SelectItem>
             {GENRES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
           </SelectContent>
         </Select>
@@ -381,14 +371,12 @@ export default function LibraryPage() {
             onClick={() => { setGenreFilter("all"); setFormatFilter("all"); }}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            Limpiar filtros ✕
+            Limpiar filtros
           </button>
         )}
       </div>
 
-      {/* ══════════════════════════════════════════
-          CONTENIDO — Libros
-         ══════════════════════════════════════════ */}
+      {/* CONTENIDO */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -404,17 +392,17 @@ export default function LibraryPage() {
           </div>
           <div className="space-y-2">
             <p className="text-2xl font-light font-display text-foreground tracking-tight">
-              {books.length === 0 ? "Tu historia empieza aquí" : "Ningún libro coincide"}
+              {books.length === 0 ? "Tu historia empieza aqui" : "Ningun libro coincide"}
             </p>
             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
               {books.length === 0
-                ? "Cada gran biblioteca empezó con un único libro. ¿Cuál será el tuyo?"
-                : "Prueba a cambiar los filtros o el año seleccionado"}
+                ? "Cada gran biblioteca empezo con un unico libro. Cual sera el tuyo?"
+                : "Prueba a cambiar los filtros o el ano seleccionado"}
             </p>
           </div>
           {books.length === 0 && (
             <p className="text-xs text-muted-foreground/60">
-              💡 Puedes importar desde Goodreads o añadir libros uno a uno
+              Puedes importar desde Goodreads o anadir libros uno a uno
             </p>
           )}
         </div>
@@ -447,7 +435,7 @@ export default function LibraryPage() {
                     <div
                       key={book.id}
                       className="relative flex-shrink-0 w-[44px] h-[190px] rounded-sm overflow-hidden cursor-pointer group shadow-md hover:scale-105 transition-transform duration-150 book-3d"
-                      title={`${book.title} — ${book.author}`}
+                      title={`${book.title} - ${book.author}`}
                     >
                       {book.coverUrl ? (
                         <img src={book.coverUrl} alt={book.title} className="w-full h-full object-cover" />
@@ -469,7 +457,7 @@ export default function LibraryPage() {
         </div>
       )}
 
-      {/* Dialog de edición desde búsqueda */}
+      {/* Dialog de edicion desde busqueda */}
       {searchEditBook && (
         <EditBookDialog
           book={searchEditBook}
