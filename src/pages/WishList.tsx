@@ -55,7 +55,6 @@ function WishForm({ initial, onSave, trigger }: {
   const [priority, setPriority] = useState(initial?.priority || 3);
   const [status, setStatus] = useState<WishStatus>(initial?.status || "Buscar");
   const [totalPages, setTotalPages] = useState(String(initial?.totalPages || ""));
-  const [synopsis, setSynopsis] = useState(initial?.synopsis || "");
 
   const reset = () => {
     setTitle(initial?.title || ""); setAuthor(initial?.author || "");
@@ -68,7 +67,7 @@ function WishForm({ initial, onSave, trigger }: {
 
   const handleSubmit = () => {
     if (!title.trim() || !author.trim()) return;
-    onSave({ title: title.trim(), author: author.trim(), coverUrl: coverUrl.trim() || undefined, hasSaga, saga: hasSaga ? saga : undefined, sagaOrder: hasSaga ? sagaOrder : undefined, genre, priority, synopsis: synopsis.trim() || undefined, status, totalPages: parseInt(totalPages) || 0 });
+    onSave({ title: title.trim(), author: author.trim(), coverUrl: coverUrl.trim() || undefined, hasSaga, saga: hasSaga ? saga : undefined, sagaOrder: hasSaga ? sagaOrder : undefined, genre, priority, status, totalPages: parseInt(totalPages) || 0 });
     setOpen(false);
     if (!initial) reset();
   };
@@ -109,16 +108,6 @@ function WishForm({ initial, onSave, trigger }: {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
-          </div>
-          <div>
-            <Label>Sinopsis</Label>
-            <Textarea
-              value={synopsis}
-              onChange={(e) => setSynopsis(e.target.value)}
-              placeholder="¿De qué va el libro?"
-              className="resize-none"
-              rows={3}
-            />
           </div>
           <div><Label>Páginas totales</Label><Input type="number" value={totalPages} onChange={(e) => setTotalPages(e.target.value)} placeholder="Ej: 350" min={0} /></div>
         </div>
