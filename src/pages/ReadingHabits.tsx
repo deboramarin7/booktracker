@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBooksContext } from "@/components/Layout";
+import { useReadingHabits } from "@/hooks/useReadingHabits";
 
 const HABITS_KEY = "book-tracker-reading-habits";
 
@@ -153,7 +154,7 @@ function StreakBadge({
 export default function ReadingHabits() {
   const currentYear = new Date().getFullYear();
   const [selectedYear] = useState(currentYear);
-  const [habits, setHabits] = useState<Record<string, string[]>>(loadHabits);
+  const { habits, toggleDay: toggleDaySupabase } = useReadingHabits();
 
   const yearKey = String(selectedYear);
   const readDays = habits[yearKey] || [];
@@ -173,8 +174,7 @@ export default function ReadingHabits() {
     else yearDays.push(key);
 
     updated[yearKey] = yearDays;
-    setHabits(updated);
-    saveHabits(updated);
+    toggleDaySupabase(date);
   };
 
   const selectedDates = useMemo(
