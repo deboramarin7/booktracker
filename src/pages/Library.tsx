@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useBooks } from "@/hooks/useBooks";
 import { AddBookDialog } from "@/components/AddBookDialog";
-import { ImportBooksDialog, ExportBooksButton } from "@/components/ImportExportBooks";
+import { ExportBooksButton } from "@/components/ImportExportBooks";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { EditBookDialog } from "@/components/EditBookDialog";
 import { useWishlist, type WishItem } from "@/hooks/useWishlist";
@@ -217,7 +217,6 @@ export default function LibraryPage() {
               <AlignJustify className="h-4 w-4" />
             </button>
           </div>
-          <ImportBooksDialog onImport={addBooksInBatch} onImportWishlist={handleImportWishlist} />
           <ExportBooksButton books={books} />
           <AddBookDialog onAdd={addBook} onAddToWishlist={addItem} />
         </div>
