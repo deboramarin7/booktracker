@@ -7,7 +7,6 @@ import { useBooksContext } from "@/components/Layout";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -56,7 +55,6 @@ function WishForm({ initial, onSave, trigger }: {
   const [priority, setPriority] = useState(initial?.priority || 3);
   const [status, setStatus] = useState<WishStatus>(initial?.status || "Buscar");
   const [totalPages, setTotalPages] = useState(String(initial?.totalPages || ""));
-  const [synopsis, setSynopsis] = useState(initial?.synopsis || "");
 
   const reset = () => {
     setTitle(initial?.title || ""); setAuthor(initial?.author || "");
@@ -65,27 +63,11 @@ function WishForm({ initial, onSave, trigger }: {
     setSagaOrder(initial?.sagaOrder || ""); setGenre(initial?.genre || GENRES[0]);
     setPriority(initial?.priority || 3); setStatus(initial?.status || "Buscar");
     setTotalPages(String(initial?.totalPages || ""));
-    setSynopsis(initial?.synopsis || "");
   };
-
-  // Sync form fields when editing a different item
-  useEffect(() => {
-    setTitle(initial?.title || "");
-    setAuthor(initial?.author || "");
-    setCoverUrl(initial?.coverUrl || "");
-    setHasSaga(initial?.hasSaga || false);
-    setSaga(initial?.saga || "");
-    setSagaOrder(initial?.sagaOrder || "");
-    setGenre(initial?.genre || GENRES[0]);
-    setPriority(initial?.priority || 3);
-    setSynopsis(initial?.synopsis || "");
-    setStatus(initial?.status as any || "Buscar");
-    setTotalPages(String(initial?.totalPages || ""));
-  }, [initial]);
 
   const handleSubmit = () => {
     if (!title.trim() || !author.trim()) return;
-    onSave({ title: title.trim(), author: author.trim(), coverUrl: coverUrl.trim() || undefined, hasSaga, saga: hasSaga ? saga : undefined, sagaOrder: hasSaga ? sagaOrder : undefined, genre, priority, synopsis: synopsis.trim() || undefined, status, totalPages: parseInt(totalPages) || 0 });
+    onSave({ title: title.trim(), author: author.trim(), coverUrl: coverUrl.trim() || undefined, hasSaga, saga: hasSaga ? saga : undefined, sagaOrder: hasSaga ? sagaOrder : undefined, genre, priority, status, totalPages: parseInt(totalPages) || 0 });
     setOpen(false);
     if (!initial) reset();
   };
@@ -126,26 +108,6 @@ function WishForm({ initial, onSave, trigger }: {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
-          </div>
-          <div>
-            <Label>Sinopsis</Label>
-            <Textarea
-              value={synopsis}
-              onChange={(e) => setSynopsis(e.target.value)}
-              placeholder="¿De qué va el libro?"
-              className="resize-none"
-              rows={3}
-            />
-          </div>
-          <div>
-            <Label>Prioridad</Label>
-            <div className="flex gap-1 mt-1">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button key={n} type="button" onClick={() => setPriority(n)} className="transition-transform hover:scale-110">
-                  <Heart size={22} className={n <= priority ? "fill-rose-500 text-rose-500" : "text-muted-foreground/40"} />
-                </button>
-              ))}
-            </div>
           </div>
           <div><Label>Páginas totales</Label><Input type="number" value={totalPages} onChange={(e) => setTotalPages(e.target.value)} placeholder="Ej: 350" min={0} /></div>
         </div>
@@ -339,9 +301,7 @@ function WishListContent() {
     <div className="space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
-            💜 Wish List
-          </h2>
+          <h2 className="text-2xl font-display font-bold">💜 Wish List</h2>
           <span className="text-sm text-muted-foreground font-body">({items.length})</span>
         </div>
         <div className="flex items-center gap-1">
