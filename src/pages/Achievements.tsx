@@ -345,7 +345,7 @@ useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
               Mostrando: <span className="font-semibold text-foreground">{CATEGORY_META[categoryFilter].label}</span>
             </p>
             <Button variant="ghost" size="sm" className="text-xs" onClick={() => setCategoryFilter("all")}>
-              Ver todos —
+              Ver todos
             </Button>
           </div>
         )}
@@ -359,7 +359,7 @@ useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
 
       {/* ——— MONTHLY CHALLENGES ——— */}
       <div className="space-y-6">
-        <h3 className="text-xl font-bold font-display">📅 Retos Mensuales {selectedYear}</h3>
+        <h3 className="text-xl font-bold font-display">📅 Retos Mensuales {selectedYear}</h3>
 
         {yearGoalTotal > 0 && (
           <Card className="border-border/30">
