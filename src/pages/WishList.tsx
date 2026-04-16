@@ -1,51 +1,38 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useWishlist } from "@/hooks/useWishlist";
-import type { WishItem, WishStatus } from "@/hooks/useWishlist";
-import { Heart, Plus, Pencil, Trash2, BookHeart, BookOpen, Loader as Loader2, Search, Filter, BookMarked, Flame } from "lucide-react";
-import { BookCoverImage } from "@/components/BookCoverImage";
-import { useBooksContext } from "@/components/Layout";
-import { useToast } from "@/hooks/use-toast";
+import type { WishItem } from "@/hooks/useWishlist";
+import {
+  Heart, Plus, Pencil, Trash2, BookOpen, Search, X,
+  BookHeart, ChevronLeft,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { GENRE_COLORS, GENRES } from "@/lib/constants";
-import { cn } from "@/lib/utils";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-const STATUSES: WishStatus[] = ["Comprado", "Buscar", "En biblioteca", "En kindle"];
+const GENRES = [
+  "Fantasía","Ciencia Ficción","Romance","Misterio","Thriller",
+  "Terror","Histórica","Contemporánea","Aventura","Otros",
+];
 
-function Hearts({ value, onChange }: { value: number; onChange?: (v: number) => void }) {
-  return (
-    <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Heart
-          key={i}
-          className={`h-4 w-4 cursor-pointer transition-colors ${i <= value ? "fill-red-500 text-red-500" : "text-muted-foreground/30"}`}
-          onClick={() => onChange?.(i)}
-        />
-      ))}
-    </div>
-  );
-}
-
-const statusColors: Record<WishStatus, string> = {
-  "Comprado": "bg-green-500/10 text-green-700 border-green-500/20",
-  "Buscar": "bg-yellow-500/10 text-yellow-700 border-yellow-500/20",
-  "En biblioteca": "bg-blue-500/10 text-blue-700 border-blue-500/20",
-  "En kindle": "bg-purple-500/10 text-purple-700 border-purple-500/20",
+const STATUS_LABELS: Record<string, string> = {
+  Buscar: "Por buscar", Conseguido: "Conseguido", Prestado: "Prestado",
 };
 
-function WishForm({ initial, onSave, trigger }: {
-  initial?: WishItem;
-  onSave: (data: Omit<WishItem, "id">) => void;
-  trigger: React.ReactNode;
+function WishItemForm({ open, onOpenChange, initial, onSave }: {
+  open: boolean; onOpenChange: (v: boolean) => void;
+  initial?: WishItem; onSave: (data: Omit<WishItem, "id">) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(initial?.title || "");
   const [author, setAuthor] = useState(initial?.author || "");
   const [coverUrl, setCoverUrl] = useState(initial?.coverUrl || "");
@@ -54,397 +41,270 @@ function WishForm({ initial, onSave, trigger }: {
   const [sagaOrder, setSagaOrder] = useState(initial?.sagaOrder || "");
   const [genre, setGenre] = useState(initial?.genre || GENRES[0]);
   const [priority, setPriority] = useState(initial?.priority || 3);
-  const [status, setStatus] = useState<WishStatus>(initial?.status || "Buscar");
-  const [totalPages, setTotalPages] = useState(String(initial?.totalPages || ""));
   const [synopsis, setSynopsis] = useState(initial?.synopsis || "");
-
-  const reset = () => {
-    setTitle(initial?.title || ""); setAuthor(initial?.author || "");
-    setCoverUrl(initial?.coverUrl || "");
-    setHasSaga(initial?.hasSaga || false); setSaga(initial?.saga || "");
-    setSagaOrder(initial?.sagaOrder || ""); setGenre(initial?.genre || GENRES[0]);
-    setPriority(initial?.priority || 3); setStatus(initial?.status || "Buscar");
-    setTotalPages(String(initial?.totalPages || ""));
-    setSynopsis(initial?.synopsis || "");
-  };
+  const [status, setStatus] = useState<"Buscar"|"Conseguido"|"Prestado">(initial?.status as any || "Buscar");
+  const [totalPages, setTotalPages] = useState(String(initial?.totalPages || ""));
 
   const handleSubmit = () => {
     if (!title.trim() || !author.trim()) return;
-    onSave({ title: title.trim(), author: author.trim(), coverUrl: coverUrl.trim() || undefined, hasSaga, saga: hasSaga ? saga : undefined, sagaOrder: hasSaga ? sagaOrder : undefined, genre, priority, synopsis: synopsis.trim() || undefined, status, totalPages: parseInt(totalPages) || 0 });
-    setOpen(false);
-    if (!initial) reset();
+    onSave({ title: title.trim(), author: author.trim(), coverUrl: coverUrl.trim() || undefined,
+      hasSaga, saga: hasSaga ? saga : undefined, sagaOrder: hasSaga ? sagaOrder : undefined,
+      genre, priority, synopsis: synopsis.trim() || undefined, status,
+      totalPages: parseInt(totalPages) || 0 });
+    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) reset(); }}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{initial ? "Editar" : "Añadir a"} Wish List</DialogTitle></DialogHeader>
-        <div className="space-y-4">
-          <div><Label>Título *</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
-          <div><Label>Autor/a *</Label><Input value={author} onChange={(e) => setAuthor(e.target.value)} /></div>
-          <div><Label>URL de portada</Label><Input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://..." /></div>
-          <div className="flex items-center gap-2">
-            <Label>¿Pertenece a una saga?</Label>
-            <Switch checked={hasSaga} onCheckedChange={setHasSaga} />
-          </div>
-          {hasSaga && (
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>Nombre de la saga</Label><Input value={saga} onChange={(e) => setSaga(e.target.value)} /></div>
-              <div><Label>Orden</Label><Input value={sagaOrder} onChange={(e) => setSagaOrder(e.target.value)} placeholder="Ej: 1" /></div>
-            </div>
-          )}
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{initial ? "Editar libro" : "Añadir a Wish List"}</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-3 py-2">
+          <div><Label>Título *</Label><Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título del libro" /></div>
+          <div><Label>Autor *</Label><Input value={author} onChange={e => setAuthor(e.target.value)} placeholder="Nombre del autor" /></div>
+          <div><Label>URL portada</Label><Input value={coverUrl} onChange={e => setCoverUrl(e.target.value)} placeholder="https://..." /></div>
           <div>
             <Label>Género</Label>
             <Select value={genre} onValueChange={setGenre}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{GENRES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
+              <SelectContent>{GENRES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div>
-            <Label>Prioridad</Label>
-            <Hearts value={priority} onChange={setPriority} />
+          <div className="flex items-center gap-2">
+            <input type="checkbox" id="hasSaga" checked={hasSaga} onChange={e => setHasSaga(e.target.checked)} className="rounded" />
+            <Label htmlFor="hasSaga">¿Pertenece a una saga?</Label>
           </div>
-          <div>
-            <Label>Estado</Label>
-            <Select value={status} onValueChange={(v) => setStatus(v as WishStatus)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
+          {hasSaga && (
+            <div className="flex gap-2">
+              <div className="flex-1"><Label>Saga</Label><Input value={saga} onChange={e => setSaga(e.target.value)} /></div>
+              <div className="w-20"><Label>Nº</Label><Input value={sagaOrder} onChange={e => setSagaOrder(e.target.value)} /></div>
+            </div>
+          )}
           <div>
             <Label>Sinopsis</Label>
-            <Textarea
-              value={synopsis}
-              onChange={(e) => setSynopsis(e.target.value)}
-              placeholder="¿De qué va el libro?"
-              className="resize-none"
-              rows={3}
-            />
+            <Textarea value={synopsis} onChange={e => setSynopsis(e.target.value)} placeholder="¿De qué va el libro?" className="resize-none" rows={3} />
           </div>
           <div>
             <Label>Prioridad</Label>
             <div className="flex gap-1 mt-1">
-              {[1, 2, 3, 4, 5].map((n) => (
+              {[1,2,3,4,5].map(n => (
                 <button key={n} type="button" onClick={() => setPriority(n)} className="transition-transform hover:scale-110">
                   <Heart size={22} className={n <= priority ? "fill-rose-500 text-rose-500" : "text-muted-foreground/40"} />
                 </button>
               ))}
             </div>
           </div>
-          <div><Label>Páginas totales</Label><Input type="number" value={totalPages} onChange={(e) => setTotalPages(e.target.value)} placeholder="Ej: 350" min={0} /></div>
-        </div>
-        <DialogFooter>
-          <DialogClose asChild><Button variant="ghost">Cancelar</Button></DialogClose>
-          <Button onClick={handleSubmit} disabled={!title.trim() || !author.trim()}>
-            {initial ? "Guardar" : "Añadir"}
+          <div>
+            <Label>Estado</Label>
+            <Select value={status} onValueChange={v => setStatus(v as any)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Buscar">Por buscar</SelectItem>
+                <SelectItem value="Conseguido">Conseguido</SelectItem>
+                <SelectItem value="Prestado">Prestado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div><Label>Páginas totales</Label><Input type="number" value={totalPages} onChange={e => setTotalPages(e.target.value)} placeholder="Ej: 350" min={0} /></div>
+          <Button onClick={handleSubmit} disabled={!title.trim() || !author.trim()} className="mt-1">
+            {initial ? "Guardar cambios" : "Añadir a la lista"}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-export default function WishList() {
-  return <WishListContent />;
-}
-
-function WishCard({ item, updateItem, deleteItem, onMoveToLibrary }: { item: WishItem; updateItem: (id: string, data: Omit<WishItem, "id">) => void; deleteItem: (id: string) => void; onMoveToLibrary: (item: WishItem) => void }) {
-  const isTopPriority = item.priority >= 5;
-
+function WishDetailPanel({ item, onEdit, onDelete, onClose }: {
+  item: WishItem; onEdit: () => void; onDelete: () => void; onClose: () => void;
+}) {
   return (
-    <Card className={cn(
-      "transition-all hover:shadow-md border-border/30",
-      isTopPriority && "ring-1 ring-red-500/20 border-red-500/10"
-    )}>
-      <CardContent className="p-4 space-y-3">
-        {isTopPriority && (
-          <div className="flex items-center gap-1 mb-1">
-            <Flame className="h-3.5 w-3.5 text-red-500" />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-red-500">Must read</span>
-          </div>
-        )}
-        <div className="flex items-start gap-3">
-          <BookCoverImage
-            src={item.coverUrl}
-            alt={item.title}
-            title={item.title}
-            className="w-14 h-20 object-cover rounded-lg shadow-sm shrink-0"
-            fallbackClassName="w-14 h-20 rounded-lg shrink-0"
-          />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-display font-semibold leading-tight">{item.title}</p>
-                <p className="text-sm text-muted-foreground font-body">{item.author}</p>
-              </div>
-              <div className="flex gap-0.5 shrink-0">
-                <WishForm
-                  initial={item}
-                  onSave={(data) => updateItem(item.id, data)}
-                  trigger={<Button variant="ghost" size="icon" className="h-7 w-7"><Pencil className="h-3.5 w-3.5" /></Button>}
-                />
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={() => deleteItem(item.id)}>
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between p-4 border-b border-border/40">
+        <button onClick={onClose} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ChevronLeft size={16} /> Cerrar
+        </button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={onEdit}><Pencil size={14} className="mr-1" />Editar</Button>
+          <Button size="sm" variant="destructive" onClick={onDelete}><Trash2 size={14} className="mr-1" />Borrar</Button>
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+        <div className="flex gap-4">
+          <div className="w-24 flex-shrink-0">
+            <div className="aspect-[2/3] rounded-lg overflow-hidden border border-border/40 bg-muted/30">
+              {item.coverUrl
+                ? <img src={item.coverUrl} alt={item.title} className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center"><BookOpen size={24} className="text-muted-foreground/40" /></div>
+              }
             </div>
+          </div>
+          <div className="flex flex-col gap-1 flex-1 min-w-0">
+            <h2 className="font-bold text-lg leading-tight">{item.title}</h2>
+            <p className="text-muted-foreground text-sm">{item.author}</p>
             {item.hasSaga && item.saga && (
-              <p className="text-xs text-muted-foreground font-body mt-1">
-                📚 {item.saga} {item.sagaOrder && `#${item.sagaOrder}`}
-              </p>
+              <p className="text-xs text-primary/70">{item.saga}{item.sagaOrder ? ` #${item.sagaOrder}` : ""}</p>
             )}
-            {item.totalPages > 0 && (
-              <p className="text-[11px] text-muted-foreground/70 font-body">{item.totalPages} páginas</p>
-            )}
-            <div className="flex items-center justify-between mt-2">
-              <div className="flex gap-1.5 flex-wrap">
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${GENRE_COLORS[item.genre] || "bg-muted text-muted-foreground"}`}>
-                  {item.genre}
-                </span>
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${statusColors[item.status]}`}>
-                  {item.status}
-                </span>
-              </div>
-              <Hearts value={item.priority} onChange={(v) => updateItem(item.id, { ...item, priority: v })} />
+            <div className="flex gap-0.5 mt-1">
+              {[1,2,3,4,5].map(n => (
+                <Heart key={n} size={14} className={n <= item.priority ? "fill-rose-500 text-rose-500" : "text-muted-foreground/20"} />
+              ))}
             </div>
           </div>
         </div>
-        {/* CTA: Empezar a leer — always visible */}
-        <Button
-          size="sm"
-          variant={isTopPriority ? "default" : "outline"}
-          className={cn(
-            "w-full text-xs gap-1.5",
-            isTopPriority
-              ? "bg-primary hover:bg-primary/90"
-              : "border-primary/30 text-primary hover:bg-primary/10"
+        <div className="grid grid-cols-2 gap-2 text-sm border-t border-border/40 pt-3">
+          <div><span className="text-muted-foreground">Género</span><p className="font-medium mt-0.5">{item.genre || "—"}</p></div>
+          <div><span className="text-muted-foreground">Estado</span><p className="font-medium mt-0.5">{STATUS_LABELS[item.status] || item.status}</p></div>
+          {item.totalPages > 0 && (
+            <div><span className="text-muted-foreground">Páginas</span><p className="font-medium mt-0.5">{item.totalPages.toLocaleString("es-ES")}</p></div>
           )}
-          onClick={() => onMoveToLibrary(item)}
-        >
-          <BookMarked className="h-3.5 w-3.5" />
-          Empezar a leer
-        </Button>
-      </CardContent>
-    </Card>
+        </div>
+        {item.synopsis && (
+          <div className="border-t border-border/40 pt-3">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Sinopsis</p>
+            <p className="text-sm leading-relaxed text-foreground/80">{item.synopsis}</p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
-function WishListContent() {
-  const { items, loading, addItem, updateItem, deleteItem } = useWishlist();
-  const { addBook } = useBooksContext();
-  const { toast } = useToast();
-  const [filterPriority, setFilterPriority] = useState<number | null>(null);
-  const [filterGenre, setFilterGenre] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+export default function WishList() {
+  const { items: wishItems, addItem: addWishItem, updateItem: updateWishItem, deleteItem: deleteWishItem } = useWishlist();
   const [search, setSearch] = useState("");
-  const [sagaFilter, setSagaFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedItem, setSelectedItem] = useState<WishItem | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editItem, setEditItem] = useState<WishItem | undefined>(undefined);
+  const [deleteTarget, setDeleteTarget] = useState<WishItem | null>(null);
 
-  const handleMoveToLibrary = async (item: WishItem) => {
-    await addBook({
-      title: item.title,
-      author: item.author,
-      coverUrl: item.coverUrl,
-      hasSaga: item.hasSaga,
-      saga: item.saga,
-      sagaOrder: item.sagaOrder,
-      genre: item.genre,
-      format: "",
-      source: "",
-      status: "reading",
-      totalPages: item.totalPages || 0,
-      pagesRead: 0,
-      rating: 0,
-      notes: "",
-      tags: [],
-    });
-    toast({ title: "📖 Movido a biblioteca", description: `"${item.title}" ahora está en Leyendo` });
+  const filtered = useMemo(() => wishItems.filter(item => {
+    const matchSearch = !search || item.title.toLowerCase().includes(search.toLowerCase()) || item.author.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === "all" || item.status === statusFilter;
+    return matchSearch && matchStatus;
+  }), [wishItems, search, statusFilter]);
+
+  const handleSave = (data: Omit<WishItem, "id">) => {
+    if (editItem) {
+      updateWishItem(editItem.id, data);
+      if (selectedItem?.id === editItem.id) setSelectedItem({ ...editItem, ...data });
+    } else {
+      addWishItem(data);
+    }
+    setEditItem(undefined);
   };
 
-  const sagaNames = [...new Set(items.filter(i => i.hasSaga && i.saga).map(i => i.saga!))].sort((a, b) => a.localeCompare(b, "es"));
-
-  const genreNames = [...new Set(items.filter(i => i.genre).map(i => i.genre))].sort((a, b) => a.localeCompare(b, "es"));
-
-  const filteredItems = items
-    .filter(i => !filterPriority || i.priority === filterPriority)
-    .filter(i => filterGenre === "all" || i.genre === filterGenre)
-    .filter(i => filterStatus === "all" || i.status === filterStatus)
-    .filter(i => {
-      if (sagaFilter === "all") return true;
-      if (sagaFilter === "individual") return !i.hasSaga || !i.saga;
-      return i.saga === sagaFilter;
-    })
-    .filter(i =>
-      !search ||
-      i.title.toLowerCase().includes(search.toLowerCase()) ||
-      i.author.toLowerCase().includes(search.toLowerCase()) ||
-      (i.saga && i.saga.toLowerCase().includes(search.toLowerCase()))
-    );
-
-  // Sort by priority DESC, then by saga, then alphabetically
-  const sortedItems = [...filteredItems].sort((a, b) => {
-    // Priority first (highest first)
-    if (b.priority !== a.priority) return b.priority - a.priority;
-
-    const sagaA = a.hasSaga && a.saga ? a.saga.toLowerCase() : "";
-    const sagaB = b.hasSaga && b.saga ? b.saga.toLowerCase() : "";
-    if (sagaA && sagaB && sagaA !== sagaB) return sagaA.localeCompare(sagaB, "es");
-    if (sagaA && !sagaB) return -1;
-    if (!sagaA && sagaB) return 1;
-    if (sagaA && sagaB && sagaA === sagaB) {
-      const orderA = parseInt(a.sagaOrder || "0") || 0;
-      const orderB = parseInt(b.sagaOrder || "0") || 0;
-      if (orderA !== orderB) return orderA - orderB;
-    }
-    return a.title.localeCompare(b.title, "es");
-  });
-
-  // Build saga groups
-  const sagaGroups = new Map<string, WishItem[]>();
-  const standalone: WishItem[] = [];
-  sortedItems.forEach((item) => {
-    if (item.hasSaga && item.saga) {
-      const key = item.saga;
-      if (!sagaGroups.has(key)) sagaGroups.set(key, []);
-      sagaGroups.get(key)!.push(item);
-    } else {
-      standalone.push(item);
-    }
-  });
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
         <div className="flex items-center gap-3">
-          <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
-            💜 Wish List
-          </h2>
-          <span className="text-sm text-muted-foreground font-body">({items.length})</span>
+          <BookHeart className="h-7 w-7 text-primary" />
+          <h1 className="text-2xl font-bold font-display">Wish List</h1>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">{wishItems.length}</span>
         </div>
-        <div className="flex items-center gap-1">
-          {[1, 2, 3, 4, 5].map((v) => (
-            <button
-              key={v}
-              onClick={() => setFilterPriority(filterPriority === v ? null : v)}
-              className={`p-1 rounded transition-colors ${filterPriority && v <= filterPriority ? "bg-red-100 dark:bg-red-900/30" : "hover:bg-secondary"}`}
-            >
-              <Heart className={`h-4 w-4 ${filterPriority && v <= filterPriority ? "fill-red-500 text-red-500" : "text-muted-foreground/40"}`} />
-            </button>
-          ))}
-          {filterPriority && (
-            <button onClick={() => setFilterPriority(null)} className="text-xs text-muted-foreground ml-1 hover:text-foreground">✕</button>
-          )}
-        </div>
+        <Button onClick={() => { setEditItem(undefined); setFormOpen(true); }}>
+          <Plus size={16} className="mr-1" /> Añadir libro
+        </Button>
       </div>
 
-      {/* Search + filters */}
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por título, autor o saga..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 font-body" />
-          </div>
+      <div className="flex gap-3 mb-6 flex-wrap">
+        <div className="relative flex-1 min-w-48">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por título o autor..." className="pl-9" />
+          {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X size={14} /></button>}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Select value={filterGenre} onValueChange={setFilterGenre}>
-            <SelectTrigger className="w-[150px] h-8 text-xs font-body">
-              <SelectValue placeholder="Género" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los géneros</SelectItem>
-              {genreNames.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[150px] h-8 text-xs font-body">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los estados</SelectItem>
-              {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={sagaFilter} onValueChange={setSagaFilter}>
-            <SelectTrigger className="w-[180px] h-8 text-xs font-body">
-              <Filter className="h-3 w-3 mr-1.5 text-muted-foreground" />
-              <SelectValue placeholder="Saga" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="individual">📖 Individuales</SelectItem>
-              {sagaNames.map((s) => (
-                <SelectItem key={s} value={s}>📚 {s}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {(filterGenre !== "all" || filterStatus !== "all" || filterPriority || sagaFilter !== "all") && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 text-xs text-muted-foreground"
-              onClick={() => { setFilterGenre("all"); setFilterStatus("all"); setFilterPriority(null); setSagaFilter("all"); }}
-            >
-              Limpiar filtros ✕
-            </Button>
-          )}
-        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los estados</SelectItem>
+            <SelectItem value="Buscar">Por buscar</SelectItem>
+            <SelectItem value="Conseguido">Conseguido</SelectItem>
+            <SelectItem value="Prestado">Prestado</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
-          <div className="relative">
-            <div className="w-24 h-24 rounded-2xl bg-primary/8 border border-primary/15 flex items-center justify-center">
-              <BookHeart className="h-10 w-10 text-primary/40" />
-            </div>
-            <div className="absolute -top-1 -right-1 text-xl">💜</div>
+      {wishItems.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
+          <BookHeart size={48} className="text-muted-foreground/30" />
+          <div>
+            <p className="text-lg font-medium text-muted-foreground">Tu lista de deseos está vacía</p>
+            <p className="text-sm text-muted-foreground/60 mt-1">Añade los libros que quieres leer</p>
           </div>
-          <div className="space-y-1.5">
-            <p className="text-xl font-semibold font-display text-foreground">Tu lista de deseos está vacía</p>
-            <p className="text-sm text-muted-foreground font-display max-w-xs mx-auto">
-              "Una casa sin libros es como un cuerpo sin alma." — Cicerón
-            </p>
-          </div>
-          <p className="text-xs text-muted-foreground/60 font-display">Añade libros que tengas ganas de leer 📖</p>
+          <Button onClick={() => { setEditItem(undefined); setFormOpen(true); }}>
+            <Plus size={16} className="mr-1" /> Añadir primer libro
+          </Button>
         </div>
-      ) : (
-        <div className="space-y-8">
-          {/* Saga groups */}
-          {Array.from(sagaGroups.entries()).map(([sagaName, sagaItems]) => (
-            <div key={sagaName}>
-              <h3 className="text-sm font-display font-semibold mb-3 flex items-center gap-1.5 text-muted-foreground">
-                📚 Saga: {sagaName} <span className="text-xs font-normal">({sagaItems.length})</span>
-              </h3>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {sagaItems.map((item) => (
-                  <WishCard key={item.id} item={item} updateItem={updateItem} deleteItem={deleteItem} onMoveToLibrary={handleMoveToLibrary} />
-                ))}
-              </div>
-            </div>
-          ))}
+      )}
 
-          {/* Standalone books */}
-          {standalone.length > 0 && (
-            <div>
-              {sagaGroups.size > 0 && (
-                <h3 className="text-sm font-display font-semibold mb-3 text-muted-foreground">📖 Libros individuales ({standalone.length})</h3>
-              )}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {standalone.map((item) => (
-                  <WishCard key={item.id} item={item} updateItem={updateItem} deleteItem={deleteItem} onMoveToLibrary={handleMoveToLibrary} />
-                ))}
-              </div>
+      {wishItems.length > 0 && (
+        <div className={`flex gap-6 ${selectedItem ? "flex-col lg:flex-row" : ""}`}>
+          <div className={`${selectedItem ? "lg:w-[55%]" : "w-full"}`}>
+            {filtered.length === 0
+              ? <p className="text-center text-muted-foreground py-12">No hay resultados</p>
+              : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {filtered.map(item => (
+                    <div key={item.id} className="group cursor-pointer" onClick={() => setSelectedItem(item)}>
+                      <div className={`relative aspect-[2/3] rounded-[var(--radius)] overflow-hidden border transition-all duration-200 ${selectedItem?.id === item.id ? "border-primary shadow-lg shadow-primary/20" : "border-border/40 group-hover:border-primary/40 group-hover:shadow-md"}`}>
+                        {item.coverUrl
+                          ? <img src={item.coverUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          : <div className="w-full h-full flex flex-col items-center justify-center bg-muted/50 gap-2 p-2">
+                              <BookOpen size={24} className="text-muted-foreground/40" />
+                              <p className="text-[10px] text-muted-foreground/60 text-center leading-tight line-clamp-3">{item.title}</p>
+                            </div>
+                        }
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-end justify-center pb-2 gap-2">
+                          <button onClick={e => { e.stopPropagation(); setEditItem(item); setFormOpen(true); }}
+                            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full p-1.5 transition-colors"><Pencil size={13} /></button>
+                          <button onClick={e => { e.stopPropagation(); setDeleteTarget(item); }}
+                            className="bg-white/20 hover:bg-rose-500/80 backdrop-blur-sm text-white rounded-full p-1.5 transition-colors"><Trash2 size={13} /></button>
+                        </div>
+                      </div>
+                      <div className="mt-1.5 px-0.5">
+                        <p className="text-xs font-semibold line-clamp-1 leading-tight">{item.title}</p>
+                        <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">{item.author}</p>
+                        <div className="flex gap-0.5 mt-1">
+                          {[1,2,3,4,5].map(n => <Heart key={n} size={10} className={n <= item.priority ? "fill-rose-500 text-rose-500" : "text-muted-foreground/20"} />)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            }
+          </div>
+          {selectedItem && (
+            <div className="lg:w-[45%] lg:sticky lg:top-6 lg:max-h-[calc(100vh-8rem)] border border-border/40 rounded-xl overflow-hidden bg-card">
+              <WishDetailPanel
+                item={selectedItem}
+                onEdit={() => { setEditItem(selectedItem); setFormOpen(true); }}
+                onDelete={() => setDeleteTarget(selectedItem)}
+                onClose={() => setSelectedItem(null)}
+              />
             </div>
           )}
         </div>
       )}
+
+      <WishItemForm open={formOpen} onOpenChange={v => { setFormOpen(v); if (!v) setEditItem(undefined); }} initial={editItem} onSave={handleSave} />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={v => !v && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Borrar "{deleteTarget?.title}"?</AlertDialogTitle>
+            <AlertDialogDescription>Esta acción no se puede deshacer.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteTarget && (deleteWishItem(deleteTarget.id), setDeleteTarget(null), selectedItem?.id === deleteTarget.id && setSelectedItem(null))} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Borrar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
