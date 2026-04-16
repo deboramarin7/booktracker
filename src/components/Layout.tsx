@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";....
+import { useAuth } from "@/hooks/useAuth";
 import { Outlet, NavLink, Link, useNavigate } from "react-router-dom";
 import {
   BookOpen, Library, Users, Heart, BookMarked, CalendarDays,
