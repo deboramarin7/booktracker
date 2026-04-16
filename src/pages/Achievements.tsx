@@ -352,7 +352,7 @@ useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
 
       {/* ——— MONTHLY CHALLENGES ——— */}
       <div className="space-y-6">
-        <h3 className="text-xl font-bold font-display">📅 Retos Mensuales {selectedYear}</h3>
+        <h3 className="text-xl font-bold font-display">📅Retos Mensuales {selectedYear}</h3>
 
         {yearGoalTotal > 0 && (
           <Card className="border-border/30">
