@@ -126,49 +126,51 @@ export function useBooks() {
 
   useEffect(() => { fetchBooks(); }, [fetchBooks]);
 
+  Date.now() en el nombre del canal → evita el conflicto cuando React re-monta
+.on() antes de .subscribe() → separados en dos llamadas para evitar el encadenamiento que falla
+Aquí tienes el bloque exacto que debes reemplazar en tu src/hooks/useBooks.ts. Busca el useEffect del real-time (el que añadí antes) y cámbialo por este:
+
   // ─── SINCRONIZACIÓN EN TIEMPO REAL ───
-  // Escucha cambios en la tabla "books" para el usuario actual.
-  // Cuando añades/editas/borras un libro desde otro dispositivo,
-  // se actualiza automáticamente sin recargar la página.
   useEffect(() => {
     if (!userId) return;
 
-    const channel = supabase
-      .channel(`books-sync-${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "books",
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const { eventType } = payload;
+    const channelName = `books-sync-${userId}-${Date.now()}`;
+    const channel = supabase.channel(channelName);
 
-          if (eventType === "INSERT") {
-            const newBook = dbToBook(payload.new as DbBook);
-            setBooks((prev) => {
-              // Evitar duplicados (si el insert ya fue hecho localmente)
-              if (prev.some((b) => b.id === newBook.id)) return prev;
-              return [newBook, ...prev];
-            });
-          }
+    channel.on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "books",
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        const { eventType } = payload;
 
-          if (eventType === "UPDATE") {
-            const updated = dbToBook(payload.new as DbBook);
-            setBooks((prev) =>
-              prev.map((b) => (b.id === updated.id ? updated : b))
-            );
-          }
-
-          if (eventType === "DELETE") {
-            const deletedId = (payload.old as { id: string }).id;
-            setBooks((prev) => prev.filter((b) => b.id !== deletedId));
-          }
+        if (eventType === "INSERT") {
+          const newBook = dbToBook(payload.new as DbBook);
+          setBooks((prev) => {
+            if (prev.some((b) => b.id === newBook.id)) return prev;
+            return [newBook, ...prev];
+          });
         }
-      )
-      .subscribe();
+
+        if (eventType === "UPDATE") {
+          const updated = dbToBook(payload.new as DbBook);
+          setBooks((prev) =>
+            prev.map((b) => (b.id === updated.id ? updated : b))
+          );
+        }
+
+        if (eventType === "DELETE") {
+          const deletedId = (payload.old as { id: string }).id;
+          setBooks((prev) => prev.filter((b) => b.id !== deletedId));
+        }
+      }
+    );
+
+    channel.subscribe();
 
     return () => {
       supabase.removeChannel(channel);
