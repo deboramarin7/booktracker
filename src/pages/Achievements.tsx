@@ -1,7 +1,5 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useBooksContext } from "@/components/Layout";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -17,8 +15,11 @@ import {
 const MONTHLY_GOALS_KEY = "book-tracker-monthly-goals";
 const HABITS_KEY = "book-tracker-reading-habits";
 
-function loadMonthlyGoalsLocal(): Record<string, number> {
+function loadMonthlyGoals(): Record<string, number> {
   try { return JSON.parse(localStorage.getItem(MONTHLY_GOALS_KEY) || "{}"); } catch { return {}; }
+}
+function saveMonthlyGoals(data: Record<string, number>) {
+  localStorage.setItem(MONTHLY_GOALS_KEY, JSON.stringify(data));
 }
 function loadHabits(): Record<string, string[]> {
   try { return JSON.parse(localStorage.getItem(HABITS_KEY) || "{}"); } catch { return {}; }
@@ -138,27 +139,7 @@ export default function Achievements() {
   const currentMonth = new Date().getMonth();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
   const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [monthlyGoals, setMonthlyGoals] = useState<Record<string, number>>(loadMonthlyGoalsLocalthlyGoals);
-  const { user } = useAuth();
-
-  // Load monthly goals from Supabase
-  const fetchMonthlyGoals = useCallback(async () => {
-    if (!user) return;
-    const { data, error } = await supabase
-      .from("monthly_goals")
-      .select("month, goal")
-      .eq("user_id", user.id);
-    if (!error && data && data.length > 0) {
-      const goals: Record<string, number> = {};
-      data.forEach((row: { month: string; goal: number }) => {
-        goals[row.month] = row.goal;
-      });
-      setMonthlyGoals(goals);
-      localStorage.setItem(MONTHLY_GOALS_KEY, JSON.stringify(goals));
-    }
-  }, [user]);
-
-  useEffect(() => { fetchMonthlyGoals(); }, [fetchMonthlyGoals]);
+  const [monthlyGoals, setMonthlyGoals] = useState<Record<string, number>>(loadMonthlyGoals);
   const [editingMonth, setEditingMonth] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<AchievementCategory | "all">("all");
@@ -276,13 +257,7 @@ useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
     const val = parseInt(editValue);
     if (!isNaN(val) && val >= 0) {
       const updated = { ...monthlyGoals, [monthKey]: val };
-    localStorage.setItem(MONTHLY_GOALS_KEY, JSON.stringify(updated));
-    if (user) {
-      supabase.from("monthly_goals").upsert(
-        Object.entries(updated).map(([month, goal]) => ({ user_id: user.id, month, goal })),
-        { onConflict: "user_id,month" }
-      );
-    }
+      setMonthlyGoals(updated);
       saveMonthlyGoals(updated);
     }
     setEditingMonth(null);
@@ -307,6 +282,13 @@ useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
 
       {/* ——— SUMMARY + CATEGORY STATS ——— */}
       {/* ── AVISO LOCALSTORAGE ── */}
+      <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-amber-500/20 bg-amber-500/5 text-sm text-amber-700 dark:text-amber-400">
+        <span className="text-base leading-none mt-0.5">💾</span>
+        <p className="font-body">
+          Los objetivos y logros se guardan en este dispositivo. Para sincronizar entre dispositivos,
+          <span className="font-semibold"> inicia sesión</span> (próximamente).
+        </p>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         {/* Total */}
         <Card className="border-none bg-gradient-to-br from-amber-500/15 via-amber-400/5 to-transparent sm:col-span-1">
@@ -377,7 +359,7 @@ useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
 
       {/* ——— MONTHLY CHALLENGES ——— */}
       <div className="space-y-6">
-        <h3 className="text-xl font-bold font-display">📅Retos Mensuales {selectedYear}</h3>
+        <h3 className="text-xl font-bold font-display">📅 Retos Mensuales {selectedYear}</h3>
 
         {yearGoalTotal > 0 && (
           <Card className="border-border/30">
