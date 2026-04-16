@@ -33,6 +33,7 @@ export interface WishItem {
   sagaOrder?: string;
   genre: string;
   priority: number;
+  synopsis?: string;
   status: WishStatus;
   totalPages: number;
 }
