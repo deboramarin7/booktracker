@@ -126,15 +126,16 @@ export function useBooks() {
 
   useEffect(() => { fetchBooks(); }, [fetchBooks]);
 
-  Date.now() en el nombre del canal → evita el conflicto cuando React re-monta
-.on() antes de .subscribe() → separados en dos llamadas para evitar el encadenamiento que falla
-Aquí tienes el bloque exacto que debes reemplazar en tu src/hooks/useBooks.ts. Busca el useEffect del real-time (el que añadí antes) y cámbialo por este:
-
   // ─── SINCRONIZACIÓN EN TIEMPO REAL ───
+  // Escucha cambios en la tabla "books" para el usuario actual.
+  // Cuando añades/editas/borras un libro desde otro dispositivo,
+  // se actualiza automáticamente sin recargar la página.
   useEffect(() => {
     if (!userId) return;
 
+    // Nombre único por montaje para evitar conflictos con React StrictMode
     const channelName = `books-sync-${userId}-${Date.now()}`;
+
     const channel = supabase.channel(channelName);
 
     channel.on(
