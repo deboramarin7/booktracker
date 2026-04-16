@@ -1,4 +1,4 @@
-const CACHE_NAME = 'booktracker-v1';
+const CACHE_NAME = 'booktracker-20260416';
 
 // Install - cache basic shell
 self.addEventListener('install', (event) => {
