@@ -126,6 +126,55 @@ export function useBooks() {
 
   useEffect(() => { fetchBooks(); }, [fetchBooks]);
 
+  // ─── SINCRONIZACIÓN EN TIEMPO REAL ───
+  // Escucha cambios en la tabla "books" para el usuario actual.
+  // Cuando añades/editas/borras un libro desde otro dispositivo,
+  // se actualiza automáticamente sin recargar la página.
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel(`books-sync-${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "books",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const { eventType } = payload;
+
+          if (eventType === "INSERT") {
+            const newBook = dbToBook(payload.new as DbBook);
+            setBooks((prev) => {
+              // Evitar duplicados (si el insert ya fue hecho localmente)
+              if (prev.some((b) => b.id === newBook.id)) return prev;
+              return [newBook, ...prev];
+            });
+          }
+
+          if (eventType === "UPDATE") {
+            const updated = dbToBook(payload.new as DbBook);
+            setBooks((prev) =>
+              prev.map((b) => (b.id === updated.id ? updated : b))
+            );
+          }
+
+          if (eventType === "DELETE") {
+            const deletedId = (payload.old as { id: string }).id;
+            setBooks((prev) => prev.filter((b) => b.id !== deletedId));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
+
   const addBook = async (data: Omit<Book, "id" | "addedAt">) => {
     const now = new Date().toISOString();
     const startDate = data.status === "reading" ? data.startDate || now.split("T")[0] : data.startDate;
