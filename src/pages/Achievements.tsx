@@ -282,13 +282,6 @@ useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
 
       {/* ——— SUMMARY + CATEGORY STATS ——— */}
       {/* ── AVISO LOCALSTORAGE ── */}
-      <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-amber-500/20 bg-amber-500/5 text-sm text-amber-700 dark:text-amber-400">
-        <span className="text-base leading-none mt-0.5">💾</span>
-        <p className="font-body">
-          Los objetivos y logros se guardan en este dispositivo. Para sincronizar entre dispositivos,
-          <span className="font-semibold"> inicia sesión</span> (próximamente).
-        </p>
-      </div>
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         {/* Total */}
         <Card className="border-none bg-gradient-to-br from-amber-500/15 via-amber-400/5 to-transparent sm:col-span-1">
