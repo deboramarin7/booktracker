@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useBooksContext } from "@/components/Layout";
+import { useMonthlyGoals } from "@/hooks/useMonthlyGoals";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -15,12 +16,7 @@ import {
 const MONTHLY_GOALS_KEY = "book-tracker-monthly-goals";
 const HABITS_KEY = "book-tracker-reading-habits";
 
-function loadMonthlyGoals(): Record<string, number> {
-  try { return JSON.parse(localStorage.getItem(MONTHLY_GOALS_KEY) || "{}"); } catch { return {}; }
-}
-function saveMonthlyGoals(data: Record<string, number>) {
-  localStorage.setItem(MONTHLY_GOALS_KEY, JSON.stringify(data));
-}
+
 function loadHabits(): Record<string, string[]> {
   try { return JSON.parse(localStorage.getItem(HABITS_KEY) || "{}"); } catch { return {}; }
 }
@@ -139,7 +135,7 @@ export default function Achievements() {
   const currentMonth = new Date().getMonth();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
   const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [monthlyGoals, setMonthlyGoals] = useState<Record<string, number>>(loadMonthlyGoals);
+  const { goals: monthlyGoals, setGoals: saveMonthlyGoals } = useMonthlyGoals();
   const [editingMonth, setEditingMonth] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<AchievementCategory | "all">("all");
