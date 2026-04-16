@@ -1,5 +1,7 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useBooksContext } from "@/components/Layout";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -15,11 +17,8 @@ import {
 const MONTHLY_GOALS_KEY = "book-tracker-monthly-goals";
 const HABITS_KEY = "book-tracker-reading-habits";
 
-function loadMonthlyGoals(): Record<string, number> {
+function loadMonthlyGoalsLocal(): Record<string, number> {
   try { return JSON.parse(localStorage.getItem(MONTHLY_GOALS_KEY) || "{}"); } catch { return {}; }
-}
-function saveMonthlyGoals(data: Record<string, number>) {
-  localStorage.setItem(MONTHLY_GOALS_KEY, JSON.stringify(data));
 }
 function loadHabits(): Record<string, string[]> {
   try { return JSON.parse(localStorage.getItem(HABITS_KEY) || "{}"); } catch { return {}; }
@@ -139,7 +138,27 @@ export default function Achievements() {
   const currentMonth = new Date().getMonth();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
   const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [monthlyGoals, setMonthlyGoals] = useState<Record<string, number>>(loadMonthlyGoals);
+  const [monthlyGoals, setMonthlyGoals] = useState<Record<string, number>>(loadMonthlyGoalsLocalthlyGoals);
+  const { user } = useAuth();
+
+  // Load monthly goals from Supabase
+  const fetchMonthlyGoals = useCallback(async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("monthly_goals")
+      .select("month, goal")
+      .eq("user_id", user.id);
+    if (!error && data && data.length > 0) {
+      const goals: Record<string, number> = {};
+      data.forEach((row: { month: string; goal: number }) => {
+        goals[row.month] = row.goal;
+      });
+      setMonthlyGoals(goals);
+      localStorage.setItem(MONTHLY_GOALS_KEY, JSON.stringify(goals));
+    }
+  }, [user]);
+
+  useEffect(() => { fetchMonthlyGoals(); }, [fetchMonthlyGoals]);
   const [editingMonth, setEditingMonth] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<AchievementCategory | "all">("all");
@@ -257,7 +276,13 @@ useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
     const val = parseInt(editValue);
     if (!isNaN(val) && val >= 0) {
       const updated = { ...monthlyGoals, [monthKey]: val };
-      setMonthlyGoals(updated);
+    localStorage.setItem(MONTHLY_GOALS_KEY, JSON.stringify(updated));
+    if (user) {
+      supabase.from("monthly_goals").upsert(
+        Object.entries(updated).map(([month, goal]) => ({ user_id: user.id, month, goal })),
+        { onConflict: "user_id,month" }
+      );
+    }
       saveMonthlyGoals(updated);
     }
     setEditingMonth(null);
