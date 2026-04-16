@@ -335,7 +335,7 @@ useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
               Mostrando: <span className="font-semibold text-foreground">{CATEGORY_META[categoryFilter].label}</span>
             </p>
             <Button variant="ghost" size="sm" className="text-xs" onClick={() => setCategoryFilter("all")}>
-              Ver todos —
+              Ver todos
             </Button>
           </div>
         )}
