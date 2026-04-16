@@ -52,11 +52,11 @@ const sections: Section[] = [
     id: "wishlist",
     icon: <Heart className="h-5 w-5" />,
     title: "Wish List",
-    description: "Tu lista de libros que quieres leer. Se agrupan automáticamente por sagas.",
+    description: "Tu lista de libros que quieres leer. Tu lista de deseos en formato visual. Navega por las portadas, consulta la ficha de cada libro y gestiona tus próximas lecturas.",
     steps: [
       {
         title: "Añadir a la Wish List",
-        text: "Se añadem directamente desde '+ Añadir libro' en Mi Biblioteca eligiendo el estado 'Quiero leer'."
+        text: "Se añaden directamente desde '+ Añadir libro' en Mi Biblioteca eligiendo el estado 'Quiero leer'."
       },
       {
         title: "Agrupación por sagas",
@@ -128,7 +128,7 @@ const sections: Section[] = [
       },
       {
         title: "Ver estadísticas",
-        text: "Muestra los libros leídos, los que has emepzado y terminado en ese mes."
+        text: "Muestra los libros leídos, los que has empezado y terminado en ese mes."
       },
        {
         title: "Calendario",
