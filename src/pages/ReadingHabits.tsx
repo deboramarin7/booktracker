@@ -362,15 +362,6 @@ export default function ReadingHabits() {
   return (
     <div className="space-y-8">
       <h2 className="text-2xl font-display font-bold">📚 Hábitos y Calendario</h2>
-
-      <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-amber-500/20 bg-amber-500/5 text-sm text-amber-700 dark:text-amber-400">
-        <span className="text-base leading-none mt-0.5">💾</span>
-        <p className="font-body">
-          Los hábitos se guardan en este dispositivo. Para sincronizar entre dispositivos,
-          <span className="font-semibold"> inicia sesión</span> (próximamente).
-        </p>
-      </div>
-
       <Tabs defaultValue="habits" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="habits">📊 Hábitos</TabsTrigger>
