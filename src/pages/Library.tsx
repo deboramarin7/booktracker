@@ -1,6 +1,5 @@
 import { useState, useMemo, useRef } from "react";
 import { useBooks } from "@/hooks/useBooks";
-import { BookCard } from "@/components/BookCard";
 import { AddBookDialog } from "@/components/AddBookDialog";
 import { ImportBooksDialog, ExportBooksButton } from "@/components/ImportExportBooks";
 import { GlobalSearch } from "@/components/GlobalSearch";
@@ -8,7 +7,7 @@ import { EditBookDialog } from "@/components/EditBookDialog";
 import { useWishlist, type WishItem } from "@/hooks/useWishlist";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, Pencil, Check, LayoutGrid, AlignJustify, Library, Target } from "lucide-react";
+import { BookOpen, Pencil, Check, LayoutGrid, AlignJustify, Library, Target, Star } from "lucide-react";
 import type { Book, ReadingStatus } from "@/hooks/useBooks";
 import { GENRES, FORMATS, STATUSES } from "@/lib/constants";
 
@@ -417,16 +416,50 @@ export default function LibraryPage() {
                 </span>
               </div>
               {viewMode === "grid" ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {groupBooks.map((book, index) => (
-                    <BookCard
+                    <div
                       key={book.id}
-                      book={book}
-                      index={index}
-                      onUpdate={updateBook}
-                      onDelete={deleteBook}
-                      onMoveToWishlist={handleMoveToWishlist}
-                    />
+                      className="group cursor-pointer animate-fade-in"
+                      style={{ animationDelay: `${index * 30}ms` }}
+                      onClick={() => setSearchEditBook(book)}
+                    >
+                      <div className="aspect-[2/3] rounded-[var(--radius)] overflow-hidden bg-muted mb-2 book-3d relative shadow-md hover:shadow-xl transition-shadow">
+                        {book.coverUrl ? (
+                          <img src={book.coverUrl} alt={book.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div
+                            className="w-full h-full flex items-center justify-center"
+                            style={{ background: `hsl(${Math.abs(book.title.charCodeAt(0) * 7 + (book.title.charCodeAt(1) || 0) * 13) % 360}, 35%, 25%)` }}
+                          >
+                            <BookOpen className="h-8 w-8 text-white/40" />
+                          </div>
+                        )}
+                        {/* Status badge */}
+                        <div className="absolute top-2 left-2">
+                          <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-black/60 text-white backdrop-blur-sm">
+                            {STATUS_LABELS[book.status] || book.status}
+                          </span>
+                        </div>
+                      </div>
+                      <h3 className="text-sm font-medium truncate">{book.title}</h3>
+                      <p className="text-xs text-muted-foreground truncate">{book.author}</p>
+                      {book.hasSaga && book.saga && (
+                        <p className="text-[10px] text-primary truncate mt-0.5">
+                          {book.saga}{book.sagaOrder ? ` #${book.sagaOrder}` : ""}
+                        </p>
+                      )}
+                      {book.rating > 0 && (
+                        <div className="flex gap-0.5 mt-1">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              className={`h-3 w-3 ${s <= book.rating ? "text-accent fill-accent" : "text-muted-foreground/20"}`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               ) : (
