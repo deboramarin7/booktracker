@@ -12,7 +12,6 @@ import Shelves from "./pages/Shelves";
 import ReadingHabits from "./pages/ReadingHabits";
 import Achievements from "./pages/Achievements";
 import Dashboard from "./pages/Dashboard";
-import Wrapped from "./pages/Wrapped";
 import Help from "./pages/Help";
 
 const queryClient = new QueryClient();
@@ -41,7 +40,6 @@ function ProtectedRoutes() {
         <Route path="reading-habits" element={<ReadingHabits />} />
         <Route path="logros" element={<Achievements />} />
         <Route path="dashboard" element={<Dashboard />} />
-        <Route path="wrapped" element={<Wrapped />} />
         <Route path="ayuda" element={<Help />} />
       </Route>
     </Routes>
