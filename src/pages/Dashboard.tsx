@@ -281,6 +281,9 @@ export default function Dashboard() {
             <ShareableStats year={selectedYear} books={yearBooks} />
             <BestOfYearExport year={selectedYear} books={yearBooks} />
           </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            💡 Pulsa <strong>Compartir</strong> para descargar una imagen con tu resumen del año.
+          </p>
         )}
       </div>
 
