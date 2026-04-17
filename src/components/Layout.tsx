@@ -43,7 +43,6 @@ const navLinks = [
   { to: "/reading-habits", label: "Habitos", icon: <CalendarDays className="h-5 w-5" /> },
   { to: "/logros", label: "Logros", icon: <Trophy className="h-5 w-5" /> },
   { to: "/dashboard", label: "Dashboard", icon: <TrendingUp className="h-5 w-5" /> },
-  { to: "/wrapped", label: "Wrapped", icon: <Sparkles className="h-5 w-5" /> },
   { to: "/ayuda", label: "Ayuda", icon: <HelpCircle className="h-5 w-5" /> },
 ];
 
