@@ -280,10 +280,8 @@ export default function Dashboard() {
           <div className="flex items-center gap-2">
             <ShareableStats year={selectedYear} books={yearBooks} />
             <BestOfYearExport year={selectedYear} books={yearBooks} />
+            <p className="text-xs text-muted-foreground w-full mt-1">💡 Pulsa <span className="font-medium">Compartir</span> para descargar una imagen con tu resumen del año.</p>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            💡 Pulsa <strong>Compartir</strong> para descargar una imagen con tu resumen del año.
-          </p>
         )}
       </div>
 
