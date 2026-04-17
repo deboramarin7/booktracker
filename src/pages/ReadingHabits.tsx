@@ -476,18 +476,18 @@ export default function ReadingHabits() {
                 <BarChart data={chartData} barSize={28}>
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke="rgba(0,0,0,0.1)" 
+                    stroke="rgba(128,128,128,0.2)" 
                     opacity={0.3}
                   />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 11, fill: "rgba(0,0,0,0.75)" }}
-                    stroke="rgba(0,0,0,0.15)"
+                    tick={{ fontSize: 11, fill: "currentColor" }}
+                    stroke="rgba(128,128,128,0.3)"
                   />
                   <YAxis
                     allowDecimals={false}
-                    tick={{ fontSize: 11, fill: "rgba(0,0,0,0.75)" }}
-                    stroke="rgba(0,0,0,0.15)"
+                    tick={{ fontSize: 11, fill: "currentColor" }}
+                    stroke="rgba(128,128,128,0.3)"
                     width={24}
                   />
                   <RechartsTooltip
