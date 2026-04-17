@@ -182,50 +182,6 @@ const sections: Section[] = [
       "Puedes compartir tus estadísticas con el botón de compartir que encontrarás en el Dashboard."
     ]
   },
-  {
-    id: "wrapped",
-    icon: <Sparkles className="h-5 w-5" />,
-    title: "Wrapped ✨",
-    description: "Tu resumen anual de lectura en formato visual, inspirado en el Wrapped de Spotify.",
-    steps: [
-      {
-        title: "Ver tu Wrapped",
-        text: "Navega entre los slides con las flechas o deslizando. Cada slide muestra un dato diferente: libros leídos, páginas, géneros, rachas, mejores libros..."
-      },
-      {
-        title: "Cambiar de año",
-        text: "Usa el selector de año (junto al título) para ver el resumen de cualquier año en que hayas registrado libros."
-      },
-    ],
-    tips: [
-      "El Wrapped solo muestra datos si tienes libros con estado 'Terminado' en el año seleccionado.",
-    ]
-  },
-  {
-    id: "importar",
-    icon: <Upload className="h-5 w-5" />,
-    title: "Importar desde Goodreads",
-    description: "Importa tu historial de Goodreads para empezar con todos tus libros ya registrados.",
-    steps: [
-      {
-        title: "Exportar desde Goodreads",
-        text: "En Goodreads ve a 'My Books' → 'Import and export' → 'Export Library'. Descarga el archivo CSV."
-      },
-      {
-        title: "Importar en Book Tracker",
-        text: "En Mi Biblioteca haz clic en 'Importar', selecciona el archivo CSV descargado de Goodreads y haz clic en 'Importar'."
-      },
-      {
-        title: "Búsqueda automática de portadas",
-        text: "Al importar, la app busca automáticamente las portadas de todos los libros. Puede tardar unos minutos según el número de libros."
-      }
-    ],
-    tips: [
-      "Los libros marcados como 'to-read' en Goodreads se importarán a tu Wish List automáticamente.",
-      "Los libros con estado 'currently-reading' se importarán como 'Leyendo'.",
-      "También puedes importar desde cualquier archivo CSV o Excel con columnas de Título y Autor."
-    ]
-  }
 ];
 
 function SectionCard({ section }: { section: Section }) {
@@ -342,7 +298,6 @@ export default function Help() {
           { icon: <BookOpen className="h-4 w-4" />, label: "Registra libros", desc: "Leídos, leyendo o pendientes" },
           { icon: <Star className="h-4 w-4" />, label: "Valora y reseña", desc: "Guarda tus opiniones" },
           { icon: <TrendingUp className="h-4 w-4" />, label: "Estadísticas", desc: "Ve tu evolución lectora" },
-          { icon: <Sparkles className="h-4 w-4" />, label: "Wrapped anual", desc: "Tu resumen del año" },
         ].map((item, i) => (
           <div key={i} className="rounded-xl border border-border/30 bg-muted/20 p-3 flex flex-col gap-1.5">
             <div className="text-primary">{item.icon}</div>
