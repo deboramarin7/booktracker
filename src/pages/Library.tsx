@@ -341,11 +341,11 @@ export default function LibraryPage() {
       {/* STATS */}
       {!loading && yearBooks.length > 0 && (
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-          <span><span className="text-lg font-semibold text-foreground">{finishedYearBooks.length}</span> libros leidos</span>
+          <span><span className="text-lg font-semibold text-foreground">{finishedYearBooks.length}</span> libros leídos</span>
           <span className="text-border/60">|</span>
-          <span><span className="text-lg font-semibold text-foreground">{totalPages.toLocaleString()}</span> paginas</span>
-          {totalSpent > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">{totalSpent.toFixed(2)}EUR</span> gastos</span></>)}
-          {physicalCount > 0 && (<><span className="text-border/60">|</span><span>📕 <span className="text-lg font-semibold text-foreground">{physicalCount}</span> fisico</span></>)}
+          <span><span className="text-lg font-semibold text-foreground">{totalPages.toLocaleString()}</span> páginas</span>
+          {totalSpent > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">{totalSpent.toFixed(2)}€</span> gastos</span></>)}
+          {physicalCount > 0 && (<><span className="text-border/60">|</span><span>📕 <span className="text-lg font-semibold text-foreground">{physicalCount}</span> físico</span></>)}
           {digitalCount > 0 && (<><span className="text-border/60">|</span><span>📱 <span className="text-lg font-semibold text-foreground">{digitalCount}</span> digital</span></>)}
         </div>
       )}
