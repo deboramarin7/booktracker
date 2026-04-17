@@ -176,6 +176,10 @@ const sections: Section[] = [
       {
         title: "Mejores del año",
         text: "Ve tu libro favorito, autor más leído y género predominante de cada año."
+      },
+      {
+        title: "Comparte tu resumen del año",
+        text: "En el botón de compartir se crea una imagen del resumen del Dashboard para que lo compartas donde quieras!"
       }
     ],
     tips: [
