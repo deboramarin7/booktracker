@@ -64,6 +64,9 @@ function KpiCard({ value, label, icon: Icon, accent = false }: {
           </div>
         </div>
         <p className="text-3xl font-bold font-display text-foreground tracking-tight">{typeof value === "number" ? value.toLocaleString() : value}</p>
+        <p className="text-xs text-muted-foreground mt-1 font-body">{label}</p>
+      </CardContent>
+    </Card>
   );
 }
 
