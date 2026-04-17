@@ -64,9 +64,6 @@ function KpiCard({ value, label, icon: Icon, accent = false }: {
           </div>
         </div>
         <p className="text-3xl font-bold font-display text-foreground tracking-tight">{typeof value === "number" ? value.toLocaleString() : value}</p>
-        <p className="text-xs text-muted-foreground mt-1 font-body">{label}</p>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -406,9 +403,9 @@ export default function Dashboard() {
                   <p className="text-sm font-semibold font-body text-foreground mb-4">Libros por mes</p>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={monthlyBarData} barSize={24}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" opacity={0.3} />
-                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "rgba(0,0,0,0.75)" }} stroke="rgba(0,0,0,0.15)" />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "rgba(0,0,0,0.75)" }} stroke="rgba(0,0,0,0.15)" width={24} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.2)" opacity={0.3} />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "currentColor" }} stroke="rgba(128,128,128,0.3)" />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "currentColor" }} stroke="rgba(128,128,128,0.3)" width={24} />
                       <Tooltip
                         contentStyle={{
                           borderRadius: "10px",
@@ -483,9 +480,9 @@ export default function Dashboard() {
                   <p className="text-sm font-semibold font-body text-foreground mb-4">Evolución mes a mes</p>
                   <ResponsiveContainer width="100%" height={260}>
                     <LineChart data={evolutionData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.1)" opacity={0.3} />
-                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "rgba(0,0,0,0.75)" }} stroke="rgba(0,0,0,0.15)" />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "rgba(0,0,0,0.75)" }} stroke="rgba(0,0,0,0.15)" width={24} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.2)" opacity={0.3} />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "currentColor" }} stroke="rgba(128,128,128,0.3)" />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "currentColor" }} stroke="rgba(128,128,128,0.3)" width={24} />
                       <Tooltip
                         contentStyle={{
                           borderRadius: "10px",
