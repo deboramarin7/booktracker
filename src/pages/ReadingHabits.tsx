@@ -476,17 +476,17 @@ export default function ReadingHabits() {
                 <BarChart data={chartData} barSize={28}>
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke="rgba(255,255,255,0.08)"
+                    stroke="rgba(0,0,0,0.1)" 
                     opacity={0.3}
                   />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 11, fill: "rgba(255,255,255,0.7)" }}
-                    stroke="rgba(255,255,255,0.15)"
+                    tick={{ fontSize: 11, fill: "rgba(0,0,0,0.75)" }}
+                    stroke="rgba(0,0,0,0.15)"
                   />
                   <YAxis
                     allowDecimals={false}
-                    tick={{ fontSize: 11, fill: "rgba(255,255,255,0.7)" }}
+                    tick={{ fontSize: 11, fill: "rgba(0,0,0,0.75)" }}
                     stroke="rgba(255,255,255,0.15)"
                     width={24}
                   />
