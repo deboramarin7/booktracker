@@ -487,7 +487,7 @@ export default function ReadingHabits() {
                   <YAxis
                     allowDecimals={false}
                     tick={{ fontSize: 11, fill: "rgba(0,0,0,0.75)" }}
-                    stroke="rgba(255,255,255,0.15)"
+                    stroke="rgba(0,0,0,0.15)"
                     width={24}
                   />
                   <RechartsTooltip
