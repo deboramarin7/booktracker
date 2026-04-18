@@ -28,7 +28,6 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBooksContext } from "@/components/Layout";
-import { useReadingHabits } from "@/hooks/useReadingHabits";
 
 const HABITS_KEY = "book-tracker-reading-habits";
 
@@ -154,7 +153,7 @@ function StreakBadge({
 export default function ReadingHabits() {
   const currentYear = new Date().getFullYear();
   const [selectedYear] = useState(currentYear);
-  const { habits, toggleDay: toggleDaySupabase } = useReadingHabits();
+  const [habits, setHabits] = useState<Record<string, string[]>>(loadHabits);
 
   const yearKey = String(selectedYear);
   const readDays = habits[yearKey] || [];
@@ -174,7 +173,8 @@ export default function ReadingHabits() {
     else yearDays.push(key);
 
     updated[yearKey] = yearDays;
-    toggleDaySupabase(date);
+    setHabits(updated);
+    saveHabits(updated);
   };
 
   const selectedDates = useMemo(
@@ -361,7 +361,18 @@ export default function ReadingHabits() {
 
   return (
     <div className="space-y-8">
-      <h2 className="text-2xl font-display font-bold">📚 Hábitos y Calendario</h2>
+      <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
+            📚 Hábitos y Calendario
+          </h2>
+
+      <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-amber-500/20 bg-amber-500/5 text-sm text-amber-700 dark:text-amber-400">
+        <span className="text-base leading-none mt-0.5">💾</span>
+        <p className="font-body">
+          Los hábitos se guardan en este dispositivo. Para sincronizar entre dispositivos,
+          <span className="font-semibold"> inicia sesión</span> (próximamente).
+        </p>
+      </div>
+
       <Tabs defaultValue="habits" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="habits">📊 Hábitos</TabsTrigger>
@@ -476,18 +487,18 @@ export default function ReadingHabits() {
                 <BarChart data={chartData} barSize={28}>
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke="rgba(128,128,128,0.2)" 
+                    stroke="rgba(255,255,255,0.08)"
                     opacity={0.3}
                   />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 11, fill: "currentColor" }}
-                    stroke="rgba(128,128,128,0.3)"
+                    tick={{ fontSize: 11, fill: "rgba(255,255,255,0.7)" }}
+                    stroke="rgba(255,255,255,0.15)"
                   />
                   <YAxis
                     allowDecimals={false}
-                    tick={{ fontSize: 11, fill: "currentColor" }}
-                    stroke="rgba(128,128,128,0.3)"
+                    tick={{ fontSize: 11, fill: "rgba(255,255,255,0.7)" }}
+                    stroke="rgba(255,255,255,0.15)"
                     width={24}
                   />
                   <RechartsTooltip
