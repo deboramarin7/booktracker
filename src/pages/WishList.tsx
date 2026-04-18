@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { WishItem, WishStatus } from "@/hooks/useWishlist";
 import { Heart, Plus, Pencil, Trash2, BookHeart, BookOpen, Loader as Loader2, Search, Filter, BookMarked, Flame } from "lucide-react";
@@ -126,7 +126,80 @@ export default function WishList() {
   return <WishListContent />;
 }
 
-function WishCard({ item, updateItem, deleteItem, onMoveToLibrary }: { item: WishItem; updateItem: (id: string, data: Omit<WishItem, "id">) => void; deleteItem: (id: string) => void; onMoveToLibrary: (item: WishItem) => void }) {
+function WishCard({ item, updateItem, deleteItem, onMoveToLibrary }: { item: WishItem; updateItem: (id: string, updates: Partial<WishItem>) => Promise<void>; deleteItem: (id: string) => Promise<void>; onMoveToLibrary: (item: WishItem, status: string) => Promise<void> }) {
+  const [hovered, setHovered] = React.useState(false);
+  const [showDetail, setShowDetail] = React.useState(false);
+
+  return (
+    <>
+      <div
+        className="relative group cursor-pointer"
+        style={{ aspectRatio: '2/3' }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onClick={() => setShowDetail(true)}
+      >
+        <BookCoverImage
+          title={item.title}
+          author={item.author}
+          coverUrl={item.coverUrl}
+          className="w-full h-full object-cover rounded-lg shadow-md"
+        />
+        {/* Hover overlay */}
+        <div className={`absolute inset-0 rounded-lg transition-all duration-200 ${hovered ? 'bg-black/60' : 'bg-transparent pointer-events-none'}`}>
+          {hovered && (
+            <div className="absolute inset-0 flex flex-col items-center justify-end p-3 gap-2">
+              <button
+                onClick={(e) => { e.stopPropagation(); onMoveToLibrary(item, 'reading'); }}
+                className="w-full flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold py-2 px-3 rounded-md hover:bg-primary/90 transition-colors"
+              >
+                <BookOpen className="h-3.5 w-3.5" />
+                Empezar a leer
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Detail dialog */}
+      {showDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setShowDetail(false)}>
+          <div className="bg-background rounded-xl shadow-xl max-w-sm w-full p-5 flex flex-col gap-4" onClick={e => e.stopPropagation()}>
+            <div className="flex gap-4">
+              <div className="w-24 flex-shrink-0" style={{ aspectRatio: '2/3' }}>
+                <BookCoverImage title={item.title} author={item.author} coverUrl={item.coverUrl} className="w-full h-full object-cover rounded-md shadow" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-foreground text-base leading-tight mb-1">{item.title}</h3>
+                <p className="text-sm text-muted-foreground mb-1">{item.author}</p>
+                {item.saga && <p className="text-xs text-muted-foreground mb-1">📚 {item.saga}{item.sagaOrder ? ` #${item.sagaOrder}` : ''}</p>}
+                {item.genre && <p className="text-xs text-muted-foreground mb-1">{item.genre}</p>}
+                {item.totalPages > 0 && <p className="text-xs text-muted-foreground">{item.totalPages} páginas</p>}
+              </div>
+            </div>
+            {item.synopsis && <p className="text-sm text-muted-foreground line-clamp-4">{item.synopsis}</p>}
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => { onMoveToLibrary(item, 'reading'); setShowDetail(false); }}
+                className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-sm font-semibold py-2 px-3 rounded-md hover:bg-primary/90 transition-colors"
+              >
+                <BookOpen className="h-4 w-4" />
+                Empezar a leer
+              </button>
+              <button
+                onClick={() => { deleteItem(item.id); setShowDetail(false); }}
+                className="p-2 text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                title="Eliminar"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
   const isTopPriority = item.priority >= 5;
 
   return (
@@ -397,7 +470,7 @@ function WishListContent() {
               <h3 className="text-sm font-display font-semibold mb-3 flex items-center gap-1.5 text-muted-foreground">
                 📚 Saga: {sagaName} <span className="text-xs font-normal">({sagaItems.length})</span>
               </h3>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {sagaItems.map((item) => (
                   <WishCard key={item.id} item={item} updateItem={updateItem} deleteItem={deleteItem} onMoveToLibrary={handleMoveToLibrary} />
                 ))}
@@ -411,7 +484,7 @@ function WishListContent() {
               {sagaGroups.size > 0 && (
                 <h3 className="text-sm font-display font-semibold mb-3 text-muted-foreground">📖 Libros individuales ({standalone.length})</h3>
               )}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {standalone.map((item) => (
                   <WishCard key={item.id} item={item} updateItem={updateItem} deleteItem={deleteItem} onMoveToLibrary={handleMoveToLibrary} />
                 ))}
