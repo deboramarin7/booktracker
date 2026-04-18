@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { WishItem, WishStatus } from "@/hooks/useWishlist";
 import { Heart, Plus, Pencil, Trash2, BookHeart, BookOpen, Loader as Loader2, Search, Filter, BookMarked, Flame } from "lucide-react";
@@ -126,81 +126,86 @@ export default function WishList() {
   return <WishListContent />;
 }
 
-function WishCard({ item, updateItem, deleteItem, onMoveToLibrary }: { item: WishItem; updateItem: (id: string, updates: Partial<WishItem>) => Promise<void>; deleteItem: (id: string) => Promise<void>; onMoveToLibrary: (item: WishItem, status: string) => Promise<void> }) {
-  const [hovered, setHovered] = React.useState(false);
-  const [showDetail, setShowDetail] = React.useState(false);
+function WishCard({ item, updateItem, deleteItem, onMoveToLibrary }: { item: WishItem; updateItem: (id: string, data: Omit<WishItem, "id">) => void; deleteItem: (id: string) => void; onMoveToLibrary: (item: WishItem) => void }) {
+  const isTopPriority = item.priority >= 5;
 
   return (
-    <>
-      <div
-        className="relative group cursor-pointer"
-        style={{ aspectRatio: '2/3' }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        onClick={() => setShowDetail(true)}
-      >
-        <BookCoverImage
-          title={item.title}
-          author={item.author}
-          coverUrl={item.coverUrl}
-          className="w-full h-full object-cover rounded-lg shadow-md"
-        />
-        {/* Hover overlay */}
-        <div className={`absolute inset-0 rounded-lg transition-all duration-200 ${hovered ? 'bg-black/60' : 'bg-transparent pointer-events-none'}`}>
-          {hovered && (
-            <div className="absolute inset-0 flex flex-col items-center justify-end p-3 gap-2">
-              <button
-                onClick={(e) => { e.stopPropagation(); onMoveToLibrary(item, 'reading'); }}
-                className="w-full flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold py-2 px-3 rounded-md hover:bg-primary/90 transition-colors"
-              >
-                <BookOpen className="h-3.5 w-3.5" />
-                Empezar a leer
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Detail dialog */}
-      {showDetail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setShowDetail(false)}>
-          <div className="bg-background rounded-xl shadow-xl max-w-sm w-full p-5 flex flex-col gap-4" onClick={e => e.stopPropagation()}>
-            <div className="flex gap-4">
-              <div className="w-24 flex-shrink-0" style={{ aspectRatio: '2/3' }}>
-                <BookCoverImage title={item.title} author={item.author} coverUrl={item.coverUrl} className="w-full h-full object-cover rounded-md shadow" />
+    <Card className={cn(
+      "transition-all hover:shadow-md border-border/30",
+      isTopPriority && "ring-1 ring-red-500/20 border-red-500/10"
+    )}>
+      <CardContent className="p-4 space-y-3">
+        {isTopPriority && (
+          <div className="flex items-center gap-1 mb-1">
+            <Flame className="h-3.5 w-3.5 text-red-500" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-red-500">Must read</span>
+          </div>
+        )}
+        <div className="flex items-start gap-3">
+          <BookCoverImage
+            src={item.coverUrl}
+            alt={item.title}
+            title={item.title}
+            className="w-14 h-20 object-cover rounded-lg shadow-sm shrink-0"
+            fallbackClassName="w-14 h-20 rounded-lg shrink-0"
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="font-display font-semibold leading-tight">{item.title}</p>
+                <p className="text-sm text-muted-foreground font-body">{item.author}</p>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-foreground text-base leading-tight mb-1">{item.title}</h3>
-                <p className="text-sm text-muted-foreground mb-1">{item.author}</p>
-                {item.saga && <p className="text-xs text-muted-foreground mb-1">📚 {item.saga}{item.sagaOrder ? ` #${item.sagaOrder}` : ''}</p>}
-                {item.genre && <p className="text-xs text-muted-foreground mb-1">{item.genre}</p>}
-                {item.totalPages > 0 && <p className="text-xs text-muted-foreground">{item.totalPages} páginas</p>}
+              <div className="flex gap-0.5 shrink-0">
+                <WishForm
+                  initial={item}
+                  onSave={(data) => updateItem(item.id, data)}
+                  trigger={<Button variant="ghost" size="icon" className="h-7 w-7"><Pencil className="h-3.5 w-3.5" /></Button>}
+                />
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={() => deleteItem(item.id)}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
               </div>
             </div>
-            {item.synopsis && <p className="text-sm text-muted-foreground line-clamp-4">{item.synopsis}</p>}
-            <div className="flex gap-2 pt-1">
-              <button
-                onClick={() => { onMoveToLibrary(item, 'reading'); setShowDetail(false); }}
-                className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-sm font-semibold py-2 px-3 rounded-md hover:bg-primary/90 transition-colors"
-              >
-                <BookOpen className="h-4 w-4" />
-                Empezar a leer
-              </button>
-              <button
-                onClick={() => { deleteItem(item.id); setShowDetail(false); }}
-                className="p-2 text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-                title="Eliminar"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+            {item.hasSaga && item.saga && (
+              <p className="text-xs text-muted-foreground font-body mt-1">
+                📚 {item.saga} {item.sagaOrder && `#${item.sagaOrder}`}
+              </p>
+            )}
+            {item.totalPages > 0 && (
+              <p className="text-[11px] text-muted-foreground/70 font-body">{item.totalPages} páginas</p>
+            )}
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex gap-1.5 flex-wrap">
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${GENRE_COLORS[item.genre] || "bg-muted text-muted-foreground"}`}>
+                  {item.genre}
+                </span>
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${statusColors[item.status]}`}>
+                  {item.status}
+                </span>
+              </div>
+              <Hearts value={item.priority} onChange={(v) => updateItem(item.id, { ...item, priority: v })} />
             </div>
           </div>
         </div>
-      )}
-    </>
+        {/* CTA: Empezar a leer — always visible */}
+        <Button
+          size="sm"
+          variant={isTopPriority ? "default" : "outline"}
+          className={cn(
+            "w-full text-xs gap-1.5",
+            isTopPriority
+              ? "bg-primary hover:bg-primary/90"
+              : "border-primary/30 text-primary hover:bg-primary/10"
+          )}
+          onClick={() => onMoveToLibrary(item)}
+        >
+          <BookMarked className="h-3.5 w-3.5" />
+          Empezar a leer
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
-  const isTopPriority = item.priority >= 5;
 
 function WishListContent() {
   const { items, loading, addItem, updateItem, deleteItem } = useWishlist();
@@ -392,7 +397,7 @@ function WishListContent() {
               <h3 className="text-sm font-display font-semibold mb-3 flex items-center gap-1.5 text-muted-foreground">
                 📚 Saga: {sagaName} <span className="text-xs font-normal">({sagaItems.length})</span>
               </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {sagaItems.map((item) => (
                   <WishCard key={item.id} item={item} updateItem={updateItem} deleteItem={deleteItem} onMoveToLibrary={handleMoveToLibrary} />
                 ))}
@@ -406,7 +411,7 @@ function WishListContent() {
               {sagaGroups.size > 0 && (
                 <h3 className="text-sm font-display font-semibold mb-3 text-muted-foreground">📖 Libros individuales ({standalone.length})</h3>
               )}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {standalone.map((item) => (
                   <WishCard key={item.id} item={item} updateItem={updateItem} deleteItem={deleteItem} onMoveToLibrary={handleMoveToLibrary} />
                 ))}
