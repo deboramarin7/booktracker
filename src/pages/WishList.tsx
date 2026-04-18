@@ -145,9 +145,10 @@ function WishCard({ item, updateItem, deleteItem, onMoveToLibrary }: { item: Wis
           coverUrl={item.coverUrl}
           className="w-full h-full object-cover rounded-lg shadow-md"
         />
+        {/* Hover overlay */}
         <div className={`absolute inset-0 rounded-lg transition-all duration-200 ${hovered ? 'bg-black/60' : 'bg-transparent pointer-events-none'}`}>
           {hovered && (
-            <div className="absolute inset-0 flex flex-col items-center justify-end p-3">
+            <div className="absolute inset-0 flex flex-col items-center justify-end p-3 gap-2">
               <button
                 onClick={(e) => { e.stopPropagation(); onMoveToLibrary(item, 'reading'); }}
                 className="w-full flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-xs font-semibold py-2 px-3 rounded-md hover:bg-primary/90 transition-colors"
@@ -160,6 +161,7 @@ function WishCard({ item, updateItem, deleteItem, onMoveToLibrary }: { item: Wis
         </div>
       </div>
 
+      {/* Detail dialog */}
       {showDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setShowDetail(false)}>
           <div className="bg-background rounded-xl shadow-xl max-w-sm w-full p-5 flex flex-col gap-4" onClick={e => e.stopPropagation()}>
@@ -187,6 +189,7 @@ function WishCard({ item, updateItem, deleteItem, onMoveToLibrary }: { item: Wis
               <button
                 onClick={() => { deleteItem(item.id); setShowDetail(false); }}
                 className="p-2 text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                title="Eliminar"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -197,7 +200,7 @@ function WishCard({ item, updateItem, deleteItem, onMoveToLibrary }: { item: Wis
     </>
   );
 }
-
+  const isTopPriority = item.priority >= 5;
 
 function WishListContent() {
   const { items, loading, addItem, updateItem, deleteItem } = useWishlist();
