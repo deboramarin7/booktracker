@@ -100,7 +100,7 @@ function SortableBook({ book }: { book: Book }) {
       <TooltipTrigger asChild>
         <div
           ref={setNodeRef}
-          style={{ ...style, width: "78px", height: "118px" }}
+          style={{ ...style, width: "90px", height: "140px" }}
           className={`relative group shrink-0 cursor-grab active:cursor-grabbing touch-none select-none ${
             isDragging
               ? "scale-110 rotate-2"
@@ -114,7 +114,7 @@ function SortableBook({ book }: { book: Book }) {
               <img
                 src={book.coverUrl}
                 alt={book.title}
-                className="w-[72px] sm:w-[88px] md:w-[100px] h-[108px] sm:h-[132px] md:h-[150px] object-cover rounded-[4px] transition-transform duration-200 group-hover:scale-[1.03]"
+                className="w-[80px] sm:w-[100px] md:w-[120px] h-[120px] sm:h-[150px] md:h-[180px] object-cover rounded-[4px] transition-transform duration-200 group-hover:scale-[1.03]"
                 draggable={false}
                 style={{
                   boxShadow: "0 6px 14px rgba(0,0,0,0.35)",
@@ -125,7 +125,7 @@ function SortableBook({ book }: { book: Book }) {
             </div>
           ) : (
             <div
-              className="w-[72px] sm:w-[88px] md:w-[100px] h-[108px] sm:h-[132px] md:h-[150px] rounded-[4px] flex items-center justify-center relative overflow-hidden"
+              className="w-[80px] sm:w-[100px] md:w-[120px] h-[120px] sm:h-[150px] md:h-[180px] rounded-[4px] flex items-center justify-center relative overflow-hidden"
               style={{
                 backgroundColor: spineColor,
                 boxShadow: "0 6px 14px rgba(0,0,0,0.35)",
@@ -381,7 +381,7 @@ function ShelfRow({ row }: { row: Book[] }) {
   return (
     <div className="relative">
       <div
-        className="flex items-end gap-[3px] sm:gap-[4px] px-3 sm:px-5 pt-6 pb-0 min-h-[80px] sm:min-h-[100px] relative overflow-x-auto"
+        className="flex items-end gap-[3px] sm:gap-[4px] px-3 sm:px-5 pt-6 pb-0 min-h-[140px] sm:min-h-[170px] relative overflow-x-auto"
         style={{ background: "transparent", scrollbarWidth: "none" }}
       >
         <style>{`div::-webkit-scrollbar { display: none; }`}</style>
