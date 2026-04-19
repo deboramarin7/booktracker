@@ -406,19 +406,19 @@ export default function Dashboard() {
                   <p className="text-sm font-semibold font-body text-foreground mb-4">Libros por mes</p>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={monthlyBarData} barSize={24}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--foreground))" }} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "hsl(var(--foreground))" }} stroke="hsl(var(--muted-foreground))" width={24} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--foreground)" }} stroke="var(--muted-foreground)" />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "var(--foreground)" }} stroke="var(--muted-foreground)" width={24} />
                       <Tooltip
                         contentStyle={{
                           borderRadius: "10px",
                           fontSize: "13px",
-                          border: "1px solid hsl(var(--border))",
-                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid var(--border)",
+                          backgroundColor: "var(--card)",
                         }}
                         formatter={(value: number) => [`${value} libros`, ""]}
                       />
-                      <Bar dataKey="libros" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="libros" fill="var(--primary)" radius={[6, 6, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -451,8 +451,8 @@ export default function Dashboard() {
                             contentStyle={{
                               borderRadius: "10px",
                               fontSize: "12px",
-                              border: "1px solid hsl(var(--border))",
-                              backgroundColor: "hsl(var(--card))",
+                              border: "1px solid var(--border)",
+                              backgroundColor: "var(--card)",
                             }}
                             formatter={(value: number) => [`${value} libros`, ""]}
                           />
@@ -483,15 +483,15 @@ export default function Dashboard() {
                   <p className="text-sm font-semibold font-body text-foreground mb-4">Evolución mes a mes</p>
                   <ResponsiveContainer width="100%" height={260}>
                     <LineChart data={evolutionData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--foreground))" }} stroke="hsl(var(--muted-foreground))" />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "hsl(var(--foreground))" }} stroke="hsl(var(--muted-foreground))" width={24} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--foreground)" }} stroke="var(--muted-foreground)" />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "var(--foreground)" }} stroke="var(--muted-foreground)" width={24} />
                       <Tooltip
                         contentStyle={{
                           borderRadius: "10px",
                           fontSize: "13px",
-                          border: "1px solid hsl(var(--border))",
-                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid var(--border)",
+                          backgroundColor: "var(--card)",
                         }}
                       />
                       {evolutionYears.map((year, i) => (
