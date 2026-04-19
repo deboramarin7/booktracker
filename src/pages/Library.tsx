@@ -176,25 +176,31 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
                   <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${Math.round((book.pagesRead / book.totalPages) * 100)}%` }} />
                 </div>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min={0}
-                    max={book.totalPages}
-                    defaultValue={book.pagesRead}
-                    onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value) || 0), book.totalPages);
-                        onUpdate(book.id, { pagesRead: val });
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const val = Math.min(Math.max(0, Number(e.target.value) || 0), book.totalPages);
-                      if (val !== book.pagesRead) onUpdate(book.id, { pagesRead: val });
-                    }}
-                    className="flex-1 h-9 text-sm px-3 rounded-[var(--radius)] border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    placeholder="Páginas leídas"
-                  />
+         
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min={0}
+                  max={book.totalPages}
+                  defaultValue={book.pagesRead}
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onFocus={(e) => { e.stopPropagation(); (e.target as HTMLInputElement).select(); }}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === "Enter") {
+                      const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value) || 0), book.totalPages);
+                      onUpdate(book.id, { pagesRead: val });
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const val = Math.min(Math.max(0, Number(e.target.value) || 0), book.totalPages);
+                    if (val !== book.pagesRead) onUpdate(book.id, { pagesRead: val });
+                  }}
+                  className="flex-1 h-9 text-sm px-3 rounded-[var(--radius)] border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="Páginas leídas"
+                />
                   <span className="text-xs text-muted-foreground whitespace-nowrap">/ {book.totalPages}</span>
                 </div>
               </div>
