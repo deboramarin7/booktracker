@@ -218,26 +218,31 @@ function WishListContent() {
   const [sagaFilter, setSagaFilter] = useState<string>("all");
 
   const handleMoveToLibrary = async (item: WishItem) => {
-    await addBook({
-      title: item.title,
-      author: item.author,
-      coverUrl: item.coverUrl,
-      hasSaga: item.hasSaga,
-      saga: item.saga,
-      sagaOrder: item.sagaOrder,
-      genre: item.genre,
-      format: "",
-      source: "",
-      status: "reading",
-      totalPages: item.totalPages || 0,
-      pagesRead: 0,
-      rating: 0,
-      notes: "",
-      tags: [],
-    });
-    toast({ title: "📖 Movido a biblioteca", description: `"${item.title}" ahora está en Leyendo` });
+    try {
+      await addBook({
+        title: item.title,
+        author: item.author,
+        coverUrl: item.coverUrl,
+        hasSaga: item.hasSaga,
+        saga: item.saga,
+        sagaOrder: item.sagaOrder,
+        genre: item.genre,
+        format: "",
+        source: "",
+        status: "reading",
+        totalPages: item.totalPages || 0,
+        pagesRead: 0,
+        rating: 0,
+        notes: "",
+        tags: [],
+      });
+      await deleteItem(item.id);
+      toast({ title: "Movido a biblioteca", description: `"${item.title}" ahora está en Leyendo` });
+    } catch (e) {
+      toast({ title: "Error", description: "No se pudo mover el libro", variant: "destructive" });
+    }
   };
-
+  
   const sagaNames = [...new Set(items.filter(i => i.hasSaga && i.saga).map(i => i.saga!))].sort((a, b) => a.localeCompare(b, "es"));
 
   const genreNames = [...new Set(items.filter(i => i.genre).map(i => i.genre))].sort((a, b) => a.localeCompare(b, "es"));
