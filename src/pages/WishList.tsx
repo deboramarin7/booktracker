@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { WishItem, WishStatus } from "@/hooks/useWishlist";
-import { Heart, Plus, Pencil, Trash2, BookHeart, BookOpen, Loader as Loader2, Search, Filter, BookMarked, Flame } from "lucide-react";
+import { Heart, Plus, Pencil, Trash2, BookHeart, BookOpen, Loader as Loader2, Search, Filter, BookMarked, Flame, Library } from "lucide-react";
 import { BookCoverImage } from "@/components/BookCoverImage";
 import { useBooksContext } from "@/components/Layout";
 import { useToast } from "@/hooks/use-toast";
