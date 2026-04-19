@@ -341,7 +341,11 @@ function WishListContent() {
     <div className="space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-display font-bold">Wish List</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight flex items-center gap-2 sm:gap-3">
+            <Library className="h-6 w-6 sm:h-9 sm:w-9 text-primary flex-shrink-0" />
+            <span className="truncate">❤️ Wish List</span>
+          </h2>
+
           <span className="text-sm text-muted-foreground font-body">({items.length})</span>
         </div>
         <div className="flex items-center gap-1">
