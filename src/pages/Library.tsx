@@ -203,6 +203,20 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
                 />
                   <span className="text-xs text-muted-foreground whitespace-nowrap">/ {book.totalPages}</span>
                 </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`¿Marcar "${book.title}" como terminado?`)) {
+                      onUpdate(book.id, { status: "finished", pagesRead: book.totalPages });
+                      setShowDetail(false);
+                    }
+                  }}
+                  className="w-full h-9 rounded-[var(--radius)] bg-green-500/20 text-green-400 text-sm font-medium hover:bg-green-500/30 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Check className="h-4 w-4" />
+                  Marcar como terminado
+                </button>
+                
               </div>
             )}
             
