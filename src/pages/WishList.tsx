@@ -76,13 +76,13 @@ function WishForm({ initial, onSave, trigger }: {
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) reset(); }}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{initial ? "Editar" : "Añadir a"} Wish List</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{initial ? "Editar" : "Anadir a"} Wish List</DialogTitle></DialogHeader>
         <div className="space-y-4">
-          <div><Label>Título *</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
+          <div><Label>Titulo *</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
           <div><Label>Autor/a *</Label><Input value={author} onChange={(e) => setAuthor(e.target.value)} /></div>
           <div><Label>URL de portada</Label><Input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://..." /></div>
           <div className="flex items-center gap-2">
-            <Label>¿Pertenece a una saga?</Label>
+            <Label>Pertenece a una saga?</Label>
             <Switch checked={hasSaga} onCheckedChange={setHasSaga} />
           </div>
           {hasSaga && (
@@ -92,7 +92,7 @@ function WishForm({ initial, onSave, trigger }: {
             </div>
           )}
           <div>
-            <Label>Género</Label>
+            <Label>Genero</Label>
             <Select value={genre} onValueChange={setGenre}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{GENRES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
@@ -109,12 +109,12 @@ function WishForm({ initial, onSave, trigger }: {
               <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div><Label>Páginas totales</Label><Input type="number" value={totalPages} onChange={(e) => setTotalPages(e.target.value)} placeholder="Ej: 350" min={0} /></div>
+          <div><Label>Paginas totales</Label><Input type="number" value={totalPages} onChange={(e) => setTotalPages(e.target.value)} placeholder="Ej: 350" min={0} /></div>
         </div>
         <DialogFooter>
           <DialogClose asChild><Button variant="ghost">Cancelar</Button></DialogClose>
           <Button onClick={handleSubmit} disabled={!title.trim() || !author.trim()}>
-            {initial ? "Guardar" : "Añadir"}
+            {initial ? "Guardar" : "Anadir"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -122,89 +122,128 @@ function WishForm({ initial, onSave, trigger }: {
   );
 }
 
-export default function WishList() {
-  return <WishListContent />;
-}
-
-function WishCard({ item, updateItem, deleteItem, onMoveToLibrary }: { item: WishItem; updateItem: (id: string, data: Omit<WishItem, "id">) => void; deleteItem: (id: string) => void; onMoveToLibrary: (item: WishItem) => void }) {
+function WishCoverCard({ item, updateItem, deleteItem, onMoveToLibrary }: {
+  item: WishItem;
+  updateItem: (id: string, data: Omit<WishItem, "id">) => void;
+  deleteItem: (id: string) => void;
+  onMoveToLibrary: (item: WishItem) => void;
+}) {
+  const [showDetail, setShowDetail] = useState(false);
   const isTopPriority = item.priority >= 5;
 
   return (
-    <Card className={cn(
-      "transition-all hover:shadow-md border-border/30",
-      isTopPriority && "ring-1 ring-red-500/20 border-red-500/10"
-    )}>
-      <CardContent className="p-4 space-y-3">
-        {isTopPriority && (
-          <div className="flex items-center gap-1 mb-1">
-            <Flame className="h-3.5 w-3.5 text-red-500" />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-red-500">Must read</span>
-          </div>
-        )}
-        <div className="flex items-start gap-3">
+    <>
+      <div className="group cursor-pointer" onClick={() => setShowDetail(true)}>
+        <div className="aspect-[2/3] rounded-[var(--radius)] overflow-hidden bg-muted mb-2 book-3d relative">
           <BookCoverImage
             src={item.coverUrl}
             alt={item.title}
             title={item.title}
-            className="w-14 h-20 object-cover rounded-lg shadow-sm shrink-0"
-            fallbackClassName="w-14 h-20 rounded-lg shrink-0"
+            className="w-full h-full object-cover"
+            iconClassName="h-10 w-10"
           />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-display font-semibold leading-tight">{item.title}</p>
-                <p className="text-sm text-muted-foreground font-body">{item.author}</p>
+          {/* Priority badge */}
+          {isTopPriority && (
+            <div className="absolute top-2 left-2">
+              <span className="px-2 py-0.5 text-[10px] font-medium bg-red-500/20 text-red-200 rounded-full backdrop-blur-sm flex items-center gap-1">
+                <Flame className="h-3 w-3" /> Must read
+              </span>
+            </div>
+          )}
+          {/* Status badge */}
+          <div className={`absolute ${isTopPriority ? "top-8" : "top-2"} left-2`}>
+            <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full backdrop-blur-sm ${statusColors[item.status]}`}>
+              {item.status}
+            </span>
+          </div>
+          {/* Hover overlay */}
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
+            <WishForm
+              initial={item}
+              onSave={(data) => updateItem(item.id, data)}
+              trigger={
+                <button onClick={(e) => e.stopPropagation()} className="w-7 h-7 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center text-white transition-colors">
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              }
+            />
+            <button
+              onClick={(e) => { e.stopPropagation(); if (window.confirm(`Eliminar "${item.title}"?`)) deleteItem(item.id); }}
+              className="w-7 h-7 rounded-full bg-red-500/80 hover:bg-red-500 flex items-center justify-center text-white transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+        <h3 className="text-sm font-semibold truncate font-body">{item.title}</h3>
+        <p className="text-xs text-muted-foreground truncate">{item.author}</p>
+        {item.hasSaga && item.saga && (
+          <p className="text-[10px] text-primary truncate mt-0.5">{item.saga} #{item.sagaOrder}</p>
+        )}
+        <div className="mt-1">
+          <Hearts value={item.priority} />
+        </div>
+      </div>
+
+      {/* Detail modal */}
+      {showDetail && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowDetail(false)}>
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 space-y-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex gap-4">
+              <div className="w-20 h-28 rounded-xl overflow-hidden shrink-0 shadow-md">
+                <BookCoverImage src={item.coverUrl} alt={item.title} title={item.title} className="w-full h-full object-cover" iconClassName="h-8 w-8" />
               </div>
-              <div className="flex gap-0.5 shrink-0">
-                <WishForm
-                  initial={item}
-                  onSave={(data) => updateItem(item.id, data)}
-                  trigger={<Button variant="ghost" size="icon" className="h-7 w-7"><Pencil className="h-3.5 w-3.5" /></Button>}
-                />
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={() => deleteItem(item.id)}>
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-lg font-display leading-tight text-foreground">{item.title}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{item.author}</p>
+                {item.hasSaga && item.saga && (
+                  <p className="text-xs text-primary mt-1">{item.saga} #{item.sagaOrder}</p>
+                )}
+                <div className="mt-2">
+                  <Hearts value={item.priority} onChange={(v) => updateItem(item.id, { ...item, priority: v })} />
+                </div>
               </div>
             </div>
-            {item.hasSaga && item.saga && (
-              <p className="text-xs text-muted-foreground font-body mt-1">
-                📚 {item.saga} {item.sagaOrder && `#${item.sagaOrder}`}
-              </p>
-            )}
-            {item.totalPages > 0 && (
-              <p className="text-[11px] text-muted-foreground/70 font-body">{item.totalPages} páginas</p>
-            )}
-            <div className="flex items-center justify-between mt-2">
-              <div className="flex gap-1.5 flex-wrap">
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${GENRE_COLORS[item.genre] || "bg-muted text-muted-foreground"}`}>
-                  {item.genre}
-                </span>
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${statusColors[item.status]}`}>
-                  {item.status}
-                </span>
+            {/* Details */}
+            <div className="grid grid-cols-2 gap-2 text-sm border-t border-border/40 pt-3">
+              {item.genre && <><span className="text-muted-foreground">Genero</span><span className="text-foreground font-medium">{item.genre}</span></>}
+              <><span className="text-muted-foreground">Estado</span><span className={`font-medium ${statusColors[item.status]} px-2 py-0.5 rounded-full text-xs inline-block w-fit`}>{item.status}</span></>
+              {item.totalPages > 0 && <><span className="text-muted-foreground">Paginas</span><span className="text-foreground font-medium">{item.totalPages}</span></>}
+            </div>
+            {/* Actions */}
+            <div className="flex flex-col gap-2 pt-1">
+              <button
+                onClick={(e) => { e.stopPropagation(); onMoveToLibrary(item); setShowDetail(false); }}
+                className="w-full h-10 rounded-[var(--radius)] bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+              >
+                <BookMarked className="h-4 w-4" />
+                Empezar a leer
+              </button>
+              <div className="flex gap-2">
+                <WishForm
+                  initial={item}
+                  onSave={(data) => { updateItem(item.id, data); setShowDetail(false); }}
+                  trigger={
+                    <button onClick={(e) => e.stopPropagation()} className="flex-1 flex items-center justify-center gap-2 h-9 rounded-[var(--radius)] border border-border/50 text-sm font-medium hover:bg-muted/50 transition-colors text-foreground">
+                      <Pencil className="h-3.5 w-3.5" /> Editar
+                    </button>
+                  }
+                />
+                <button onClick={() => setShowDetail(false)} className="flex-1 h-9 rounded-[var(--radius)] border border-border/50 text-sm font-medium hover:bg-muted/50 transition-colors text-foreground">
+                  Cerrar
+                </button>
               </div>
-              <Hearts value={item.priority} onChange={(v) => updateItem(item.id, { ...item, priority: v })} />
             </div>
           </div>
         </div>
-        {/* CTA: Empezar a leer — always visible */}
-        <Button
-          size="sm"
-          variant={isTopPriority ? "default" : "outline"}
-          className={cn(
-            "w-full text-xs gap-1.5",
-            isTopPriority
-              ? "bg-primary hover:bg-primary/90"
-              : "border-primary/30 text-primary hover:bg-primary/10"
-          )}
-          onClick={() => onMoveToLibrary(item)}
-        >
-          <BookMarked className="h-3.5 w-3.5" />
-          Empezar a leer
-        </Button>
-      </CardContent>
-    </Card>
+      )}
+    </>
   );
+}
+
+export default function WishList() {
+  return <WishListContent />;
 }
 
 function WishListContent() {
@@ -237,12 +276,12 @@ function WishListContent() {
         tags: [],
       });
       await deleteItem(item.id);
-      toast({ title: "Movido a biblioteca", description: `"${item.title}" ahora está en Leyendo` });
+      toast({ title: "Movido a biblioteca", description: `"${item.title}" ahora esta en Leyendo` });
     } catch (e) {
       toast({ title: "Error", description: "No se pudo mover el libro", variant: "destructive" });
     }
   };
-  
+
   const sagaNames = [...new Set(items.filter(i => i.hasSaga && i.saga).map(i => i.saga!))].sort((a, b) => a.localeCompare(b, "es"));
 
   const genreNames = [...new Set(items.filter(i => i.genre).map(i => i.genre))].sort((a, b) => a.localeCompare(b, "es"));
@@ -263,11 +302,8 @@ function WishListContent() {
       (i.saga && i.saga.toLowerCase().includes(search.toLowerCase()))
     );
 
-  // Sort by priority DESC, then by saga, then alphabetically
   const sortedItems = [...filteredItems].sort((a, b) => {
-    // Priority first (highest first)
     if (b.priority !== a.priority) return b.priority - a.priority;
-
     const sagaA = a.hasSaga && a.saga ? a.saga.toLowerCase() : "";
     const sagaB = b.hasSaga && b.saga ? b.saga.toLowerCase() : "";
     if (sagaA && sagaB && sagaA !== sagaB) return sagaA.localeCompare(sagaB, "es");
@@ -281,7 +317,6 @@ function WishListContent() {
     return a.title.localeCompare(b.title, "es");
   });
 
-  // Build saga groups
   const sagaGroups = new Map<string, WishItem[]>();
   const standalone: WishItem[] = [];
   sortedItems.forEach((item) => {
@@ -306,7 +341,7 @@ function WishListContent() {
     <div className="space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-display font-bold">💜 Wish List</h2>
+          <h2 className="text-2xl font-display font-bold">Wish List</h2>
           <span className="text-sm text-muted-foreground font-body">({items.length})</span>
         </div>
         <div className="flex items-center gap-1">
@@ -320,7 +355,7 @@ function WishListContent() {
             </button>
           ))}
           {filterPriority && (
-            <button onClick={() => setFilterPriority(null)} className="text-xs text-muted-foreground ml-1 hover:text-foreground">✕</button>
+            <button onClick={() => setFilterPriority(null)} className="text-xs text-muted-foreground ml-1 hover:text-foreground">X</button>
           )}
         </div>
       </div>
@@ -330,16 +365,16 @@ function WishListContent() {
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por título, autor o saga..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 font-body" />
+            <Input placeholder="Buscar por titulo, autor o saga..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 font-body" />
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Select value={filterGenre} onValueChange={setFilterGenre}>
             <SelectTrigger className="w-[150px] h-8 text-xs font-body">
-              <SelectValue placeholder="Género" />
+              <SelectValue placeholder="Genero" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos los géneros</SelectItem>
+              <SelectItem value="all">Todos los generos</SelectItem>
               {genreNames.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -359,9 +394,9 @@ function WishListContent() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="individual">📖 Individuales</SelectItem>
+              <SelectItem value="individual">Individuales</SelectItem>
               {sagaNames.map((s) => (
-                <SelectItem key={s} value={s}>📚 {s}</SelectItem>
+                <SelectItem key={s} value={s}>{s}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -372,7 +407,7 @@ function WishListContent() {
               className="h-8 text-xs text-muted-foreground"
               onClick={() => { setFilterGenre("all"); setFilterStatus("all"); setFilterPriority(null); setSagaFilter("all"); }}
             >
-              Limpiar filtros ✕
+              Limpiar filtros
             </Button>
           )}
         </div>
@@ -384,15 +419,13 @@ function WishListContent() {
             <div className="w-24 h-24 rounded-2xl bg-primary/8 border border-primary/15 flex items-center justify-center">
               <BookHeart className="h-10 w-10 text-primary/40" />
             </div>
-            <div className="absolute -top-1 -right-1 text-xl">💜</div>
           </div>
           <div className="space-y-1.5">
-            <p className="text-xl font-semibold font-display text-foreground">Tu lista de deseos está vacía</p>
+            <p className="text-xl font-semibold font-display text-foreground">Tu lista de deseos esta vacia</p>
             <p className="text-sm text-muted-foreground font-display max-w-xs mx-auto">
-              "Una casa sin libros es como un cuerpo sin alma." — Cicerón
+              "Una casa sin libros es como un cuerpo sin alma." - Ciceron
             </p>
           </div>
-          <p className="text-xs text-muted-foreground/60 font-display">Añade libros que tengas ganas de leer 📖</p>
         </div>
       ) : (
         <div className="space-y-8">
@@ -400,11 +433,11 @@ function WishListContent() {
           {Array.from(sagaGroups.entries()).map(([sagaName, sagaItems]) => (
             <div key={sagaName}>
               <h3 className="text-sm font-display font-semibold mb-3 flex items-center gap-1.5 text-muted-foreground">
-                📚 Saga: {sagaName} <span className="text-xs font-normal">({sagaItems.length})</span>
+                Saga: {sagaName} <span className="text-xs font-normal">({sagaItems.length})</span>
               </h3>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
                 {sagaItems.map((item) => (
-                  <WishCard key={item.id} item={item} updateItem={updateItem} deleteItem={deleteItem} onMoveToLibrary={handleMoveToLibrary} />
+                  <WishCoverCard key={item.id} item={item} updateItem={updateItem} deleteItem={deleteItem} onMoveToLibrary={handleMoveToLibrary} />
                 ))}
               </div>
             </div>
@@ -414,11 +447,11 @@ function WishListContent() {
           {standalone.length > 0 && (
             <div>
               {sagaGroups.size > 0 && (
-                <h3 className="text-sm font-display font-semibold mb-3 text-muted-foreground">📖 Libros individuales ({standalone.length})</h3>
+                <h3 className="text-sm font-display font-semibold mb-3 text-muted-foreground">Libros individuales ({standalone.length})</h3>
               )}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
                 {standalone.map((item) => (
-                  <WishCard key={item.id} item={item} updateItem={updateItem} deleteItem={deleteItem} onMoveToLibrary={handleMoveToLibrary} />
+                  <WishCoverCard key={item.id} item={item} updateItem={updateItem} deleteItem={deleteItem} onMoveToLibrary={handleMoveToLibrary} />
                 ))}
               </div>
             </div>
