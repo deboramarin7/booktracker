@@ -164,6 +164,42 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
                 <p className="text-sm text-foreground leading-relaxed">{book.notes}</p>
               </div>
             )}
+
+            {/* Progress — solo para libros en estado "reading" */}
+            {book.status === "reading" && book.totalPages > 0 && (
+              <div className="border-t border-border/40 pt-3 space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Progreso</span>
+                  <span className="text-foreground font-medium">{book.pagesRead} / {book.totalPages} pág. ({Math.round((book.pagesRead / book.totalPages) * 100)}%)</span>
+                </div>
+                <div className="h-2.5 rounded-full bg-muted/60 overflow-hidden">
+                  <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${Math.round((book.pagesRead / book.totalPages) * 100)}%` }} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={book.totalPages}
+                    defaultValue={book.pagesRead}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value) || 0), book.totalPages);
+                        onUpdate(book.id, { pagesRead: val });
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const val = Math.min(Math.max(0, Number(e.target.value) || 0), book.totalPages);
+                      if (val !== book.pagesRead) onUpdate(book.id, { pagesRead: val });
+                    }}
+                    className="flex-1 h-9 text-sm px-3 rounded-[var(--radius)] border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="Páginas leídas"
+                  />
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">/ {book.totalPages}</span>
+                </div>
+              </div>
+            )}
+            
             {/* Actions */}
             <div className="flex gap-2 pt-1">
               <button onClick={() => { setShowDetail(false); setEditing(true); }} className="flex-1 flex items-center justify-center gap-2 h-9 rounded-[var(--radius)] border border-border/50 text-sm font-medium hover:bg-muted/50 transition-colors text-foreground">
