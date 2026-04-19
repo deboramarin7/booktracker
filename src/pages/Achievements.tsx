@@ -267,7 +267,9 @@ useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
     <div className="space-y-10">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-2xl font-bold font-display">🎯 Logros y Retos</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
+            🎯 Logros y Retos
+          </h2>
         <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
           <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
           <SelectContent>
