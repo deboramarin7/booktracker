@@ -279,7 +279,7 @@ export default function LibraryPage() {
 
   const groupedByStatus = useMemo(() => {
     const groups: { status: ReadingStatus; label: string; books: Book[] }[] = [];
-    const statuses: ReadingStatus[] = ["finished", "reading", "want-to-read"];
+    const statuses: ReadingStatus[] = ["reading", "finished", "want-to-read"];
     for (const s of statuses) {
       const booksInGroup = filtered.filter((b) => b.status === s);
       if (booksInGroup.length > 0) {
