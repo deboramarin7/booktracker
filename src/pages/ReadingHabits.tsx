@@ -479,18 +479,18 @@ export default function ReadingHabits() {
                 <BarChart data={chartData} barSize={28}>
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
+                    stroke="var(--border)"
                     opacity={0.3}
                   />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 11, fill: "hsl(var(--foreground))" }}
-                    stroke="hsl(var(--muted-foreground))"
+                    tick={{ fontSize: 11, fill: "var(--foreground)" }}
+                    stroke="var(--muted-foreground)"
                   />
                   <YAxis
                     allowDecimals={false}
-                    tick={{ fontSize: 11, fill: "hsl(var(--foreground))" }}
-                    stroke="hsl(var(--muted-foreground))"
+                    tick={{ fontSize: 11, fill: "var(--foreground)" }}
+                    stroke="var(--muted-foreground)"
                     width={24}
                   />
                   <RechartsTooltip
@@ -498,15 +498,15 @@ export default function ReadingHabits() {
                     contentStyle={{
                       borderRadius: "10px",
                       fontSize: "13px",
-                      border: "1px solid hsl(var(--border))",
-                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid var(--border)",
+                      backgroundColor: "var(--card)",
                     }}
                   />
                   <Bar dataKey="days" radius={[6, 6, 0, 0]}>
                     {chartData.map((entry, index) => (
                       <Cell
                         key={index}
-                        fill={entry.days > 0 ? "hsl(152, 60%, 42%)" : "hsl(var(--muted))"}
+                        fill={entry.days > 0 ? "hsl(152, 60%, 42%)" : "var(--muted)"}
                         opacity={entry.days > 0 ? 0.85 : 0.3}
                       />
                     ))}
