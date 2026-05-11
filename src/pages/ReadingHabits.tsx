@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBooksContext } from "@/components/Layout";
+import { es } from "date-fns/locale";
 
 const HABITS_KEY = "book-tracker-reading-habits";
 
@@ -450,7 +451,7 @@ export default function ReadingHabits() {
             </p>
             <Card className="border-border/30">
               <CardContent className="p-4 flex justify-center">
-                <Calendar
+               <Calendar
                   mode="multiple"
                   selected={selectedDates}
                   onDayClick={toggleDay}
@@ -458,12 +459,14 @@ export default function ReadingHabits() {
                   onMonthChange={setVisibleMonth}
                   fromDate={new Date(selectedYear, 0, 1)}
                   toDate={new Date(selectedYear, 11, 31)}
+                  locale={es}
+                  weekStartsOn={1}
                   className={cn("p-3 pointer-events-auto")}
                   classNames={{
-                    day_selected:
-                      "bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-500 dark:text-white",
-                  }}
-                />
+                  day_selected:
+                  "bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-500 dark:text-white",
+                    }}
+               />
               </CardContent>
             </Card>
           </div>
