@@ -129,21 +129,6 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
             </div>
           </div>
 
-          {/* Best book */}
-          {bestBook && (
-            <div style={{
-              background: "rgba(255,255,255,0.08)",
-              borderRadius: "12px",
-              padding: "12px 16px",
-              marginBottom: "16px",
-            }}>
-              <p style={{ fontSize: "10px", opacity: 0.6, textTransform: "uppercase", letterSpacing: "1px", marginBottom: "4px" }}>
-                ⭐ Libro favorito
-              </p>
-              <p style={{ fontSize: "15px", fontWeight: "700" }}>{bestBook.title}</p>
-              <p style={{ fontSize: "12px", opacity: 0.7 }}>{bestBook.author}</p>
-            </div>
-          )}
 
           {/* Cover strip */}
           {books.filter(b => b.coverUrl).length > 0 && (
