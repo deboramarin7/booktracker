@@ -51,6 +51,9 @@ const STATUS_LABELS: Record<string, string> = {
 function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: string, data: Partial<Omit<Book, "id" | "addedAt">>) => void; onDelete: (id: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
+  const [showFinishForm, setShowFinishForm] = useState(false);
+  const [finishRating, setFinishRating] = useState(0);
+  const [finishNotes, setFinishNotes] = useState("");
 
   const statusBadge = () => {
     switch (book.status) {
@@ -87,7 +90,7 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
               <Pencil className="h-3.5 w-3.5" />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); if (window.confirm(`¿Eliminar "${book.title}"? Esta acción no se puede deshacer.`)) onDelete(book.id); }}
+              onClick={(e) => { e.stopPropagation(); if (window.confirm(`Eliminar "${book.title}"? Esta accion no se puede deshacer.`)) onDelete(book.id); }}
               className="w-7 h-7 rounded-full bg-red-500/80 hover:bg-red-500 flex items-center justify-center text-white transition-colors"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -120,8 +123,8 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
       )}
 
       {showDetail && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowDetail(false)}>
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 space-y-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => { setShowDetail(false); setShowFinishForm(false); }}>
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="flex gap-4">
               <div className="w-20 h-28 rounded-xl overflow-hidden shrink-0 shadow-md">
@@ -144,16 +147,16 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
             </div>
             {/* Details grid */}
             <div className="grid grid-cols-2 gap-2 text-sm border-t border-border/40 pt-3">
-              {book.genre && <><span className="text-muted-foreground">Género</span><span className="text-foreground font-medium">{book.genre}</span></>}
+              {book.genre && <><span className="text-muted-foreground">Genero</span><span className="text-foreground font-medium">{book.genre}</span></>}
               {book.format && <><span className="text-muted-foreground">Formato</span><span className="text-foreground font-medium">{book.format}</span></>}
-              {book.totalPages > 0 && <><span className="text-muted-foreground">Páginas</span><span className="text-foreground font-medium">{book.totalPages}</span></>}
-              {book.price && <><span className="text-muted-foreground">Precio</span><span className="text-foreground font-medium">{book.price}€</span></>}
+              {book.totalPages > 0 && <><span className="text-muted-foreground">Paginas</span><span className="text-foreground font-medium">{book.totalPages}</span></>}
+              {book.price && <><span className="text-muted-foreground">Precio</span><span className="text-foreground font-medium">{book.price}EUR</span></>}
               {book.source && <><span className="text-muted-foreground">Procedencia</span><span className="text-foreground font-medium">{book.source}</span></>}
               {(book.startDate || book.endDate) && (
                 <><span className="text-muted-foreground">Fechas</span>
                 <span className="text-foreground font-medium text-xs">
                   {book.startDate && new Date(book.startDate + "T12:00:00").toLocaleDateString("es-ES", {day:"2-digit",month:"2-digit",year:"2-digit"})}
-                  {book.startDate && book.endDate && " → "}
+                  {book.startDate && book.endDate && " -> "}
                   {book.endDate && new Date(book.endDate + "T12:00:00").toLocaleDateString("es-ES", {day:"2-digit",month:"2-digit",year:"2-digit"})}
                 </span></>
               )}
@@ -170,62 +173,113 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
               <div className="border-t border-border/40 pt-3 space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Progreso</span>
-                  <span className="text-foreground font-medium">{book.pagesRead} / {book.totalPages} pág. ({Math.round((book.pagesRead / book.totalPages) * 100)}%)</span>
+                  <span className="text-foreground font-medium">{book.pagesRead} / {book.totalPages} pag. ({Math.round((book.pagesRead / book.totalPages) * 100)}%)</span>
                 </div>
                 <div className="h-2.5 rounded-full bg-muted/60 overflow-hidden">
                   <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${Math.round((book.pagesRead / book.totalPages) * 100)}%` }} />
                 </div>
                 <div className="flex items-center gap-2">
-         
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  min={0}
-                  max={book.totalPages}
-                  defaultValue={book.pagesRead}
-                  onClick={(e) => e.stopPropagation()}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onFocus={(e) => { e.stopPropagation(); (e.target as HTMLInputElement).select(); }}
-                  onKeyDown={(e) => {
-                    e.stopPropagation();
-                    if (e.key === "Enter") {
-                      const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value) || 0), book.totalPages);
-                      onUpdate(book.id, { pagesRead: val });
-                    }
-                  }}
-                  onBlur={(e) => {
-                    const val = Math.min(Math.max(0, Number(e.target.value) || 0), book.totalPages);
-                    if (val !== book.pagesRead) onUpdate(book.id, { pagesRead: val });
-                  }}
-                  className="flex-1 h-9 text-sm px-3 rounded-[var(--radius)] border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  placeholder="Páginas leídas"
-                />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min={0}
+                    max={book.totalPages}
+                    defaultValue={book.pagesRead}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onFocus={(e) => { e.stopPropagation(); (e.target as HTMLInputElement).select(); }}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === "Enter") {
+                        const val = Math.min(Math.max(0, Number((e.target as HTMLInputElement).value) || 0), book.totalPages);
+                        onUpdate(book.id, { pagesRead: val });
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const val = Math.min(Math.max(0, Number(e.target.value) || 0), book.totalPages);
+                      if (val !== book.pagesRead) onUpdate(book.id, { pagesRead: val });
+                    }}
+                    className="flex-1 h-9 text-sm px-3 rounded-[var(--radius)] border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    placeholder="Paginas leidas"
+                  />
                   <span className="text-xs text-muted-foreground whitespace-nowrap">/ {book.totalPages}</span>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (window.confirm(`¿Marcar "${book.title}" como terminado?`)) {
-                      onUpdate(book.id, { status: "finished", pagesRead: book.totalPages });
-                      setShowDetail(false);
-                    }
-                  }}
-                  className="w-full h-9 rounded-[var(--radius)] bg-green-500/20 text-green-400 text-sm font-medium hover:bg-green-500/30 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Check className="h-4 w-4" />
-                  Marcar como terminado
-                </button>
-                
+
+                {/* Marcar como terminado — con formulario de valoracion */}
+                {!showFinishForm ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowFinishForm(true);
+                      setFinishRating(0);
+                      setFinishNotes("");
+                    }}
+                    className="w-full h-9 rounded-[var(--radius)] bg-green-500/20 text-green-400 text-sm font-medium hover:bg-green-500/30 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Check className="h-4 w-4" />
+                    Marcar como terminado
+                  </button>
+                ) : (
+                  <div className="space-y-3 p-3 rounded-[var(--radius)] bg-muted/30 border border-border/40" onClick={(e) => e.stopPropagation()}>
+                    <p className="text-sm font-medium text-foreground">Valoracion</p>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                        <Star
+                          key={i}
+                          className={cn(
+                            "h-7 w-7 cursor-pointer transition-colors",
+                            i <= finishRating ? "text-accent fill-accent" : "text-muted-foreground/30 hover:text-accent/50"
+                          )}
+                          onClick={() => setFinishRating(i)}
+                        />
+                      ))}
+                    </div>
+                    <textarea
+                      value={finishNotes}
+                      onChange={(e) => setFinishNotes(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onFocus={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                      placeholder="Escribe tu resena (opcional)"
+                      className="w-full h-20 text-sm px-3 py-2 rounded-[var(--radius)] border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowFinishForm(false)}
+                        className="flex-1 h-9 rounded-[var(--radius)] border border-border/50 text-sm font-medium hover:bg-muted/50 transition-colors text-foreground"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => {
+                          onUpdate(book.id, {
+                            status: "finished",
+                            pagesRead: book.totalPages,
+                            rating: finishRating,
+                            notes: finishNotes.trim() || book.notes,
+                          });
+                          setShowDetail(false);
+                          setShowFinishForm(false);
+                        }}
+                        className="flex-1 h-9 rounded-[var(--radius)] bg-green-500/20 text-green-400 text-sm font-medium hover:bg-green-500/30 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Check className="h-4 w-4" />
+                        Confirmar
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-            
+
             {/* Actions */}
             <div className="flex gap-2 pt-1">
-              <button onClick={() => { setShowDetail(false); setEditing(true); }} className="flex-1 flex items-center justify-center gap-2 h-9 rounded-[var(--radius)] border border-border/50 text-sm font-medium hover:bg-muted/50 transition-colors text-foreground">
+              <button onClick={() => { setShowDetail(false); setShowFinishForm(false); setEditing(true); }} className="flex-1 flex items-center justify-center gap-2 h-9 rounded-[var(--radius)] border border-border/50 text-sm font-medium hover:bg-muted/50 transition-colors text-foreground">
                 <Pencil className="h-3.5 w-3.5" /> Editar
               </button>
-              <button onClick={() => setShowDetail(false)} className="flex-1 h-9 rounded-[var(--radius)] bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
+              <button onClick={() => { setShowDetail(false); setShowFinishForm(false); }} className="flex-1 h-9 rounded-[var(--radius)] bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
                 Cerrar
               </button>
             </div>
@@ -310,7 +364,7 @@ export default function LibraryPage() {
       return s + (isNaN(p) ? 0 : p);
     }, 0);
   }, [finishedYearBooks]);
-  const physicalCount = useMemo(() => finishedYearBooks.filter((b) => b.format === "Físico").length, [finishedYearBooks]);
+  const physicalCount = useMemo(() => finishedYearBooks.filter((b) => b.format === "Fisico").length, [finishedYearBooks]);
   const digitalCount = useMemo(() => finishedYearBooks.filter((b) => b.format === "Digital").length, [finishedYearBooks]);
 
   const filtered = useMemo(() => {
@@ -351,10 +405,9 @@ export default function LibraryPage() {
     <div className="space-y-8">
       {/* HEADER */}
       <div className="space-y-3">
-        {/* Row 1: Title + Year */}
         <div className="flex items-center gap-3">
            <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
-            📚 Mi Biblioteca
+            Mi Biblioteca
           </h2>
           <Select value={yearFilter} onValueChange={setYearFilter}>
             <SelectTrigger className="h-8 sm:h-9 w-24 sm:w-28 text-sm font-medium rounded-[var(--radius)] border-border/50 flex-shrink-0">
@@ -368,7 +421,6 @@ export default function LibraryPage() {
             </SelectContent>
           </Select>
         </div>
-        {/* Row 2: View modes + Actions */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center border border-border/40 rounded-[var(--radius)] overflow-hidden flex-shrink-0">
             <button onClick={() => setViewMode("covers")}
@@ -397,12 +449,12 @@ export default function LibraryPage() {
       {/* STATS */}
       {!loading && yearBooks.length > 0 && (
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-          <span><span className="text-lg font-semibold text-foreground">{finishedYearBooks.length}</span> libros leídos</span>
+          <span><span className="text-lg font-semibold text-foreground">{finishedYearBooks.length}</span> libros leidos</span>
           <span className="text-border/60">|</span>
-          <span><span className="text-lg font-semibold text-foreground">{totalPages.toLocaleString()}</span> páginas</span>
-          {totalSpent > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">{totalSpent.toFixed(2)}€</span> gastos</span></>)}
-          {physicalCount > 0 && (<><span className="text-border/60">|</span><span>📕 <span className="text-lg font-semibold text-foreground">{physicalCount}</span> físico</span></>)}
-          {digitalCount > 0 && (<><span className="text-border/60">|</span><span>📱 <span className="text-lg font-semibold text-foreground">{digitalCount}</span> digital</span></>)}
+          <span><span className="text-lg font-semibold text-foreground">{totalPages.toLocaleString()}</span> paginas</span>
+          {totalSpent > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">{totalSpent.toFixed(2)}EUR</span> gastos</span></>)}
+          {physicalCount > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">{physicalCount}</span> fisico</span></>)}
+          {digitalCount > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">{digitalCount}</span> digital</span></>)}
         </div>
       )}
 
