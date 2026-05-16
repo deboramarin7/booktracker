@@ -150,7 +150,7 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
               {book.genre && <><span className="text-muted-foreground">Genero</span><span className="text-foreground font-medium">{book.genre}</span></>}
               {book.format && <><span className="text-muted-foreground">Formato</span><span className="text-foreground font-medium">{book.format}</span></>}
               {book.totalPages > 0 && <><span className="text-muted-foreground">Paginas</span><span className="text-foreground font-medium">{book.totalPages}</span></>}
-              {book.price && <><span className="text-muted-foreground">Precio</span><span className="text-foreground font-medium">{book.price}EUR</span></>}
+              {book.price && <><span className="text-muted-foreground">Precio</span><span className="text-foreground font-medium">{book.price}€</span></>}
               {book.source && <><span className="text-muted-foreground">Procedencia</span><span className="text-foreground font-medium">{book.source}</span></>}
               {(book.startDate || book.endDate) && (
                 <><span className="text-muted-foreground">Fechas</span>
@@ -452,7 +452,7 @@ export default function LibraryPage() {
           <span><span className="text-lg font-semibold text-foreground">{finishedYearBooks.length}</span> libros leidos</span>
           <span className="text-border/60">|</span>
           <span><span className="text-lg font-semibold text-foreground">{totalPages.toLocaleString()}</span> paginas</span>
-          {totalSpent > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">{totalSpent.toFixed(2)}EUR</span> gastos</span></>)}
+          {totalSpent > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">{totalSpent.toFixed(2)}€</span> gastos</span></>)}
           {physicalCount > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">{physicalCount}</span> fisico</span></>)}
           {digitalCount > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">{digitalCount}</span> digital</span></>)}
         </div>
