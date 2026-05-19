@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -28,39 +28,17 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBooksContext } from "@/components/Layout";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { es } from "date-fns/locale";
 
-const HABITS_KEY = "book-tracker-reading-habits";
-
-function loadHabits(): Record<string, string[]> {
-  try {
-    return JSON.parse(localStorage.getItem(HABITS_KEY) || "{}");
-  } catch {
-    return {};
-  }
-}
-
-function saveHabits(data: Record<string, string[]>) {
-  localStorage.setItem(HABITS_KEY, JSON.stringify(data));
-}
-
 const MONTH_NAMES = [
-  "Enero",
-  "Febrero",
-  "Marzo",
-  "Abril",
-  "Mayo",
-  "Junio",
-  "Julio",
-  "Agosto",
-  "Septiembre",
-  "Octubre",
-  "Noviembre",
-  "Diciembre",
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
 
 const MONTH_SHORT = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-const DAY_NAMES = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+const DAY_NAMES = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -145,22 +123,41 @@ function StreakBadge({
           </div>
         )}
       </div>
-
       <p className="text-xs text-muted-foreground font-body text-center">{label}</p>
     </div>
   );
 }
 
 export default function ReadingHabits() {
+  const { user } = useAuth();
   const currentYear = new Date().getFullYear();
   const [selectedYear] = useState(currentYear);
-  const [habits, setHabits] = useState<Record<string, string[]>>(loadHabits);
+  const [habits, setHabits] = useState<Record<string, string[]>>({});
+
+  // Cargar habitos desde Supabase
+  const fetchHabits = useCallback(async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("reading_habits")
+      .select("date")
+      .eq("user_id", user.id);
+    if (error) { console.error("Error loading habits:", error); return; }
+    const grouped: Record<string, string[]> = {};
+    (data || []).forEach((row: { date: string }) => {
+      const year = row.date.split("-")[0];
+      if (!grouped[year]) grouped[year] = [];
+      grouped[year].push(row.date);
+    });
+    setHabits(grouped);
+  }, [user]);
+
+  useEffect(() => { fetchHabits(); }, [fetchHabits]);
 
   const yearKey = String(selectedYear);
   const readDays = habits[yearKey] || [];
 
-  const toggleDay = (date: Date | undefined) => {
-    if (!date) return;
+  const toggleDay = async (date: Date | undefined) => {
+    if (!date || !user) return;
 
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
       date.getDate()
@@ -170,12 +167,16 @@ export default function ReadingHabits() {
     const yearDays = [...(updated[yearKey] || [])];
     const idx = yearDays.indexOf(key);
 
-    if (idx >= 0) yearDays.splice(idx, 1);
-    else yearDays.push(key);
+    if (idx >= 0) {
+      yearDays.splice(idx, 1);
+      await supabase.from("reading_habits").delete().eq("user_id", user.id).eq("date", key);
+    } else {
+      yearDays.push(key);
+      await supabase.from("reading_habits").insert({ user_id: user.id, date: key });
+    }
 
     updated[yearKey] = yearDays;
     setHabits(updated);
-    saveHabits(updated);
   };
 
   const selectedDates = useMemo(
@@ -363,13 +364,13 @@ export default function ReadingHabits() {
   return (
     <div className="space-y-8">
       <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
-            📚 Hábitos y Calendario
-          </h2>
-      
+        Habitos y Calendario
+      </h2>
+
       <Tabs defaultValue="habits" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="habits">📊 Hábitos</TabsTrigger>
-          <TabsTrigger value="calendar">📅 Calendario</TabsTrigger>
+          <TabsTrigger value="habits">Habitos</TabsTrigger>
+          <TabsTrigger value="calendar">Calendario</TabsTrigger>
         </TabsList>
 
         <TabsContent value="habits" className="space-y-8 mt-6">
@@ -406,18 +407,18 @@ export default function ReadingHabits() {
               {streak > 0 ? (
                 <p className="text-center text-sm text-muted-foreground mt-6 font-body">
                   {streak >= 30
-                    ? "🔥 ¡Increíble! Un mes entero leyendo sin parar."
+                    ? "Increible! Un mes entero leyendo sin parar."
                     : streak >= 14
-                    ? "🔥 ¡Dos semanas seguidas! Estás en racha."
+                    ? "Dos semanas seguidas! Estas en racha."
                     : streak >= 7
-                    ? "🔥 ¡Una semana! Sigue así."
+                    ? "Una semana! Sigue asi."
                     : streak >= 3
-                    ? "¡Buen ritmo! No pares ahora."
-                    : "¡Has empezado! Vuelve mañana para mantener la racha."}
+                    ? "Buen ritmo! No pares ahora."
+                    : "Has empezado! Vuelve manana para mantener la racha."}
                 </p>
               ) : (
                 <p className="text-center text-sm text-muted-foreground mt-6 font-body">
-                  Marca el día de hoy como leído para empezar tu racha 🔥
+                  Marca el dia de hoy como leido para empezar tu racha
                 </p>
               )}
             </CardContent>
@@ -425,7 +426,7 @@ export default function ReadingHabits() {
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: "Días leídos", value: totalDays, icon: CalendarDays },
+              { label: "Dias leidos", value: totalDays, icon: CalendarDays },
               { label: "Media/mes", value: avgPerMonth, icon: TrendingUp },
               { label: `Mejor mes (${bestMonth.name})`, value: bestMonth.days, icon: Zap },
               { label: "Consistencia", value: `${consistencyScore}%`, icon: Trophy },
@@ -447,11 +448,11 @@ export default function ReadingHabits() {
 
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground font-body">
-              Haz clic en un día para marcar/desmarcar que leíste
+              Haz clic en un dia para marcar/desmarcar que leiste
             </p>
             <Card className="border-border/30">
               <CardContent className="p-4 flex justify-center">
-               <Calendar
+                <Calendar
                   mode="multiple"
                   selected={selectedDates}
                   onDayClick={toggleDay}
@@ -463,10 +464,10 @@ export default function ReadingHabits() {
                   weekStartsOn={1}
                   className={cn("p-3 pointer-events-auto")}
                   classNames={{
-                  day_selected:
-                  "bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-500 dark:text-white",
-                    }}
-               />
+                    day_selected:
+                      "bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-500 dark:text-white",
+                  }}
+                />
               </CardContent>
             </Card>
           </div>
@@ -475,7 +476,7 @@ export default function ReadingHabits() {
             <CardContent className="pt-6 pb-4">
               <p className="text-sm font-semibold font-body text-foreground mb-4 flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-primary/60" />
-                Días de lectura por mes
+                Dias de lectura por mes
               </p>
 
               <ResponsiveContainer width="100%" height={220}>
@@ -497,7 +498,7 @@ export default function ReadingHabits() {
                     width={24}
                   />
                   <RechartsTooltip
-                    formatter={(value: number) => [`${value} días`, ""]}
+                    formatter={(value: number) => [`${value} dias`, ""]}
                     contentStyle={{
                       borderRadius: "10px",
                       fontSize: "13px",
@@ -524,7 +525,7 @@ export default function ReadingHabits() {
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center p-4 rounded-xl bg-muted/30 border border-border/20">
               <p className="text-3xl font-bold text-foreground font-display">{daysReadingCount.size}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Días leyendo</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Dias leyendo</p>
             </div>
 
             <div className="text-center p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
@@ -633,7 +634,7 @@ export default function ReadingHabits() {
                               variant="outline"
                               className="text-[9px] px-1 py-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/30 truncate max-w-full"
                             >
-                              📖
+                              Started
                             </Badge>
                           )}
 
@@ -642,7 +643,7 @@ export default function ReadingHabits() {
                               variant="outline"
                               className="text-[9px] px-1 py-0 bg-accent/10 text-accent border-accent/30 truncate max-w-full"
                             >
-                              ✅
+                              Done
                             </Badge>
                           )}
                         </div>
@@ -656,13 +657,13 @@ export default function ReadingHabits() {
                         <div className="space-y-1">
                           {data.started.map((b, i) => (
                             <p key={`s-${i}`} className="text-xs">
-                              📖 Empezaste: <strong>{b.title}</strong>
+                              Empezaste: <strong>{b.title}</strong>
                             </p>
                           ))}
 
                           {data.finished.map((b, i) => (
                             <p key={`f-${i}`} className="text-xs">
-                              ✅ Terminaste: <strong>{b.title}</strong>
+                              Terminaste: <strong>{b.title}</strong>
                             </p>
                           ))}
 
@@ -674,7 +675,7 @@ export default function ReadingHabits() {
                             )
                             .map((b, i) => (
                               <p key={`r-${i}`} className="text-xs">
-                                📚 Leyendo: <strong>{b.title}</strong>
+                                Leyendo: <strong>{b.title}</strong>
                               </p>
                             ))}
                         </div>
@@ -689,14 +690,12 @@ export default function ReadingHabits() {
           <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-sm bg-emerald-500/10 border border-emerald-500/30" />
-              <span>Día de lectura</span>
+              <span>Dia de lectura</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span>📖</span>
               <span>Libro empezado</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span>✅</span>
               <span>Libro terminado</span>
             </div>
           </div>
