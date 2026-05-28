@@ -29,6 +29,18 @@ function getBookYear(book: Book): number {
   return isNaN(d.getTime()) ? new Date().getFullYear() : d.getFullYear();
 }
 
+function getBookMonth(book: Book): number {
+  const dateStr = book.endDate || book.startDate || book.addedAt;
+  if (!dateStr) return new Date().getMonth();
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? new Date().getMonth() : d.getMonth();
+}
+
+const MONTHS = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
 type SortOption = "read-desc" | "read-asc" | "added-desc" | "added-asc" | "title-asc" | "title-desc" | "rating-desc" | "author-asc";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -296,6 +308,7 @@ export default function LibraryPage() {
 
   const currentYear = new Date().getFullYear();
   const [yearFilter, setYearFilter] = useState<string>(String(currentYear));
+  const [monthFilter, setMonthFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"covers" | "grid" | "spine">("covers");
   const [genreFilter, setGenreFilter] = useState<string>("all");
   const [formatFilter, setFormatFilter] = useState<string>("all");
@@ -352,9 +365,11 @@ export default function LibraryPage() {
   };
 
   const yearBooks = useMemo(() => {
-    if (!selectedYear) return books;
-    return books.filter((b) => getBookYear(b) === selectedYear);
-  }, [books, selectedYear]);
+    let result = books;
+    if (selectedYear) result = result.filter((b) => getBookYear(b) === selectedYear);
+    if (monthFilter !== "all") result = result.filter((b) => getBookMonth(b) === Number(monthFilter));
+    return result;
+  }, [books, selectedYear, monthFilter]);
 
   const finishedYearBooks = useMemo(() => yearBooks.filter((b) => b.status === "finished"), [yearBooks]);
   const totalPages = useMemo(() => finishedYearBooks.reduce((s, b) => s + b.totalPages, 0), [finishedYearBooks]);
@@ -405,8 +420,8 @@ export default function LibraryPage() {
     <div className="space-y-8">
       {/* HEADER */}
       <div className="space-y-3">
-        <div className="flex items-center gap-3">
-           <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
             Mi Biblioteca
           </h2>
           <Select value={yearFilter} onValueChange={setYearFilter}>
@@ -417,6 +432,17 @@ export default function LibraryPage() {
               <SelectItem value="all">Todos</SelectItem>
               {availableYears.map((y) => (
                 <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={monthFilter} onValueChange={setMonthFilter}>
+            <SelectTrigger className="h-8 sm:h-9 w-28 sm:w-36 text-sm font-medium rounded-[var(--radius)] border-border/50 flex-shrink-0">
+              <SelectValue placeholder="Mes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los meses</SelectItem>
+              {MONTHS.map((name, i) => (
+                <SelectItem key={i} value={String(i)}>{name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
