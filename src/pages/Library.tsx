@@ -480,7 +480,7 @@ export default function LibraryPage() {
           <span><span className="text-lg font-semibold text-foreground">{totalPages.toLocaleString()}</span> paginas</span>
           {totalSpent > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">{totalSpent.toFixed(2)}€</span> gastos</span></>)}
           {digitalCount > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">📱{digitalCount}</span> digital</span></>)}
-          {fisicoCount > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">📖​{fisicoCount}</span> fisico</span></>)}
+          {physicalCount > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">📖{physicalCount}</span> fisico</span></>)}
         </div>
       )}
 
