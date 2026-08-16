@@ -132,7 +132,7 @@ const sections: Section[] = [
       },
        {
         title: "Calendario",
-        text: "El calendario muestra los dias que has leído y la portada del libro."
+        text: "El calendario muestra los días que has leído y la portada del libro."
       },
     ],
     tips: [
