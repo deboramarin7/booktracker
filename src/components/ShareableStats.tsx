@@ -142,7 +142,7 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
 
           {/* Footer */}
           <p style={{ textAlign: "center", fontSize: "11px", opacity: 0.4, fontStyle: "italic", marginBottom: "4px" }}>
-            Una lectura, una historia.
+            ✨A los lectores que alzan los ojos a las estrellas y piden un deseo✨
           </p>
           <p style={{ textAlign: "center", fontSize: "10px", opacity: 0.35, letterSpacing: "1px", fontFamily: "system-ui, sans-serif" }}>
             📚 Book Tracker
