@@ -76,13 +76,13 @@ function WishForm({ initial, onSave, trigger }: {
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) reset(); }}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{initial ? "Editar" : "Anadir a"} Wish List</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{initial ? "Editar" : "Añadir a"} Wish List</DialogTitle></DialogHeader>
         <div className="space-y-4">
-          <div><Label>Titulo *</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
+          <div><Label>Título *</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} /></div>
           <div><Label>Autor/a *</Label><Input value={author} onChange={(e) => setAuthor(e.target.value)} /></div>
           <div><Label>URL de portada</Label><Input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://..." /></div>
           <div className="flex items-center gap-2">
-            <Label>Pertenece a una saga?</Label>
+            <Label>¿Pertenece a una saga?</Label>
             <Switch checked={hasSaga} onCheckedChange={setHasSaga} />
           </div>
           {hasSaga && (
@@ -92,7 +92,7 @@ function WishForm({ initial, onSave, trigger }: {
             </div>
           )}
           <div>
-            <Label>Genero</Label>
+            <Label>Género</Label>
             <Select value={genre} onValueChange={setGenre}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{GENRES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
@@ -109,12 +109,12 @@ function WishForm({ initial, onSave, trigger }: {
               <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div><Label>Paginas totales</Label><Input type="number" value={totalPages} onChange={(e) => setTotalPages(e.target.value)} placeholder="Ej: 350" min={0} /></div>
+          <div><Label>Páginas totales</Label><Input type="number" value={totalPages} onChange={(e) => setTotalPages(e.target.value)} placeholder="Ej: 350" min={0} /></div>
         </div>
         <DialogFooter>
           <DialogClose asChild><Button variant="ghost">Cancelar</Button></DialogClose>
           <Button onClick={handleSubmit} disabled={!title.trim() || !author.trim()}>
-            {initial ? "Guardar" : "Anadir"}
+            {initial ? "Guardar" : "Añadir"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -207,9 +207,9 @@ function WishCoverCard({ item, updateItem, deleteItem, onMoveToLibrary }: {
             </div>
             {/* Details */}
             <div className="grid grid-cols-2 gap-2 text-sm border-t border-border/40 pt-3">
-              {item.genre && <><span className="text-muted-foreground">Genero</span><span className="text-foreground font-medium">{item.genre}</span></>}
+              {item.genre && <><span className="text-muted-foreground">Género</span><span className="text-foreground font-medium">{item.genre}</span></>}
               <><span className="text-muted-foreground">Estado</span><span className={`font-medium ${statusColors[item.status]} px-2 py-0.5 rounded-full text-xs inline-block w-fit`}>{item.status}</span></>
-              {item.totalPages > 0 && <><span className="text-muted-foreground">Paginas</span><span className="text-foreground font-medium">{item.totalPages}</span></>}
+              {item.totalPages > 0 && <><span className="text-muted-foreground">Páginas</span><span className="text-foreground font-medium">{item.totalPages}</span></>}
             </div>
             {/* Actions */}
             <div className="flex flex-col gap-2 pt-1">
@@ -276,7 +276,7 @@ function WishListContent() {
         tags: [],
       });
       await deleteItem(item.id);
-      toast({ title: "Movido a biblioteca", description: `"${item.title}" ahora esta en Leyendo` });
+      toast({ title: "Movido a biblioteca", description: `"${item.title}" ahora está en Leyendo` });
     } catch (e) {
       toast({ title: "Error", description: "No se pudo mover el libro", variant: "destructive" });
     }
@@ -368,21 +368,21 @@ function WishListContent() {
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por titulo, autor o saga..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 font-body" />
+            <Input placeholder="Buscar por título, autor o saga..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 font-body" />
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Select value={filterGenre} onValueChange={setFilterGenre}>
-            <SelectTrigger className="w-[150px] h-8 text-xs font-body">
-              <SelectValue placeholder="Genero" />
+            <SelectTrigger className="w-[180px] h-8 text-xs font-body">
+              <SelectValue placeholder="Género" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos los generos</SelectItem>
+              <SelectItem value="all">Todos los géneros</SelectItem>
               {genreNames.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[150px] h-8 text-xs font-body">
+            <SelectTrigger className="w-[180px] h-8 text-xs font-body">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
@@ -424,9 +424,9 @@ function WishListContent() {
             </div>
           </div>
           <div className="space-y-1.5">
-            <p className="text-xl font-semibold font-display text-foreground">Tu lista de deseos esta vacia</p>
+            <p className="text-xl font-semibold font-display text-foreground">Tu lista de deseos está vacía</p>
             <p className="text-sm text-muted-foreground font-display max-w-xs mx-auto">
-              "Una casa sin libros es como un cuerpo sin alma." - Ciceron
+              "Una casa sin libros es como un cuerpo sin alma." - Cicerón
             </p>
           </div>
         </div>
