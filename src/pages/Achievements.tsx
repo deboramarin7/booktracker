@@ -1,6 +1,8 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useBooksContext } from "@/components/Layout";
 import { useMonthlyGoals } from "@/hooks/useMonthlyGoals";
+import { useReadingHabits } from "@/hooks/useReadingHabits";
+import { getBookYear, getBookMonth } from "@/lib/dateUtils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -14,12 +16,6 @@ import {
 } from "lucide-react";
 
 const MONTHLY_GOALS_KEY = "book-tracker-monthly-goals";
-const HABITS_KEY = "book-tracker-reading-habits";
-
-
-function loadHabits(): Record<string, string[]> {
-  try { return JSON.parse(localStorage.getItem(HABITS_KEY) || "{}"); } catch { return {}; }
-}
 
 const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
@@ -143,15 +139,13 @@ export default function Achievements() {
   const finishedBooks = useMemo(() => books.filter(b => b.status === "finished"), [books]);
 
   const yearFinished = useMemo(() => {
-    return finishedBooks.filter(b => {
-      const dateStr = b.endDate || b.startDate || b.addedAt;
-      const d = new Date(dateStr);
-      return !isNaN(d.getTime()) && d.getFullYear() === selectedYear;
-    });
+    return finishedBooks.filter(b => getBookYear(b) === selectedYear);
   }, [finishedBooks, selectedYear]);
 
-  const [habits, setHabits] = useState<Record<string, string[]>>(loadHabits);
-useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
+  // Se usa el mismo hook que la página de Hábitos (Supabase) en vez de
+  // leer una copia local en localStorage que nunca se refrescaba y podía
+  // quedar vacía en una sesión/dispositivo nuevo.
+  const { habits } = useReadingHabits();
   const yearDays = useMemo(() => habits[String(selectedYear)] || [], [habits, selectedYear]);
 
   const maxStreak = useMemo(() => {
@@ -196,13 +190,13 @@ useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
     { id: "5000_pages", icon: <Target className="h-6 w-6" />, title: "Maratonista", description: `Lee 5.000 páginas en ${selectedYear}`, unlocked: totalPages >= 5000, progress: { current: Math.min(totalPages, 5000), target: 5000 }, color: "hsl(230, 60%, 50%)", category: "volumen" as const },
     { id: "10000_pages", icon: <Sparkles className="h-6 w-6" />, title: "Ultra Lector", description: `Lee 10.000 páginas en ${selectedYear}`, unlocked: totalPages >= 10000, progress: { current: Math.min(totalPages, 10000), target: 10000 }, color: "hsl(270, 60%, 50%)", category: "volumen" as const },
 
-    // —— EXPLORACIÃN ——
+    // —— EXPLORACIÓN ——
     { id: "3_genres", icon: <Globe className="h-6 w-6" />, title: "Curioso", description: "Lee 3 géneros diferentes", unlocked: uniqueGenres >= 3, progress: { current: Math.min(uniqueGenres, 3), target: 3 }, color: "hsl(150, 55%, 45%)", category: "exploración" as const },
     { id: "5_genres", icon: <Medal className="h-6 w-6" />, title: "Ecléctico", description: "Lee 5 géneros diferentes", unlocked: uniqueGenres >= 5, progress: { current: Math.min(uniqueGenres, 5), target: 5 }, color: "hsl(160, 50%, 42%)", category: "exploración" as const },
     { id: "3_authors", icon: <Compass className="h-6 w-6" />, title: "Descubridor", description: "Lee a 3 autores diferentes", unlocked: uniqueAuthors >= 3, progress: { current: Math.min(uniqueAuthors, 3), target: 3 }, color: "hsl(170, 50%, 40%)", category: "exploración" as const },
     { id: "5_authors", icon: <Compass className="h-6 w-6" />, title: "Explorador", description: "Lee a 5 autores diferentes", unlocked: uniqueAuthors >= 5, progress: { current: Math.min(uniqueAuthors, 5), target: 5 }, color: "hsl(180, 50%, 38%)", category: "exploración" as const },
     { id: "10_authors", icon: <Sparkles className="h-6 w-6" />, title: "Coleccionista", description: "Lee a 10 autores diferentes", unlocked: uniqueAuthors >= 10, progress: { current: Math.min(uniqueAuthors, 10), target: 10 }, color: "hsl(140, 45%, 40%)", category: "exploración" as const },
-    { id: "five_star", icon: <Star className="h-6 w-6" />, title: "Exigente", description: "Da 5— a 3 libros", unlocked: fiveStarBooks >= 3, progress: { current: Math.min(fiveStarBooks, 3), target: 3 }, color: "hsl(45, 100%, 50%)", category: "exploración" as const },
+    { id: "five_star", icon: <Star className="h-6 w-6" />, title: "Exigente", description: "Da 5 estrellas a 3 libros", unlocked: fiveStarBooks >= 3, progress: { current: Math.min(fiveStarBooks, 3), target: 3 }, color: "hsl(45, 100%, 50%)", category: "exploración" as const },
     { id: "saga_lover", icon: <Heart className="h-6 w-6" />, title: "Saga Lover", description: "Lee libros de 3 sagas diferentes", unlocked: uniqueSagas >= 3, progress: { current: Math.min(uniqueSagas, 3), target: 3 }, color: "hsl(340, 60%, 50%)", category: "exploración" as const },
     { id: "multi_format", icon: <BookOpen className="h-6 w-6" />, title: "Multiformato", description: "Lee en 2 formatos (físico + digital)", unlocked: formatsUsed >= 2, progress: { current: Math.min(formatsUsed, 2), target: 2 }, color: "hsl(190, 55%, 42%)", category: "exploración" as const },
   ], [yearFinished, maxStreak, fiveStarBooks, uniqueAuthors, uniqueGenres, totalReadDays, totalPages, uniqueSagas, formatsUsed, selectedYear]);
@@ -238,11 +232,7 @@ useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
     return MONTH_NAMES.map((name, i) => {
       const key = `${selectedYear}-${String(i + 1).padStart(2, "0")}`;
       const goal = monthlyGoals[key] || 0;
-      const read = finishedBooks.filter(b => {
-        const dateStr = b.endDate || b.startDate || b.addedAt;
-        const d = new Date(dateStr);
-        return d.getFullYear() === selectedYear && d.getMonth() === i;
-      }).length;
+      const read = finishedBooks.filter(b => getBookYear(b) === selectedYear && getBookMonth(b) === i).length;
       const isPast = selectedYear < currentYear || (selectedYear === currentYear && i < currentMonth);
       const isCurrent = selectedYear === currentYear && i === currentMonth;
       return { name, index: i, key, goal, read, isPast, isCurrent };
@@ -253,7 +243,6 @@ useEffect(() => { setHabits(loadHabits()); }, [selectedYear]);
     const val = parseInt(editValue);
     if (!isNaN(val) && val >= 0) {
       const updated = { ...monthlyGoals, [monthKey]: val };
-      setMonthlyGoals(updated);
       saveMonthlyGoals(updated);
     }
     setEditingMonth(null);
