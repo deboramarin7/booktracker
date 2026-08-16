@@ -13,6 +13,7 @@ import { EditBookDialog } from "@/components/EditBookDialog";
 import { BookCoverImage } from "@/components/BookCoverImage";
 import { STATUS_COLORS, GENRE_COLORS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { getBookYear, getBookMonth, getBookDate } from "@/lib/dateUtils";
 
 const GOALS_KEY = "book-tracker-reading-goals";
 function loadGoals(): Record<number, number> {
@@ -20,20 +21,6 @@ function loadGoals(): Record<number, number> {
 }
 function saveGoals(goals: Record<number, number>) {
   localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
-}
-
-function getBookYear(book: Book): number {
-  const dateStr = book.endDate || book.startDate || book.addedAt;
-  if (!dateStr) return new Date().getFullYear();
-  const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? new Date().getFullYear() : d.getFullYear();
-}
-
-function getBookMonth(book: Book): number {
-  const dateStr = book.endDate || book.startDate || book.addedAt;
-  if (!dateStr) return new Date().getMonth();
-  const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? new Date().getMonth() : d.getMonth();
 }
 
 const MONTHS = [
@@ -44,12 +31,12 @@ const MONTHS = [
 type SortOption = "read-desc" | "read-asc" | "added-desc" | "added-asc" | "title-asc" | "title-desc" | "rating-desc" | "author-asc";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "read-desc", label: "Leidos recientemente" },
-  { value: "read-asc", label: "Leidos antes" },
-  { value: "added-desc", label: "Anadidos recientemente" },
-  { value: "added-asc", label: "Anadidos antes" },
-  { value: "title-asc", label: "Titulo A-Z" },
-  { value: "title-desc", label: "Titulo Z-A" },
+  { value: "read-desc", label: "Leídos recientemente" },
+  { value: "read-asc", label: "Leídos antes" },
+  { value: "added-desc", label: "Añadidos recientemente" },
+  { value: "added-asc", label: "Añadidos antes" },
+  { value: "title-asc", label: "Título A-Z" },
+  { value: "title-desc", label: "Título Z-A" },
   { value: "rating-desc", label: "Mejor valorados" },
   { value: "author-asc", label: "Autor A-Z" },
 ];
@@ -102,7 +89,7 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
               <Pencil className="h-3.5 w-3.5" />
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); if (window.confirm(`Eliminar "${book.title}"? Esta accion no se puede deshacer.`)) onDelete(book.id); }}
+              onClick={(e) => { e.stopPropagation(); if (window.confirm(`Eliminar "${book.title}"? Esta acción no se puede deshacer.`)) onDelete(book.id); }}
               className="w-7 h-7 rounded-full bg-red-500/80 hover:bg-red-500 flex items-center justify-center text-white transition-colors"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -159,9 +146,9 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
             </div>
             {/* Details grid */}
             <div className="grid grid-cols-2 gap-2 text-sm border-t border-border/40 pt-3">
-              {book.genre && <><span className="text-muted-foreground">Genero</span><span className="text-foreground font-medium">{book.genre}</span></>}
+              {book.genre && <><span className="text-muted-foreground">Género</span><span className="text-foreground font-medium">{book.genre}</span></>}
               {book.format && <><span className="text-muted-foreground">Formato</span><span className="text-foreground font-medium">{book.format}</span></>}
-              {book.totalPages > 0 && <><span className="text-muted-foreground">Paginas</span><span className="text-foreground font-medium">{book.totalPages}</span></>}
+              {book.totalPages > 0 && <><span className="text-muted-foreground">Páginas</span><span className="text-foreground font-medium">{book.totalPages}</span></>}
               {book.price && <><span className="text-muted-foreground">Precio</span><span className="text-foreground font-medium">{book.price}€</span></>}
               {book.source && <><span className="text-muted-foreground">Procedencia</span><span className="text-foreground font-medium">{book.source}</span></>}
               {(book.startDate || book.endDate) && (
@@ -213,7 +200,7 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
                       if (val !== book.pagesRead) onUpdate(book.id, { pagesRead: val });
                     }}
                     className="flex-1 h-9 text-sm px-3 rounded-[var(--radius)] border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    placeholder="Paginas leidas"
+                    placeholder="Páginas leídas"
                   />
                   <span className="text-xs text-muted-foreground whitespace-nowrap">/ {book.totalPages}</span>
                 </div>
@@ -234,7 +221,7 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
                   </button>
                 ) : (
                   <div className="space-y-3 p-3 rounded-[var(--radius)] bg-muted/30 border border-border/40" onClick={(e) => e.stopPropagation()}>
-                    <p className="text-sm font-medium text-foreground">Valoracion</p>
+                    <p className="text-sm font-medium text-foreground">Valoración</p>
                     <div className="flex gap-1">
                       {[1, 2, 3, 4, 5].map((i) => (
                         <Star
@@ -254,7 +241,7 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
                       onMouseDown={(e) => e.stopPropagation()}
                       onFocus={(e) => e.stopPropagation()}
                       onKeyDown={(e) => e.stopPropagation()}
-                      placeholder="Escribe tu resena (opcional)"
+                      placeholder="Escribe tu reseña (opcional)"
                       className="w-full h-20 text-sm px-3 py-2 rounded-[var(--radius)] border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
                     />
                     <div className="flex gap-2">
@@ -388,8 +375,8 @@ export default function LibraryPage() {
     if (formatFilter !== "all") result = result.filter((b) => b.format === formatFilter);
     result.sort((a, b) => {
       switch (sort) {
-        case "read-desc": return new Date(b.endDate || b.startDate || b.addedAt).getTime() - new Date(a.endDate || a.startDate || a.addedAt).getTime();
-        case "read-asc": return new Date(a.endDate || a.startDate || a.addedAt).getTime() - new Date(b.endDate || b.startDate || b.addedAt).getTime();
+        case "read-desc": return getBookDate(b).getTime() - getBookDate(a).getTime();
+        case "read-asc": return getBookDate(a).getTime() - getBookDate(b).getTime();
         case "added-desc": return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
         case "added-asc": return new Date(a.addedAt).getTime() - new Date(b.addedAt).getTime();
         case "title-asc": return a.title.localeCompare(b.title);
@@ -436,7 +423,7 @@ export default function LibraryPage() {
             </SelectContent>
           </Select>
           <Select value={monthFilter} onValueChange={setMonthFilter}>
-            <SelectTrigger className="h-8 sm:h-9 w-28 sm:w-36 text-sm font-medium rounded-[var(--radius)] border-border/50 flex-shrink-0">
+            <SelectTrigger className="h-8 sm:h-9 w-32 sm:w-44 text-sm font-medium rounded-[var(--radius)] border-border/50 flex-shrink-0">
               <SelectValue placeholder="Mes" />
             </SelectTrigger>
             <SelectContent>
@@ -475,12 +462,12 @@ export default function LibraryPage() {
       {/* STATS */}
       {!loading && yearBooks.length > 0 && (
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-          <span><span className="text-lg font-semibold text-foreground">{finishedYearBooks.length}</span> ​libros leidos</span>
+          <span><span className="text-lg font-semibold text-foreground">{finishedYearBooks.length}</span> libros leídos</span>
           <span className="text-border/60">|</span>
-          <span><span className="text-lg font-semibold text-foreground">{totalPages.toLocaleString()}</span> paginas</span>
+          <span><span className="text-lg font-semibold text-foreground">{totalPages.toLocaleString()}</span> páginas</span>
           {totalSpent > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">{totalSpent.toFixed(2)}€</span> gastos</span></>)}
           {digitalCount > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">📱{digitalCount}</span> digital</span></>)}
-          {physicalCount > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">📖{physicalCount}</span> fisico</span></>)}
+          {physicalCount > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">📖{physicalCount}</span> físico</span></>)}
         </div>
       )}
 
@@ -516,7 +503,7 @@ export default function LibraryPage() {
               <div className="flex items-end gap-8 mb-4">
                 <div>
                   <p className="text-4xl font-light tracking-tighter font-display text-foreground">{finishedYearBooks.length}</p>
-                  <p className="text-sm text-muted-foreground">Libros leidos</p>
+                  <p className="text-sm text-muted-foreground">Libros leídos</p>
                 </div>
                 <div>
                   <p className="text-4xl font-light tracking-tighter font-display text-muted-foreground/60">{currentGoal}</p>
@@ -532,7 +519,7 @@ export default function LibraryPage() {
               </div>
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">Sin objetivo definido. Haz clic en "Fijar objetivo" para establecer cuantos libros quieres leer este ano.</p>
+            <p className="text-sm text-muted-foreground">Sin objetivo definido. Haz clic en "Fijar objetivo" para establecer cuántos libros quieres leer este año.</p>
           )}
         </div>
       )}
@@ -540,21 +527,21 @@ export default function LibraryPage() {
       {/* FILTROS */}
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 items-center">
         <Select value={genreFilter} onValueChange={setGenreFilter}>
-          <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm rounded-[var(--radius)]"><SelectValue placeholder="Genero" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[190px] h-9 text-sm rounded-[var(--radius)]"><SelectValue placeholder="Género" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos los generos</SelectItem>
+            <SelectItem value="all">Todos los géneros</SelectItem>
             {GENRES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={formatFilter} onValueChange={setFormatFilter}>
-          <SelectTrigger className="w-full sm:w-[150px] h-9 text-sm rounded-[var(--radius)]"><SelectValue placeholder="Formato" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[190px] h-9 text-sm rounded-[var(--radius)]"><SelectValue placeholder="Formato" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos los formatos</SelectItem>
             {FORMATS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
-          <SelectTrigger className="w-full sm:w-[200px] h-9 text-sm rounded-[var(--radius)] col-span-2 sm:col-span-1"><SelectValue placeholder="Ordenar por" /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[220px] h-9 text-sm rounded-[var(--radius)] col-span-2 sm:col-span-1"><SelectValue placeholder="Ordenar por" /></SelectTrigger>
           <SelectContent>
             {SORT_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
           </SelectContent>
@@ -581,10 +568,10 @@ export default function LibraryPage() {
           </div>
           <div className="space-y-2">
             <p className="text-2xl font-light font-display text-foreground tracking-tight">
-              {books.length === 0 ? "Tu historia empieza aqui" : "Ningun libro coincide"}
+              {books.length === 0 ? "Tu historia empieza aquí" : "Ningún libro coincide"}
             </p>
             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-              {books.length === 0 ? "Cada gran biblioteca empezo con un unico libro." : "Prueba a cambiar los filtros o el ano seleccionado"}
+              {books.length === 0 ? "Cada gran biblioteca empezó con un único libro." : "Prueba a cambiar los filtros o el año seleccionado"}
             </p>
           </div>
         </div>
