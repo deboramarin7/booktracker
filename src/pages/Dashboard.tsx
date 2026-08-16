@@ -7,21 +7,11 @@ import { BookOpen, TrendingUp, TrendingDown, User, Library, ChartBar as BarChart
 import { BookCoverImage } from "@/components/BookCoverImage";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
-  BarChart, Bar, XAxis, YAxis, LineChart, Line, CartesianGrid,
+  BarChart, Bar, XAxis, YAxis, LineChart, Line, CartesianGrid, Legend,
 } from "recharts";
 import { ShareableStats, BestOfYearExport } from "@/components/ShareableStats";
-
-function getYearFromBook(book: { endDate?: string; startDate?: string; addedAt: string }): number {
-  const dateStr = book.endDate || book.startDate || book.addedAt;
-  if (!dateStr) return new Date().getFullYear();
-  const d = new Date(dateStr);
-  return isNaN(d.getTime()) ? new Date().getFullYear() : d.getFullYear();
-}
-
-const HABITS_KEY = "book-tracker-reading-habits";
-function loadHabits(): Record<string, string[]> {
-  try { return JSON.parse(localStorage.getItem(HABITS_KEY) || "{}"); } catch { return {}; }
-}
+import { getBookYear, getBookMonth, parseFlexibleDate } from "@/lib/dateUtils";
+import { useReadingHabits } from "@/hooks/useReadingHabits";
 
 const GOALS_KEY = "book-tracker-reading-goals";
 function loadGoals(): Record<number, number> {
@@ -101,11 +91,12 @@ function BookHighlight({ book, label, metric, icon: Icon }: {
 
 export default function Dashboard() {
   const { books } = useBooksContext();
+  const { habits } = useReadingHabits();
 
   const years = useMemo(() => {
     const yearSet = new Set<number>();
     yearSet.add(new Date().getFullYear());
-    books.forEach((b) => yearSet.add(getYearFromBook(b)));
+    books.forEach((b) => yearSet.add(getBookYear(b)));
     return Array.from(yearSet).sort((a, b) => b - a);
   }, [books]);
 
@@ -135,7 +126,7 @@ export default function Dashboard() {
   };
 
   const yearBooks = useMemo(
-    () => books.filter((b) => b.status === "finished" && getYearFromBook(b) === selectedYear),
+    () => books.filter((b) => b.status === "finished" && getBookYear(b) === selectedYear),
     [books, selectedYear]
   );
 
@@ -145,8 +136,11 @@ export default function Dashboard() {
     return yearBooks.length > 0 ? Math.round(totalPages / yearBooks.length) : 0;
   }, [yearBooks, totalPages]);
 
+  // Racha de lectura: se calcula a partir de los mismos datos que la
+  // página de Hábitos (Supabase, vía useReadingHabits), en lugar de leer
+  // una copia local en localStorage que nunca se actualizaba y hacía que
+  // el Dashboard mostrara "0 días" aunque hubiera una racha activa.
   const streak = useMemo(() => {
-    const habits = loadHabits();
     const allDays = Object.values(habits).flat().sort().reverse();
     if (allDays.length === 0) return 0;
     const today = new Date();
@@ -163,7 +157,7 @@ export default function Dashboard() {
       if (allDays.includes(key)) { count++; d.setDate(d.getDate() - 1); } else break;
     }
     return count;
-  }, []);
+  }, [habits]);
 
   const mostPages = useMemo(() => {
     if (yearBooks.length === 0) return null;
@@ -216,8 +210,8 @@ export default function Dashboard() {
     const booksWithDates = yearBooks.filter(b => b.startDate && b.endDate);
     if (booksWithDates.length === 0) return null;
     const times = booksWithDates.map(b => {
-      const start = new Date(b.startDate!);
-      const end = new Date(b.endDate!);
+      const start = parseFlexibleDate(b.startDate!) ?? new Date(b.startDate!);
+      const end = parseFlexibleDate(b.endDate!) ?? new Date(b.endDate!);
       return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
     });
     const avg = times.reduce((s, t) => s + t, 0) / times.length;
@@ -232,7 +226,7 @@ export default function Dashboard() {
   const monthlyBarData = useMemo(() => {
     return MONTH_SHORT.map((month, i) => ({
       month,
-      libros: yearBooks.filter(b => new Date(b.endDate || b.startDate || b.addedAt).getMonth() === i).length,
+      libros: yearBooks.filter(b => getBookMonth(b) === i).length,
     }));
   }, [yearBooks]);
 
@@ -240,11 +234,24 @@ export default function Dashboard() {
   const evolutionData = useMemo(() => {
     const finishedBooks = books.filter(b => b.status === "finished");
     const yearsInData = new Set<number>();
-    finishedBooks.forEach(b => { const y = new Date(b.endDate || b.startDate || b.addedAt).getFullYear(); if (!isNaN(y)) yearsInData.add(y); });
+    finishedBooks.forEach(b => yearsInData.add(getBookYear(b)));
     const sortedYears = Array.from(yearsInData).sort();
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
     return MONTH_SHORT.map((month, i) => {
-      const row: Record<string, string | number> = { month };
-      sortedYears.forEach(y => { row[String(y)] = finishedBooks.filter(b => { const d = new Date(b.endDate || b.startDate || b.addedAt); return d.getFullYear() === y && d.getMonth() === i; }).length; });
+      const row: Record<string, string | number | null> = { month };
+      sortedYears.forEach(y => {
+        // No dibujar meses futuros del año en curso: antes se rellenaban
+        // con 0 (sin libros), lo que Recharts conectaba con el resto de
+        // la línea y daba la falsa impresión de que ya había datos para
+        // meses que todavía no han pasado.
+        if (y === currentYear && i > currentMonth) {
+          row[String(y)] = null;
+        } else {
+          row[String(y)] = finishedBooks.filter(b => getBookYear(b) === y && getBookMonth(b) === i).length;
+        }
+      });
       return row;
     });
   }, [books]);
@@ -252,7 +259,7 @@ export default function Dashboard() {
   const evolutionYears = useMemo(() => {
     const finishedBooks = books.filter(b => b.status === "finished");
     const yearsInData = new Set<number>();
-    finishedBooks.forEach(b => { const y = new Date(b.endDate || b.startDate || b.addedAt).getFullYear(); if (!isNaN(y)) yearsInData.add(y); });
+    finishedBooks.forEach(b => yearsInData.add(getBookYear(b)));
     return Array.from(yearsInData).sort();
   }, [books]);
 
@@ -497,6 +504,9 @@ export default function Dashboard() {
                           backgroundColor: "var(--card)",
                         }}
                       />
+                      {evolutionYears.length > 1 && (
+                        <Legend wrapperStyle={{ fontSize: "12px" }} />
+                      )}
                       {evolutionYears.map((year, i) => (
                         <Line
                           key={year}
@@ -507,6 +517,7 @@ export default function Dashboard() {
                           dot={{ r: 3, strokeWidth: 0 }}
                           activeDot={{ r: 5 }}
                           name={String(year)}
+                          connectNulls={false}
                         />
                       ))}
                     </LineChart>
