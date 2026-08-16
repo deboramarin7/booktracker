@@ -281,6 +281,7 @@ export default function Shelves() {
             <span className="font-semibold text-foreground">{finishedBooks.length}</span>{" "}
             libro{finishedBooks.length !== 1 ? "s" : ""} leído
             {finishedBooks.length !== 1 ? "s" : ""}
+            <span className="opacity-60"> (histórico, todos los años)</span>
             <span className="mx-2 opacity-30">·</span>
             <span className="opacity-60 hidden sm:inline">arrastra para reorganizar</span>
             <span className="opacity-60 sm:hidden">mantén pulsado para mover</span>
