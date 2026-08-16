@@ -17,6 +17,39 @@ function proxiedCoverUrl(url?: string): string | undefined {
   return `https://images.weserv.nl/?url=${encodeURIComponent(bare)}&output=jpg`;
 }
 
+/**
+ * En móvil (sobre todo iOS Safari) el atributo `download` de un <a> no
+ * siempre descarga el archivo: el navegador simplemente abre la imagen en
+ * una pestaña. Usamos el Web Share API cuando está disponible — además de
+ * guardar la imagen, permite compartirla directamente a Instagram/TikTok,
+ * que es justo para lo que se genera esta tarjeta. En escritorio (u otros
+ * navegadores sin soporte) recurrimos a la descarga clásica.
+ */
+async function shareOrDownloadImage(node: HTMLElement, filename: string, title: string) {
+  const dataUrl = await toPng(node, { pixelRatio: 3, cacheBust: true, skipFonts: true });
+
+  const nav = typeof navigator !== "undefined" ? navigator : undefined;
+  if (nav?.canShare) {
+    try {
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], filename, { type: "image/png" });
+      if (nav.canShare({ files: [file] })) {
+        await nav.share({ files: [file], title });
+        return;
+      }
+    } catch (err) {
+      // El usuario cerró el panel de compartir: no es un error real.
+      if (err instanceof Error && err.name === "AbortError") return;
+      throw err;
+    }
+  }
+
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = dataUrl;
+  link.click();
+}
+
 interface ShareableStatsProps {
   year: number;
   books: Book[];
@@ -37,20 +70,12 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
     if (!cardRef.current) return;
     setIsGenerating(true);
     try {
-      const dataUrl = await toPng(cardRef.current, {
-        pixelRatio: 2,
-        cacheBust: true,
-        skipFonts: true,
-      });
-      const link = document.createElement("a");
-      link.download = `mi-año-lector-${year}.png`;
-      link.href = dataUrl;
-      link.click();
+      await shareOrDownloadImage(cardRef.current, `mi-año-lector-${year}.png`, `Mi Año Lector ${year}`);
     } catch (err) {
       console.error("Error generating image", err);
       toast({
         title: "No se pudo generar la imagen",
-        description: "Puede que alguna portada haya bloqueado la descarga. Inténtalo de nuevo en unos segundos.",
+        description: "Inténtalo de nuevo en unos segundos.",
         variant: "destructive",
       });
     } finally {
@@ -71,11 +96,14 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
           <DialogTitle className="font-display">Tu Año Lector {year}</DialogTitle>
         </DialogHeader>
 
-        {/* The shareable card — diseño editorial oscuro con fondo de galaxia/nebulosa */}
+        {/* The shareable card — 9:16 (formato historia de Instagram/TikTok), diseño editorial con galaxia/nebulosa */}
         <div
           ref={cardRef}
-          className="rounded-xl overflow-hidden relative"
+          className="rounded-2xl overflow-hidden relative mx-auto"
           style={{
+            aspectRatio: "9 / 16",
+            width: "100%",
+            maxWidth: "420px",
             background: [
               "radial-gradient(ellipse 55% 40% at 15% 12%, rgba(255,80,140,0.45) 0%, rgba(255,80,140,0) 60%)",
               "radial-gradient(ellipse 60% 45% at 45% 30%, rgba(70,220,180,0.35) 0%, rgba(70,220,180,0) 60%)",
@@ -85,7 +113,6 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
               "linear-gradient(160deg, #050508 0%, #0a0712 50%, #060a0c 100%)",
             ].join(", "),
             border: "1px solid rgba(212,175,131,0.18)",
-            padding: "36px 32px",
             color: "#f3ede3",
             fontFamily: "Georgia, 'Times New Roman', serif",
           }}
@@ -103,72 +130,80 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
             }}
           />
 
-          {/* Contenido — por encima de la nebulosa y las estrellas */}
-          <div style={{ position: "relative", zIndex: 1 }}>
+          {/* Contenido — header arriba, año/estadísticas centrados, footer abajo */}
+          <div style={{ position: "relative", zIndex: 1, height: "100%", display: "flex", flexDirection: "column", padding: "40px 26px 28px" }}>
             {/* Header */}
-            <div style={{ textAlign: "center", marginBottom: "28px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "10px" }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
                 <BookOpen style={{ width: "16px", height: "16px", opacity: 0.7 }} />
                 <span style={{ fontSize: "11px", letterSpacing: "3px", textTransform: "uppercase", opacity: 0.7, fontFamily: "system-ui, sans-serif" }}>
                   Mi Año Lector
                 </span>
               </div>
-              <p style={{ fontSize: "56px", fontWeight: 300, lineHeight: 1, letterSpacing: "1px" }}>{year}</p>
-              <div style={{ width: "56px", height: "1px", background: "rgba(212,175,131,0.6)", margin: "16px auto 0" }} />
             </div>
 
-            {/* Main stats — sin cajas, estilo editorial con separadores finos */}
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: "26px" }}>
-              {[
-                { value: totalBooks, label: "Libros" },
-                { value: totalPages.toLocaleString(), label: "Páginas" },
-                { value: uniqueAuthors, label: "Autores" },
-              ].map((stat, i) => (
-                <div
-                  key={stat.label}
-                  style={{
-                    textAlign: "center",
-                    padding: "0 24px",
-                    borderLeft: i > 0 ? "1px solid rgba(243,237,227,0.2)" : "none",
-                  }}
-                >
-                  <p style={{ fontSize: "34px", fontWeight: 400, lineHeight: 1 }}>{stat.value}</p>
-                  <p style={{ fontSize: "10px", opacity: 0.65, textTransform: "uppercase", letterSpacing: "1.5px", marginTop: "6px", fontFamily: "system-ui, sans-serif" }}>
-                    {stat.label}
-                  </p>
-                </div>
-              ))}
-            </div>
+            {/* Bloque central — año + estadísticas, centrado verticalmente */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+              <p style={{ fontSize: "68px", fontWeight: 300, lineHeight: 1, letterSpacing: "1px", margin: 0 }}>{year}</p>
+              <div style={{ width: "60px", height: "1px", background: "rgba(212,175,131,0.6)", margin: "20px auto 34px" }} />
 
-            {/* Físico vs Digital — mismo estilo editorial que la fila principal */}
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: "28px" }}>
-              {[
-                { value: physicalCount, label: "Físicos" },
-                { value: digitalCount, label: "Digitales" },
-              ].map((stat, i) => (
-                <div
-                  key={stat.label}
-                  style={{
-                    textAlign: "center",
-                    padding: "0 24px",
-                    borderLeft: i > 0 ? "1px solid rgba(243,237,227,0.2)" : "none",
-                  }}
-                >
-                  <p style={{ fontSize: "28px", fontWeight: 400, lineHeight: 1 }}>{stat.value}</p>
-                  <p style={{ fontSize: "10px", opacity: 0.65, textTransform: "uppercase", letterSpacing: "1.5px", marginTop: "6px", fontFamily: "system-ui, sans-serif" }}>
-                    {stat.label}
-                  </p>
-                </div>
-              ))}
+              {/* Main stats — sin cajas, estilo editorial con separadores finos */}
+              <div style={{ display: "flex", width: "100%", marginBottom: "30px" }}>
+                {[
+                  { value: totalBooks, label: "Libros" },
+                  { value: totalPages.toLocaleString(), label: "Páginas" },
+                  { value: uniqueAuthors, label: "Autores" },
+                ].map((stat, i) => (
+                  <div
+                    key={stat.label}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      textAlign: "center",
+                      padding: "0 6px",
+                      borderLeft: i > 0 ? "1px solid rgba(243,237,227,0.2)" : "none",
+                    }}
+                  >
+                    <p style={{ fontSize: "30px", fontWeight: 400, lineHeight: 1, margin: 0 }}>{stat.value}</p>
+                    <p style={{ fontSize: "9px", opacity: 0.65, textTransform: "uppercase", letterSpacing: "0.8px", marginTop: "6px", fontFamily: "system-ui, sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {stat.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Físico vs Digital — mismo estilo editorial que la fila principal */}
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                {[
+                  { value: physicalCount, label: "Físicos" },
+                  { value: digitalCount, label: "Digitales" },
+                ].map((stat, i) => (
+                  <div
+                    key={stat.label}
+                    style={{
+                      textAlign: "center",
+                      padding: "0 16px",
+                      borderLeft: i > 0 ? "1px solid rgba(243,237,227,0.2)" : "none",
+                    }}
+                  >
+                    <p style={{ fontSize: "26px", fontWeight: 400, lineHeight: 1, margin: 0 }}>{stat.value}</p>
+                    <p style={{ fontSize: "9px", opacity: 0.65, textTransform: "uppercase", letterSpacing: "0.8px", marginTop: "6px", fontFamily: "system-ui, sans-serif", whiteSpace: "nowrap" }}>
+                      {stat.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Footer */}
-            <p style={{ textAlign: "center", fontSize: "11px", opacity: 0.5, fontStyle: "italic", marginBottom: "4px" }}>
-              ✨A los lectores que alzan los ojos a las estrellas y piden un deseo✨
-            </p>
-            <p style={{ textAlign: "center", fontSize: "10px", opacity: 0.4, letterSpacing: "1px", fontFamily: "system-ui, sans-serif" }}>
-              📚 Book Tracker
-            </p>
+            <div>
+              <p style={{ textAlign: "center", fontSize: "11px", opacity: 0.5, fontStyle: "italic", margin: "0 0 4px" }}>
+                ✨A los lectores que alzan los ojos a las estrellas y piden un deseo✨
+              </p>
+              <p style={{ textAlign: "center", fontSize: "10px", opacity: 0.4, letterSpacing: "1px", fontFamily: "system-ui, sans-serif", margin: 0 }}>
+                📚 Book Tracker
+              </p>
+            </div>
           </div>
         </div>
 
@@ -200,15 +235,7 @@ export function BestOfYearExport({ year, books }: BestOfYearProps) {
     if (!cardRef.current) return;
     setIsGenerating(true);
     try {
-      const dataUrl = await toPng(cardRef.current, {
-        pixelRatio: 2,
-        cacheBust: true,
-        skipFonts: true,
-      });
-      const link = document.createElement("a");
-      link.download = `mejores-libros-${year}.png`;
-      link.href = dataUrl;
-      link.click();
+      await shareOrDownloadImage(cardRef.current, `mejores-libros-${year}.png`, `Mejores Libros de ${year}`);
     } catch (err) {
       console.error("Error generating image", err);
       toast({
