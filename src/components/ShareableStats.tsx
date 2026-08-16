@@ -71,82 +71,105 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
           <DialogTitle className="font-display">Tu Año Lector {year}</DialogTitle>
         </DialogHeader>
 
-        {/* The shareable card — diseño editorial oscuro */}
+        {/* The shareable card — diseño editorial oscuro con fondo de galaxia/nebulosa */}
         <div
           ref={cardRef}
           className="rounded-xl overflow-hidden relative"
           style={{
-            background: "linear-gradient(160deg, #0b0a09 0%, #17130f 55%, #201810 100%)",
+            background: [
+              "radial-gradient(ellipse 55% 40% at 15% 12%, rgba(255,80,140,0.45) 0%, rgba(255,80,140,0) 60%)",
+              "radial-gradient(ellipse 60% 45% at 45% 30%, rgba(70,220,180,0.35) 0%, rgba(70,220,180,0) 60%)",
+              "radial-gradient(ellipse 50% 35% at 78% 18%, rgba(255,170,90,0.25) 0%, rgba(255,170,90,0) 55%)",
+              "radial-gradient(ellipse 55% 45% at 12% 80%, rgba(50,200,170,0.32) 0%, rgba(50,200,170,0) 55%)",
+              "radial-gradient(ellipse 45% 35% at 85% 85%, rgba(150,80,220,0.22) 0%, rgba(150,80,220,0) 55%)",
+              "linear-gradient(160deg, #050508 0%, #0a0712 50%, #060a0c 100%)",
+            ].join(", "),
             border: "1px solid rgba(212,175,131,0.18)",
             padding: "36px 32px",
             color: "#f3ede3",
             fontFamily: "Georgia, 'Times New Roman', serif",
           }}
         >
-          {/* Header */}
-          <div style={{ textAlign: "center", marginBottom: "28px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "10px" }}>
-              <BookOpen style={{ width: "16px", height: "16px", opacity: 0.55 }} />
-              <span style={{ fontSize: "11px", letterSpacing: "3px", textTransform: "uppercase", opacity: 0.55, fontFamily: "system-ui, sans-serif" }}>
-                Mi Año Lector
-              </span>
+          {/* Estrellas — patrón SVG tileado, 100% CSS/SVG, sin imágenes externas */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage:
+                "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='12' cy='18' r='1' opacity='0.9'/%3E%3Ccircle cx='40' cy='55' r='0.6' opacity='0.5'/%3E%3Ccircle cx='75' cy='12' r='0.8' opacity='0.7'/%3E%3Ccircle cx='100' cy='40' r='1.2' opacity='0.9'/%3E%3Ccircle cx='130' cy='20' r='0.6' opacity='0.4'/%3E%3Ccircle cx='160' cy='60' r='1' opacity='0.8'/%3E%3Ccircle cx='195' cy='30' r='0.7' opacity='0.6'/%3E%3Ccircle cx='20' cy='90' r='0.9' opacity='0.7'/%3E%3Ccircle cx='55' cy='110' r='0.6' opacity='0.5'/%3E%3Ccircle cx='85' cy='85' r='1.3' opacity='0.9'/%3E%3Ccircle cx='115' cy='105' r='0.6' opacity='0.4'/%3E%3Ccircle cx='145' cy='95' r='1' opacity='0.8'/%3E%3Ccircle cx='180' cy='115' r='0.7' opacity='0.6'/%3E%3Ccircle cx='210' cy='85' r='0.9' opacity='0.7'/%3E%3Ccircle cx='10' cy='150' r='0.7' opacity='0.6'/%3E%3Ccircle cx='45' cy='170' r='1.1' opacity='0.9'/%3E%3Ccircle cx='70' cy='145' r='0.6' opacity='0.4'/%3E%3Ccircle cx='100' cy='185' r='0.9' opacity='0.7'/%3E%3Ccircle cx='135' cy='160' r='0.6' opacity='0.5'/%3E%3Ccircle cx='165' cy='190' r='1.2' opacity='0.9'/%3E%3Ccircle cx='200' cy='150' r='0.7' opacity='0.6'/%3E%3Ccircle cx='25' cy='210' r='0.6' opacity='0.5'/%3E%3Ccircle cx='60' cy='200' r='0.8' opacity='0.6'/%3E%3Ccircle cx='95' cy='215' r='0.6' opacity='0.4'/%3E%3Ccircle cx='125' cy='205' r='1' opacity='0.8'/%3E%3Ccircle cx='155' cy='215' r='0.6' opacity='0.5'/%3E%3Ccircle cx='190' cy='205' r='0.9' opacity='0.7'/%3E%3C/g%3E%3C/svg%3E\")",
+              backgroundRepeat: "repeat",
+              pointerEvents: "none",
+            }}
+          />
+
+          {/* Contenido — por encima de la nebulosa y las estrellas */}
+          <div style={{ position: "relative", zIndex: 1 }}>
+            {/* Header */}
+            <div style={{ textAlign: "center", marginBottom: "28px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "10px" }}>
+                <BookOpen style={{ width: "16px", height: "16px", opacity: 0.7 }} />
+                <span style={{ fontSize: "11px", letterSpacing: "3px", textTransform: "uppercase", opacity: 0.7, fontFamily: "system-ui, sans-serif" }}>
+                  Mi Año Lector
+                </span>
+              </div>
+              <p style={{ fontSize: "56px", fontWeight: 300, lineHeight: 1, letterSpacing: "1px" }}>{year}</p>
+              <div style={{ width: "56px", height: "1px", background: "rgba(212,175,131,0.6)", margin: "16px auto 0" }} />
             </div>
-            <p style={{ fontSize: "56px", fontWeight: 300, lineHeight: 1, letterSpacing: "1px" }}>{year}</p>
-            <div style={{ width: "56px", height: "1px", background: "rgba(212,175,131,0.6)", margin: "16px auto 0" }} />
-          </div>
 
-          {/* Main stats — sin cajas, estilo editorial con separadores finos */}
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: "26px" }}>
-            {[
-              { value: totalBooks, label: "Libros" },
-              { value: totalPages.toLocaleString(), label: "Páginas" },
-              { value: uniqueAuthors, label: "Autores" },
-            ].map((stat, i) => (
-              <div
-                key={stat.label}
-                style={{
-                  textAlign: "center",
-                  padding: "0 24px",
-                  borderLeft: i > 0 ? "1px solid rgba(243,237,227,0.15)" : "none",
-                }}
-              >
-                <p style={{ fontSize: "34px", fontWeight: 400, lineHeight: 1 }}>{stat.value}</p>
-                <p style={{ fontSize: "10px", opacity: 0.55, textTransform: "uppercase", letterSpacing: "1.5px", marginTop: "6px", fontFamily: "system-ui, sans-serif" }}>
-                  {stat.label}
-                </p>
-              </div>
-            ))}
-          </div>
+            {/* Main stats — sin cajas, estilo editorial con separadores finos */}
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "26px" }}>
+              {[
+                { value: totalBooks, label: "Libros" },
+                { value: totalPages.toLocaleString(), label: "Páginas" },
+                { value: uniqueAuthors, label: "Autores" },
+              ].map((stat, i) => (
+                <div
+                  key={stat.label}
+                  style={{
+                    textAlign: "center",
+                    padding: "0 24px",
+                    borderLeft: i > 0 ? "1px solid rgba(243,237,227,0.2)" : "none",
+                  }}
+                >
+                  <p style={{ fontSize: "34px", fontWeight: 400, lineHeight: 1 }}>{stat.value}</p>
+                  <p style={{ fontSize: "10px", opacity: 0.65, textTransform: "uppercase", letterSpacing: "1.5px", marginTop: "6px", fontFamily: "system-ui, sans-serif" }}>
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </div>
 
-          {/* Físico vs Digital — mismo estilo editorial que la fila principal */}
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: "28px" }}>
-            {[
-              { value: physicalCount, label: "Físicos" },
-              { value: digitalCount, label: "Digitales" },
-            ].map((stat, i) => (
-              <div
-                key={stat.label}
-                style={{
-                  textAlign: "center",
-                  padding: "0 24px",
-                  borderLeft: i > 0 ? "1px solid rgba(243,237,227,0.15)" : "none",
-                }}
-              >
-                <p style={{ fontSize: "28px", fontWeight: 400, lineHeight: 1 }}>{stat.value}</p>
-                <p style={{ fontSize: "10px", opacity: 0.55, textTransform: "uppercase", letterSpacing: "1.5px", marginTop: "6px", fontFamily: "system-ui, sans-serif" }}>
-                  {stat.label}
-                </p>
-              </div>
-            ))}
-          </div>
+            {/* Físico vs Digital — mismo estilo editorial que la fila principal */}
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "28px" }}>
+              {[
+                { value: physicalCount, label: "Físicos" },
+                { value: digitalCount, label: "Digitales" },
+              ].map((stat, i) => (
+                <div
+                  key={stat.label}
+                  style={{
+                    textAlign: "center",
+                    padding: "0 24px",
+                    borderLeft: i > 0 ? "1px solid rgba(243,237,227,0.2)" : "none",
+                  }}
+                >
+                  <p style={{ fontSize: "28px", fontWeight: 400, lineHeight: 1 }}>{stat.value}</p>
+                  <p style={{ fontSize: "10px", opacity: 0.65, textTransform: "uppercase", letterSpacing: "1.5px", marginTop: "6px", fontFamily: "system-ui, sans-serif" }}>
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </div>
 
-          {/* Footer */}
-          <p style={{ textAlign: "center", fontSize: "11px", opacity: 0.4, fontStyle: "italic", marginBottom: "4px" }}>
-            ✨A los lectores que alzan los ojos a las estrellas y piden un deseo✨
-          </p>
-          <p style={{ textAlign: "center", fontSize: "10px", opacity: 0.35, letterSpacing: "1px", fontFamily: "system-ui, sans-serif" }}>
-            📚 Book Tracker
-          </p>
+            {/* Footer */}
+            <p style={{ textAlign: "center", fontSize: "11px", opacity: 0.5, fontStyle: "italic", marginBottom: "4px" }}>
+              Una lectura, una historia.
+            </p>
+            <p style={{ textAlign: "center", fontSize: "10px", opacity: 0.4, letterSpacing: "1px", fontFamily: "system-ui, sans-serif" }}>
+              📚 Book Tracker
+            </p>
+          </div>
         </div>
 
         <Button onClick={handleDownload} disabled={isGenerating} className="w-full gap-2 mt-2">
