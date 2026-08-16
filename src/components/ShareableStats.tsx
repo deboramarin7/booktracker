@@ -4,15 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Share2, Download, Star, BookOpen, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { parseFlexibleDate } from "@/lib/dateUtils";
 import type { Book } from "@/hooks/useBooks";
 
 /**
  * Las portadas vienen de dominios externos (Open Library, Amazon...) que no
- * siempre responden con cabeceras CORS. Al mezclarlas directamente en un
- * <img> "contaminan" el <canvas> que genera html-to-image y la descarga
- * falla en silencio. Las servimos a través de un proxy de imágenes que sí
- * añade cabeceras CORS (images.weserv.nl) para poder exportarlas siempre.
+ * siempre responden con cabeceras CORS y siguen dando problemas al exportar
+ * la tarjeta como imagen, así que la tarjeta "Mi Año Lector" ya no las usa.
  */
 function proxiedCoverUrl(url?: string): string | undefined {
   if (!url) return undefined;
@@ -32,31 +29,9 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
 
   const totalBooks = books.length;
   const totalPages = books.reduce((s, b) => s + b.totalPages, 0);
-  const avgRating = totalBooks > 0 ? (books.reduce((s, b) => s + b.rating, 0) / totalBooks).toFixed(1) : "0";
   const uniqueAuthors = new Set(books.map(b => b.author)).size;
-  const uniqueGenres = new Set(books.filter(b => b.genre).map(b => b.genre)).size;
-  const topGenre = (() => {
-    const map: Record<string, number> = {};
-    books.forEach(b => { map[b.genre] = (map[b.genre] || 0) + 1; });
-    return Object.entries(map).sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
-  })();
-  const topAuthor = (() => {
-    const map: Record<string, number> = {};
-    books.forEach(b => { map[b.author] = (map[b.author] || 0) + 1; });
-    return Object.entries(map).sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
-  })();
-
-  // Reading time stats — usamos el parser flexible para no confundir DD/MM/AAAA con MM/DD/AAAA
-  const booksWithDates = books.filter(b => b.startDate && b.endDate);
-  const avgDays = booksWithDates.length > 0
-    ? (booksWithDates.reduce((s, b) => {
-        const start = parseFlexibleDate(b.startDate) ?? new Date(b.startDate!);
-        const end = parseFlexibleDate(b.endDate) ?? new Date(b.endDate!);
-        return s + Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
-      }, 0) / booksWithDates.length).toFixed(0)
-    : null;
-
-  const coverBooks = books.filter(b => b.coverUrl).slice(0, 10);
+  const physicalCount = books.filter(b => b.format === "Físico").length;
+  const digitalCount = books.filter(b => b.format === "Digital").length;
 
   const handleDownload = useCallback(async () => {
     if (!cardRef.current) return;
@@ -143,56 +118,27 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
             ))}
           </div>
 
-          {/* Secondary stats — lista editorial con reglas finas */}
-          <div style={{ marginBottom: "26px" }}>
+          {/* Físico vs Digital — mismo estilo editorial que la fila principal */}
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "28px" }}>
             {[
-              { label: "Género favorito", value: topGenre },
-              { label: "Autor/a más leído/a", value: topAuthor },
-              { label: "Puntuación media", value: `${"★".repeat(Math.round(Number(avgRating)))} ${avgRating}` },
-              { label: avgDays ? "Media días por libro" : "Géneros distintos leídos", value: avgDays ? `${avgDays} días` : String(uniqueGenres) },
-            ].map((row, i, arr) => (
+              { value: physicalCount, label: "Físicos" },
+              { value: digitalCount, label: "Digitales" },
+            ].map((stat, i) => (
               <div
-                key={row.label}
+                key={stat.label}
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  padding: "10px 2px",
-                  borderTop: "1px solid rgba(243,237,227,0.12)",
-                  borderBottom: i === arr.length - 1 ? "1px solid rgba(243,237,227,0.12)" : "none",
+                  textAlign: "center",
+                  padding: "0 24px",
+                  borderLeft: i > 0 ? "1px solid rgba(243,237,227,0.15)" : "none",
                 }}
               >
-                <span style={{ fontSize: "11px", opacity: 0.55, textTransform: "uppercase", letterSpacing: "1px", fontFamily: "system-ui, sans-serif" }}>
-                  {row.label}
-                </span>
-                <span style={{ fontSize: "15px", fontWeight: 600, textAlign: "right", marginLeft: "12px" }}>{row.value}</span>
+                <p style={{ fontSize: "28px", fontWeight: 400, lineHeight: 1 }}>{stat.value}</p>
+                <p style={{ fontSize: "10px", opacity: 0.55, textTransform: "uppercase", letterSpacing: "1.5px", marginTop: "6px", fontFamily: "system-ui, sans-serif" }}>
+                  {stat.label}
+                </p>
               </div>
             ))}
           </div>
-
-          {/* Cover collage — apiladas con ligera rotación, estilo editorial */}
-          {coverBooks.length > 0 && (
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: "24px", padding: "8px 0" }}>
-              {coverBooks.map((b, i) => (
-                <img
-                  key={i}
-                  src={proxiedCoverUrl(b.coverUrl)}
-                  alt=""
-                  crossOrigin="anonymous"
-                  style={{
-                    width: "48px",
-                    height: "72px",
-                    objectFit: "cover",
-                    borderRadius: "3px",
-                    marginLeft: i === 0 ? 0 : "-14px",
-                    transform: `rotate(${(i % 2 === 0 ? -1 : 1) * (3 + (i % 3))}deg)`,
-                    border: "2px solid #17130f",
-                    boxShadow: "0 4px 10px rgba(0,0,0,0.5)",
-                  }}
-                />
-              ))}
-            </div>
-          )}
 
           {/* Footer */}
           <p style={{ textAlign: "center", fontSize: "11px", opacity: 0.4, fontStyle: "italic", marginBottom: "4px" }}>
