@@ -1,429 +1,687 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
+import { GENRE_COLORS } from "@/lib/constants";
 import { useBooksContext } from "@/components/Layout";
-import { useMonthlyGoals } from "@/hooks/useMonthlyGoals";
-import { useReadingHabits } from "@/hooks/useReadingHabits";
-import { getBookYear, getBookMonth } from "@/lib/dateUtils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
+import { BookOpen, TrendingUp, TrendingDown, User, Library, ChartBar as BarChart3, Clock, CalendarRange, Star, Flame, BookMarked, Target, Pencil, Check } from "lucide-react";
+import { BookCoverImage } from "@/components/BookCoverImage";
 import {
-  Trophy, Target, BookOpen, Flame, Star, Crown, Zap,
-  BookMarked, Library, Calendar, Medal, Sparkles, Check,
-  Lock, Globe, Heart, Compass, TrendingUp,
-} from "lucide-react";
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
+  BarChart, Bar, XAxis, YAxis, LineChart, Line, CartesianGrid, Legend,
+} from "recharts";
+import { ShareableStats, BestOfYearExport } from "@/components/ShareableStats";
+import { getBookYear, getBookMonth, parseFlexibleDate } from "@/lib/dateUtils";
+import { useReadingHabits } from "@/hooks/useReadingHabits";
 
-const MONTHLY_GOALS_KEY = "book-tracker-monthly-goals";
-
-const MONTH_NAMES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-
-type AchievementCategory = "constancia" | "volumen" | "exploración";
-
-interface Achievement {
-  id: string;
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  unlocked: boolean;
-  progress: { current: number; target: number };
-  color: string;
-  category: AchievementCategory;
+const GOALS_KEY = "book-tracker-reading-goals";
+function loadGoals(): Record<number, number> {
+  try { return JSON.parse(localStorage.getItem(GOALS_KEY) || "{}"); } catch { return {}; }
+}
+function saveGoals(goals: Record<number, number>) {
+  localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
 }
 
-const CATEGORY_META: Record<AchievementCategory, { label: string; icon: React.ReactNode; gradient: string }> = {
-  constancia: { label: "Constancia", icon: <Flame className="h-5 w-5" />, gradient: "from-orange-500/15 via-amber-500/5 to-transparent" },
-  volumen: { label: "Volumen", icon: <TrendingUp className="h-5 w-5" />, gradient: "from-blue-500/15 via-indigo-500/5 to-transparent" },
-  exploración: { label: "Exploración", icon: <Compass className="h-5 w-5" />, gradient: "from-emerald-500/15 via-teal-500/5 to-transparent" },
-};
+const MONTH_SHORT = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
-// --- Achievement Card ---
-function AchievementCard({ a }: { a: Achievement }) {
-  const pct = (a.progress.current / a.progress.target) * 100;
-  const isInProgress = !a.unlocked && a.progress.current > 0;
-
+// --- Section header component ---
+function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementType; title: string; subtitle?: string }) {
   return (
-    <div
-      className={cn(
-        "relative rounded-2xl p-5 transition-all duration-300 border",
-        a.unlocked
-          ? "bg-card border-border/40 shadow-lg"
-          : isInProgress
-          ? "bg-card/80 border-border/30"
-          : "bg-muted/20 border-border/15"
-      )}
-    >
-      {/* Glow effect for unlocked */}
-      {a.unlocked && (
-        <div
-          className="absolute inset-0 rounded-2xl opacity-20 blur-xl pointer-events-none"
-          style={{ backgroundColor: a.color }}
-        />
-      )}
-
-      <div className="relative flex items-start gap-4">
-        {/* Icon */}
-        <div
-          className={cn(
-            "w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all",
-            a.unlocked
-              ? "text-white shadow-lg"
-              : isInProgress
-              ? "bg-muted/60 text-muted-foreground"
-              : "bg-muted/30 text-muted-foreground/40"
-          )}
-          style={a.unlocked ? { backgroundColor: a.color, boxShadow: `0 4px 20px ${a.color}40` } : undefined}
-        >
-          {a.unlocked ? a.icon : isInProgress ? a.icon : <Lock className="h-5 w-5" />}
-          {a.unlocked && (
-            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center ring-2 ring-card">
-              <Check className="h-3 w-3 text-white" />
-            </div>
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <p className={cn(
-            "font-display font-semibold text-sm",
-            a.unlocked ? "text-foreground" : isInProgress ? "text-foreground/80" : "text-muted-foreground/60"
-          )}>
-            {a.title}
-          </p>
-          <p className={cn(
-            "text-[11px] mt-0.5",
-            a.unlocked ? "text-muted-foreground" : "text-muted-foreground/50"
-          )}>
-            {a.description}
-          </p>
-
-          {/* Progress bar */}
-          <div className="mt-2.5 space-y-1">
-            <div className="relative h-2 w-full rounded-full overflow-hidden bg-muted/40">
-              <div
-                className={cn(
-                  "h-full rounded-full transition-all duration-700",
-                  a.unlocked ? "bg-emerald-500" : isInProgress ? "bg-primary/60" : "bg-muted-foreground/10"
-                )}
-                style={{
-                  width: `${Math.min(pct, 100)}%`,
-                  ...(a.unlocked ? { backgroundColor: a.color } : {}),
-                }}
-              />
-            </div>
-            <p className={cn(
-              "text-[10px] tabular-nums",
-              a.unlocked ? "text-muted-foreground" : "text-muted-foreground/50"
-            )}>
-              {a.progress.current.toLocaleString()} / {a.progress.target.toLocaleString()}
-            </p>
-          </div>
-        </div>
+    <div className="flex items-center gap-3 mb-6">
+      <div className="p-2.5 rounded-xl bg-primary/10">
+        <Icon className="h-5 w-5 text-primary" />
+      </div>
+      <div>
+        <h3 className="font-display font-bold text-lg">{title}</h3>
+        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
       </div>
     </div>
   );
 }
 
-export default function Achievements() {
+// --- KPI Card ---
+function KpiCard({ value, label, icon: Icon, accent = false }: {
+  value: string | number;
+  label: string;
+  icon: React.ElementType;
+  accent?: boolean;
+}) {
+  return (
+    <Card className="border-border/30 hover:border-border/60 transition-colors">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between mb-3">
+          <div className={`p-2 rounded-lg ${accent ? "bg-accent/10" : "bg-primary/8"}`}>
+            <Icon className={`h-4 w-4 ${accent ? "text-accent" : "text-primary/70"}`} />
+          </div>
+        </div>
+        <p className="text-3xl font-bold font-display text-foreground tracking-tight">{typeof value === "number" ? value.toLocaleString() : value}</p>
+        <p className="text-xs text-muted-foreground mt-1 font-body">{label}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+// --- Book highlight card ---
+function BookHighlight({ book, label, metric, icon: Icon }: {
+  book: { title: string; author: string; coverUrl?: string; totalPages: number; rating: number };
+  label: string;
+  metric: string;
+  icon: React.ElementType;
+}) {
+  return (
+    <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border/30">
+      <BookCoverImage
+        src={book.coverUrl}
+        alt={book.title}
+        title={book.title}
+        className="w-14 h-20 object-cover rounded-lg shadow-md flex-shrink-0"
+        fallbackClassName="w-14 h-20 rounded-lg flex-shrink-0"
+      />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Icon className="h-3.5 w-3.5 text-primary/60" />
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">{label}</span>
+        </div>
+        <p className="font-display font-semibold text-sm truncate">{book.title}</p>
+        <p className="text-xs text-muted-foreground truncate">{book.author}</p>
+        <p className="text-xs text-primary font-semibold mt-0.5">{metric}</p>
+      </div>
+    </div>
+  );
+}
+
+export default function Dashboard() {
   const { books } = useBooksContext();
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth();
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
-  const [selectedYear, setSelectedYear] = useState(currentYear);
-  const { goals: monthlyGoals, setGoals: saveMonthlyGoals } = useMonthlyGoals();
-  const [editingMonth, setEditingMonth] = useState<number | null>(null);
-  const [editValue, setEditValue] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<AchievementCategory | "all">("all");
-
-  const finishedBooks = useMemo(() => books.filter(b => b.status === "finished"), [books]);
-
-  const yearFinished = useMemo(() => {
-    return finishedBooks.filter(b => getBookYear(b) === selectedYear);
-  }, [finishedBooks, selectedYear]);
-
-  // Se usa el mismo hook que la página de Hábitos (Supabase) en vez de
-  // leer una copia local en localStorage que nunca se refrescaba y podía
-  // quedar vacía en una sesión/dispositivo nuevo.
   const { habits } = useReadingHabits();
-  const yearDays = useMemo(() => habits[String(selectedYear)] || [], [habits, selectedYear]);
 
-  const maxStreak = useMemo(() => {
-    const allDays = [...yearDays].sort();
-    if (allDays.length === 0) return 0;
-    let max = 1, current = 1;
-    for (let i = 1; i < allDays.length; i++) {
-      const prev = new Date(allDays[i - 1]);
-      const curr = new Date(allDays[i]);
-      const diff = (curr.getTime() - prev.getTime()) / 86400000;
-      if (diff === 1) { current++; max = Math.max(max, current); }
-      else if (diff > 1) current = 1;
-    }
-    return Math.max(max, current);
-  }, [yearDays]);
+  const years = useMemo(() => {
+    const yearSet = new Set<number>();
+    yearSet.add(new Date().getFullYear());
+    books.forEach((b) => yearSet.add(getBookYear(b)));
+    return Array.from(yearSet).sort((a, b) => b - a);
+  }, [books]);
 
-  const totalReadDays = yearDays.length;
-  const uniqueAuthors = useMemo(() => new Set(yearFinished.map(b => b.author)).size, [yearFinished]);
-  const uniqueGenres = useMemo(() => new Set(yearFinished.filter(b => b.genre).map(b => b.genre)).size, [yearFinished]);
-  const fiveStarBooks = useMemo(() => yearFinished.filter(b => b.rating === 5).length, [yearFinished]);
-  const totalPages = useMemo(() => yearFinished.reduce((s, b) => s + b.totalPages, 0), [yearFinished]);
-  const uniqueSagas = useMemo(() => new Set(yearFinished.filter(b => b.hasSaga && b.saga).map(b => b.saga)).size, [yearFinished]);
-  const formatsUsed = useMemo(() => new Set(yearFinished.filter(b => b.format).map(b => b.format)).size, [yearFinished]);
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
-  const achievements: Achievement[] = useMemo(() => [
-    // —— CONSTANCIA ——
-    { id: "streak_3", icon: <Flame className="h-6 w-6" />, title: "Chispa", description: "3 días seguidos leyendo", unlocked: maxStreak >= 3, progress: { current: Math.min(maxStreak, 3), target: 3 }, color: "hsl(25, 80%, 55%)", category: "constancia" as const },
-    { id: "streak_7", icon: <Flame className="h-6 w-6" />, title: "Semana en Llamas", description: "7 días seguidos leyendo", unlocked: maxStreak >= 7, progress: { current: Math.min(maxStreak, 7), target: 7 }, color: "hsl(15, 85%, 50%)", category: "constancia" as const },
-    { id: "streak_14", icon: <Zap className="h-6 w-6" />, title: "Quincena de Fuego", description: "14 días seguidos leyendo", unlocked: maxStreak >= 14, progress: { current: Math.min(maxStreak, 14), target: 14 }, color: "hsl(40, 90%, 50%)", category: "constancia" as const },
-    { id: "streak_30", icon: <Crown className="h-6 w-6" />, title: "Imparable", description: "30 días seguidos leyendo", unlocked: maxStreak >= 30, progress: { current: Math.min(maxStreak, 30), target: 30 }, color: "hsl(50, 95%, 50%)", category: "constancia" as const },
-    { id: "50_days", icon: <Calendar className="h-6 w-6" />, title: "Medio Centenar", description: `50 días de lectura en ${selectedYear}`, unlocked: totalReadDays >= 50, progress: { current: Math.min(totalReadDays, 50), target: 50 }, color: "hsl(30, 70%, 50%)", category: "constancia" as const },
-    { id: "100_days", icon: <Calendar className="h-6 w-6" />, title: "Centenario", description: `100 días de lectura en ${selectedYear}`, unlocked: totalReadDays >= 100, progress: { current: Math.min(totalReadDays, 100), target: 100 }, color: "hsl(20, 75%, 45%)", category: "constancia" as const },
-    { id: "200_days", icon: <Sparkles className="h-6 w-6" />, title: "Leyenda", description: `200 días de lectura en ${selectedYear}`, unlocked: totalReadDays >= 200, progress: { current: Math.min(totalReadDays, 200), target: 200 }, color: "hsl(10, 80%, 40%)", category: "constancia" as const },
+  const [goals, setGoals] = useState<Record<number, number>>(loadGoals);
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalInput, setGoalInput] = useState("");
+  const goalInputRef = useRef<HTMLInputElement>(null);
 
-    // —— VOLUMEN ——
-    { id: "first_book", icon: <BookOpen className="h-6 w-6" />, title: "Primer Libro", description: `Termina tu primer libro en ${selectedYear}`, unlocked: yearFinished.length >= 1, progress: { current: Math.min(yearFinished.length, 1), target: 1 }, color: "hsl(210, 70%, 55%)", category: "volumen" as const },
-    { id: "five_books", icon: <BookMarked className="h-6 w-6" />, title: "Lector Novato", description: `Termina 5 libros en ${selectedYear}`, unlocked: yearFinished.length >= 5, progress: { current: Math.min(yearFinished.length, 5), target: 5 }, color: "hsl(220, 65%, 50%)", category: "volumen" as const },
-    { id: "ten_books", icon: <Library className="h-6 w-6" />, title: "Lector Dedicado", description: `Termina 10 libros en ${selectedYear}`, unlocked: yearFinished.length >= 10, progress: { current: Math.min(yearFinished.length, 10), target: 10 }, color: "hsl(240, 55%, 55%)", category: "volumen" as const },
-    { id: "25_books", icon: <Trophy className="h-6 w-6" />, title: "Bibliófilo", description: `Termina 25 libros en ${selectedYear}`, unlocked: yearFinished.length >= 25, progress: { current: Math.min(yearFinished.length, 25), target: 25 }, color: "hsl(260, 50%, 55%)", category: "volumen" as const },
-    { id: "50_books", icon: <Crown className="h-6 w-6" />, title: "Devoralibros", description: `Termina 50 libros en ${selectedYear}`, unlocked: yearFinished.length >= 50, progress: { current: Math.min(yearFinished.length, 50), target: 50 }, color: "hsl(280, 55%, 50%)", category: "volumen" as const },
-    { id: "1000_pages", icon: <Target className="h-6 w-6" />, title: "Mil Páginas", description: `Lee 1.000 páginas en ${selectedYear}`, unlocked: totalPages >= 1000, progress: { current: Math.min(totalPages, 1000), target: 1000 }, color: "hsl(200, 60%, 50%)", category: "volumen" as const },
-    { id: "5000_pages", icon: <Target className="h-6 w-6" />, title: "Maratonista", description: `Lee 5.000 páginas en ${selectedYear}`, unlocked: totalPages >= 5000, progress: { current: Math.min(totalPages, 5000), target: 5000 }, color: "hsl(230, 60%, 50%)", category: "volumen" as const },
-    { id: "10000_pages", icon: <Sparkles className="h-6 w-6" />, title: "Ultra Lector", description: `Lee 10.000 páginas en ${selectedYear}`, unlocked: totalPages >= 10000, progress: { current: Math.min(totalPages, 10000), target: 10000 }, color: "hsl(270, 60%, 50%)", category: "volumen" as const },
+  const currentGoal = goals[selectedYear] ?? 0;
 
-    // —— EXPLORACIÓN ——
-    { id: "3_genres", icon: <Globe className="h-6 w-6" />, title: "Curioso", description: "Lee 3 géneros diferentes", unlocked: uniqueGenres >= 3, progress: { current: Math.min(uniqueGenres, 3), target: 3 }, color: "hsl(150, 55%, 45%)", category: "exploración" as const },
-    { id: "5_genres", icon: <Medal className="h-6 w-6" />, title: "Ecléctico", description: "Lee 5 géneros diferentes", unlocked: uniqueGenres >= 5, progress: { current: Math.min(uniqueGenres, 5), target: 5 }, color: "hsl(160, 50%, 42%)", category: "exploración" as const },
-    { id: "3_authors", icon: <Compass className="h-6 w-6" />, title: "Descubridor", description: "Lee a 3 autores diferentes", unlocked: uniqueAuthors >= 3, progress: { current: Math.min(uniqueAuthors, 3), target: 3 }, color: "hsl(170, 50%, 40%)", category: "exploración" as const },
-    { id: "5_authors", icon: <Compass className="h-6 w-6" />, title: "Explorador", description: "Lee a 5 autores diferentes", unlocked: uniqueAuthors >= 5, progress: { current: Math.min(uniqueAuthors, 5), target: 5 }, color: "hsl(180, 50%, 38%)", category: "exploración" as const },
-    { id: "10_authors", icon: <Sparkles className="h-6 w-6" />, title: "Coleccionista", description: "Lee a 10 autores diferentes", unlocked: uniqueAuthors >= 10, progress: { current: Math.min(uniqueAuthors, 10), target: 10 }, color: "hsl(140, 45%, 40%)", category: "exploración" as const },
-    { id: "five_star", icon: <Star className="h-6 w-6" />, title: "Exigente", description: "Da 5 estrellas a 3 libros", unlocked: fiveStarBooks >= 3, progress: { current: Math.min(fiveStarBooks, 3), target: 3 }, color: "hsl(45, 100%, 50%)", category: "exploración" as const },
-    { id: "saga_lover", icon: <Heart className="h-6 w-6" />, title: "Saga Lover", description: "Lee libros de 3 sagas diferentes", unlocked: uniqueSagas >= 3, progress: { current: Math.min(uniqueSagas, 3), target: 3 }, color: "hsl(340, 60%, 50%)", category: "exploración" as const },
-    { id: "multi_format", icon: <BookOpen className="h-6 w-6" />, title: "Multiformato", description: "Lee en 2 formatos (físico + digital)", unlocked: formatsUsed >= 2, progress: { current: Math.min(formatsUsed, 2), target: 2 }, color: "hsl(190, 55%, 42%)", category: "exploración" as const },
-  ], [yearFinished, maxStreak, fiveStarBooks, uniqueAuthors, uniqueGenres, totalReadDays, totalPages, uniqueSagas, formatsUsed, selectedYear]);
-
-  const unlockedCount = achievements.filter(a => a.unlocked).length;
-
-  const filteredAchievements = categoryFilter === "all"
-    ? achievements
-    : achievements.filter(a => a.category === categoryFilter);
-
-  // Sort: unlocked first, then by progress %
-  const sortedAchievements = [...filteredAchievements].sort((a, b) => {
-    if (a.unlocked && !b.unlocked) return -1;
-    if (!a.unlocked && b.unlocked) return 1;
-    const pctA = a.progress.current / a.progress.target;
-    const pctB = b.progress.current / b.progress.target;
-    return pctB - pctA;
-  });
-
-  // Category counts
-  const categoryCounts = {
-    constancia: achievements.filter(a => a.category === "constancia" && a.unlocked).length,
-    volumen: achievements.filter(a => a.category === "volumen" && a.unlocked).length,
-    exploración: achievements.filter(a => a.category === "exploración" && a.unlocked).length,
-  };
-  const categoryTotals = {
-    constancia: achievements.filter(a => a.category === "constancia").length,
-    volumen: achievements.filter(a => a.category === "volumen").length,
-    exploración: achievements.filter(a => a.category === "exploración").length,
-  };
-
-  const monthlyData = useMemo(() => {
-    return MONTH_NAMES.map((name, i) => {
-      const key = `${selectedYear}-${String(i + 1).padStart(2, "0")}`;
-      const goal = monthlyGoals[key] || 0;
-      const read = finishedBooks.filter(b => getBookYear(b) === selectedYear && getBookMonth(b) === i).length;
-      const isPast = selectedYear < currentYear || (selectedYear === currentYear && i < currentMonth);
-      const isCurrent = selectedYear === currentYear && i === currentMonth;
-      return { name, index: i, key, goal, read, isPast, isCurrent };
-    });
-  }, [selectedYear, finishedBooks, monthlyGoals, currentYear, currentMonth]);
-
-  const handleSaveGoal = (monthKey: string) => {
-    const val = parseInt(editValue);
+  const handleGoalSave = () => {
+    const val = parseInt(goalInput, 10);
     if (!isNaN(val) && val >= 0) {
-      const updated = { ...monthlyGoals, [monthKey]: val };
-      saveMonthlyGoals(updated);
+      const updated = { ...goals, [selectedYear]: val };
+      setGoals(updated);
+      saveGoals(updated);
     }
-    setEditingMonth(null);
-    setEditValue("");
+    setEditingGoal(false);
   };
 
-  const yearGoalTotal = monthlyData.reduce((s, m) => s + m.goal, 0);
-  const yearReadTotal = monthlyData.reduce((s, m) => s + m.read, 0);
+  const handleGoalEdit = () => {
+    setGoalInput(String(currentGoal || ""));
+    setEditingGoal(true);
+    setTimeout(() => goalInputRef.current?.focus(), 0);
+  };
+
+  const yearBooks = useMemo(
+    () => books.filter((b) => b.status === "finished" && getBookYear(b) === selectedYear),
+    [books, selectedYear]
+  );
+
+  const totalPages = useMemo(() => yearBooks.reduce((s, b) => s + b.totalPages, 0), [yearBooks]);
+
+  const avgPagesPerBook = useMemo(() => {
+    return yearBooks.length > 0 ? Math.round(totalPages / yearBooks.length) : 0;
+  }, [yearBooks, totalPages]);
+
+  // Racha de lectura: se calcula a partir de los mismos datos que la
+  // página de Hábitos (Supabase, vía useReadingHabits), en lugar de leer
+  // una copia local en localStorage que nunca se actualizaba y hacía que
+  // el Dashboard mostrara "0 días" aunque hubiera una racha activa.
+  const streak = useMemo(() => {
+    const allDays = Object.values(habits).flat().sort().reverse();
+    if (allDays.length === 0) return 0;
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+    if (!allDays.includes(todayStr) && !allDays.includes(yesterdayStr)) return 0;
+    const startDate = allDays.includes(todayStr) ? today : yesterday;
+    let count = 0;
+    const d = new Date(startDate);
+    while (true) {
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      if (allDays.includes(key)) { count++; d.setDate(d.getDate() - 1); } else break;
+    }
+    return count;
+  }, [habits]);
+
+  const mostPages = useMemo(() => {
+    if (yearBooks.length === 0) return null;
+    return yearBooks.reduce((max, b) => (b.totalPages > max.totalPages ? b : max), yearBooks[0]);
+  }, [yearBooks]);
+
+  const leastPages = useMemo(() => {
+    if (yearBooks.length === 0) return null;
+    return yearBooks.filter(b => b.totalPages > 0).reduce((min, b) => (b.totalPages < min.totalPages ? b : min), yearBooks[0]);
+  }, [yearBooks]);
+
+  const topRatedBook = useMemo(() => {
+    const rated = yearBooks.filter(b => b.rating > 0).sort((a, b) => b.rating - a.rating);
+    return rated[0] || null;
+  }, [yearBooks]);
+
+  const authorStats = useMemo(() => {
+    const map: Record<string, { titles: string[]; totalRating: number; ratedCount: number }> = {};
+    yearBooks.forEach((b) => {
+      if (!map[b.author]) map[b.author] = { titles: [], totalRating: 0, ratedCount: 0 };
+      map[b.author].titles.push(b.title);
+      if (b.rating > 0) { map[b.author].totalRating += b.rating; map[b.author].ratedCount++; }
+    });
+    return Object.entries(map)
+      .map(([author, data]) => ({ author, titles: data.titles, count: data.titles.length, avgRating: data.ratedCount > 0 ? (data.totalRating / data.ratedCount) : null }))
+      .sort((a, b) => b.count - a.count || a.author.localeCompare(b.author));
+  }, [yearBooks]);
+
+  const sagaData = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    yearBooks.filter(b => b.hasSaga && b.saga).forEach((b) => { if (!map[b.saga!]) map[b.saga!] = []; map[b.saga!].push(b.title); });
+    return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [yearBooks]);
+
+  const genreData = useMemo(() => {
+    const map: Record<string, number> = {};
+    yearBooks.forEach((b) => { const g = b.genre || "Sin género"; map[g] = (map[g] || 0) + 1; });
+    return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [yearBooks]);
+
+  const genreColorMap: Record<string, string> = Object.fromEntries(
+    Object.entries(GENRE_COLORS).map(([genre, cls]) => {
+      const match = cls.match(/bg-\[hsl\(([^)]+)\)\]/);
+      return [genre, match ? `hsl(${match[1]})` : "hsl(28,56%,36%)"];
+    })
+  );
+  const FALLBACK_COLORS = ["hsl(28,56%,36%)", "hsl(38,72%,50%)", "hsl(142,52%,36%)", "hsl(270,50%,50%)"];
+
+  const readingTimeStats = useMemo(() => {
+    const booksWithDates = yearBooks.filter(b => b.startDate && b.endDate);
+    if (booksWithDates.length === 0) return null;
+    const times = booksWithDates.map(b => {
+      const start = parseFlexibleDate(b.startDate!) ?? new Date(b.startDate!);
+      const end = parseFlexibleDate(b.endDate!) ?? new Date(b.endDate!);
+      return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+    });
+    const avg = times.reduce((s, t) => s + t, 0) / times.length;
+    const fastest = Math.min(...times);
+    const slowest = Math.max(...times);
+    const fastestBook = booksWithDates[times.indexOf(fastest)];
+    const slowestBook = booksWithDates[times.indexOf(slowest)];
+    return { avg: avg.toFixed(0), fastest, slowest, fastestBook, slowestBook, count: booksWithDates.length };
+  }, [yearBooks]);
+
+  // Monthly books bar chart data
+  const monthlyBarData = useMemo(() => {
+    return MONTH_SHORT.map((month, i) => ({
+      month,
+      libros: yearBooks.filter(b => getBookMonth(b) === i).length,
+    }));
+  }, [yearBooks]);
+
+  // Evolution line chart (multi-year)
+  const evolutionData = useMemo(() => {
+    const finishedBooks = books.filter(b => b.status === "finished");
+    const yearsInData = new Set<number>();
+    finishedBooks.forEach(b => yearsInData.add(getBookYear(b)));
+    const sortedYears = Array.from(yearsInData).sort();
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    return MONTH_SHORT.map((month, i) => {
+      const row: Record<string, string | number | null> = { month };
+      sortedYears.forEach(y => {
+        // No dibujar meses futuros del año en curso: antes se rellenaban
+        // con 0 (sin libros), lo que Recharts conectaba con el resto de
+        // la línea y daba la falsa impresión de que ya había datos para
+        // meses que todavía no han pasado.
+        if (y === currentYear && i > currentMonth) {
+          row[String(y)] = null;
+        } else {
+          row[String(y)] = finishedBooks.filter(b => getBookYear(b) === y && getBookMonth(b) === i).length;
+        }
+      });
+      return row;
+    });
+  }, [books]);
+
+  const evolutionYears = useMemo(() => {
+    const finishedBooks = books.filter(b => b.status === "finished");
+    const yearsInData = new Set<number>();
+    finishedBooks.forEach(b => yearsInData.add(getBookYear(b)));
+    return Array.from(yearsInData).sort();
+  }, [books]);
+
+  const LINE_COLORS = ["hsl(28,56%,36%)", "hsl(38,72%,50%)", "hsl(142,52%,36%)", "hsl(340,65%,55%)", "hsl(270,50%,50%)"];
+
+  const avgRating = useMemo(() => {
+    const rated = yearBooks.filter(b => b.rating > 0);
+    return rated.length > 0 ? rated.reduce((s, b) => s + b.rating, 0) / rated.length : 0;
+  }, [yearBooks]);
 
   return (
-    <div className="space-y-10">
-      {/* Header */}
+    <div className="space-y-12">
+      {/* ═══ HEADER ═══ */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
-            🎯 Logros y Retos
+        <div className="flex items-center gap-4">
+         <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
+            📈 Dashboard
           </h2>
-        <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-          <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
 
-      {/* ——— SUMMARY + CATEGORY STATS ——— */}
-      {/* ── AVISO LOCALSTORAGE ── */}
-    
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        {/* Total */}
-        <Card className="border-none bg-gradient-to-br from-amber-500/15 via-amber-400/5 to-transparent sm:col-span-1">
-          <CardContent className="p-5 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/20 flex items-center justify-center mx-auto mb-3">
-              <Trophy className="h-7 w-7 text-amber-500" />
-            </div>
-            <p className="text-3xl font-bold font-display">{unlockedCount}</p>
-            <p className="text-xs text-muted-foreground">de {achievements.length} logros</p>
-            <div className="mt-3">
-              <div className="h-2 rounded-full bg-muted/40 overflow-hidden">
-                <div className="h-full rounded-full bg-amber-500 transition-all duration-700" style={{ width: `${(unlockedCount / achievements.length) * 100}%` }} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Category cards */}
-        {(Object.entries(CATEGORY_META) as [AchievementCategory, typeof CATEGORY_META["constancia"]][]).map(([cat, meta]) => (
-          <button
-            key={cat}
-            onClick={() => setCategoryFilter(categoryFilter === cat ? "all" : cat)}
-            className={cn(
-              "text-left rounded-lg border p-4 transition-all",
-              categoryFilter === cat
-                ? "border-primary/40 bg-primary/5 ring-1 ring-primary/20"
-                : "border-border/30 hover:border-border/60 bg-card"
-            )}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className={cn("p-1.5 rounded-lg", `bg-gradient-to-br ${meta.gradient}`)}>
-                {meta.icon}
-              </div>
-              <span className="text-sm font-display font-semibold">{meta.label}</span>
-            </div>
-            <p className="text-xl font-bold font-display">
-              {categoryCounts[cat]}<span className="text-sm text-muted-foreground font-normal">/{categoryTotals[cat]}</span>
-            </p>
-            <div className="mt-2 h-1.5 rounded-full bg-muted/40 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-primary/60 transition-all duration-500"
-                style={{ width: `${(categoryCounts[cat] / categoryTotals[cat]) * 100}%` }}
-              />
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* ——— ACHIEVEMENTS GRID ——— */}
-      <div className="space-y-4">
-        {categoryFilter !== "all" && (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground font-body">
-              Mostrando: <span className="font-semibold text-foreground">{CATEGORY_META[categoryFilter].label}</span>
-            </p>
-            <Button variant="ghost" size="sm" className="text-xs" onClick={() => setCategoryFilter("all")}>
-              Ver todos
-            </Button>
+          <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        {yearBooks.length > 0 && (
+          <div className="flex items-center gap-2">
+            <ShareableStats year={selectedYear} books={yearBooks} />
+            <BestOfYearExport year={selectedYear} books={yearBooks} />
           </div>
         )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sortedAchievements.map(a => (
-            <AchievementCard key={a.id} a={a} />
-          ))}
-        </div>
       </div>
 
-      {/* ——— MONTHLY CHALLENGES ——— */}
-      <div className="space-y-6">
-        <h3 className="text-xl font-bold font-display">📅Retos Mensuales {selectedYear}</h3>
-
-        {yearGoalTotal > 0 && (
-          <Card className="border-border/30">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold font-display">Progreso anual</span>
-                <span className="text-sm text-muted-foreground font-body">{yearReadTotal}/{yearGoalTotal} libros</span>
+      {/* ═══ OBJETIVO ANUAL ═══ */}
+      <Card className="border-border/30">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Target className="h-4 w-4 text-primary" />
               </div>
-              <Progress value={yearGoalTotal > 0 ? (yearReadTotal / yearGoalTotal) * 100 : 0} className="h-2.5" />
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {monthlyData.map((m) => {
-            const pct = m.goal > 0 ? Math.min((m.read / m.goal) * 100, 100) : 0;
-            const completed = m.goal > 0 && m.read >= m.goal;
-            return (
-              <Card
-                key={m.key}
-                className={cn(
-                  "transition-all border-border/30",
-                  m.isCurrent && "ring-1 ring-primary/30",
-                  completed && "bg-gradient-to-br from-emerald-500/5 to-emerald-400/5"
+              <div>
+                <p className="text-sm font-semibold font-body">Objetivo de lectura {selectedYear}</p>
+                {currentGoal > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    {yearBooks.length} de {currentGoal} libros
+                    {yearBooks.length >= currentGoal && <span className="text-emerald-500 ml-1 font-medium">Completado!</span>}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Sin objetivo definido</p>
                 )}
-              >
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className={cn("font-semibold text-sm font-display", m.isCurrent && "text-primary")}>
-                      {m.name}
-                      {m.isCurrent && <span className="ml-1.5 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-body">Actual</span>}
-                    </span>
-                    {completed && (
-                      <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
-                        <Check className="h-3 w-3 text-white" />
-                      </div>
-                    )}
-                  </div>
+              </div>
+            </div>
 
-                  <div className="flex items-center gap-2 text-sm font-body">
-                    <span className="text-muted-foreground">Leídos:</span>
-                    <span className="font-bold text-foreground">{m.read}</span>
-                    {m.goal > 0 && (
-                      <>
-                        <span className="text-muted-foreground">/ Meta:</span>
-                        <span className="font-bold text-primary">{m.goal}</span>
-                      </>
-                    )}
-                  </div>
+            <div className="flex items-center gap-2">
+              {editingGoal ? (
+                <>
+                  <input
+                    ref={goalInputRef}
+                    type="number"
+                    min={0}
+                    value={goalInput}
+                    onChange={(e) => setGoalInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleGoalSave(); if (e.key === "Escape") setEditingGoal(false); }}
+                    className="w-20 h-8 text-sm px-2 rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="0"
+                  />
+                  <button onClick={handleGoalSave} className="h-8 px-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+                    <Check className="h-4 w-4" />
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleGoalEdit}
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-md text-sm border border-border hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  {currentGoal > 0 ? "Editar objetivo" : "Fijar objetivo"}
+                </button>
+              )}
+            </div>
+          </div>
 
-                  {m.goal > 0 && (
-                    <Progress value={pct} className={cn("h-2", completed && "[&>div]:bg-emerald-500")} />
-                  )}
+          {currentGoal > 0 && (
+            <div className="mt-4">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                <span>{Math.round((yearBooks.length / currentGoal) * 100)}%</span>
+                <span>{Math.max(0, currentGoal - yearBooks.length)} por leer</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted/60 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  style={{ width: `${Math.min(100, (yearBooks.length / currentGoal) * 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-                  {editingMonth === m.index ? (
-                    <div className="flex gap-2 mt-1">
-                      <Input
-                        type="number"
-                        min={0}
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        placeholder="Meta"
-                        className="h-8 text-sm"
-                        onKeyDown={(e) => e.key === "Enter" && handleSaveGoal(m.key)}
+      {yearBooks.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
+            <BookOpen className="h-9 w-9 text-primary/40" />
+          </div>
+          <p className="text-lg text-muted-foreground font-display">No hay libros terminados en {selectedYear}</p>
+          <p className="text-sm text-muted-foreground/60 mt-1">Añade libros y márcalos como terminados para ver tus estadísticas</p>
+        </div>
+      ) : (
+        <>
+          {/* ═══════════════════════════════════════════
+              SECCIÓN 1: KPIs GRANDES
+              ═══════════════════════════════════════════ */}
+          <section>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <KpiCard value={yearBooks.length} label="Libros leídos" icon={BookOpen} />
+              <KpiCard value={totalPages.toLocaleString()} label="Páginas totales" icon={BookMarked} accent />
+              <KpiCard value={avgPagesPerBook} label="Páginas de media / libro" icon={BarChart3} />
+              <KpiCard
+                value={readingTimeStats ? `${readingTimeStats.avg} días` : `${streak} días`}
+                label={readingTimeStats ? "Media de lectura / libro" : "Racha de lectura"}
+                icon={readingTimeStats ? Clock : Flame}
+                accent
+              />
+            </div>
+
+            {/* Secondary stats row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+              {[
+                { label: "Autores", value: new Set(yearBooks.map(b => b.author)).size },
+                { label: "Géneros", value: new Set(yearBooks.filter(b => b.genre).map(b => b.genre)).size },
+                { label: "Racha", value: `${streak} días`, show: !!readingTimeStats },
+                { label: "Valoración media", value: avgRating > 0 ? `${avgRating.toFixed(1)} ★` : "—" },
+              ].filter(s => s.show !== false).map(stat => (
+                <div key={stat.label} className="text-center p-3 rounded-xl bg-muted/40 border border-border/20">
+                  <p className="text-lg font-bold font-display text-foreground">{stat.value}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ═══════════════════════════════════════════
+              SECCIÓN 2: GRÁFICOS
+              ═══════════════════════════════════════════ */}
+          <section className="space-y-6">
+            <SectionHeader icon={BarChart3} title="Gráficos" subtitle={`Visualización de tu lectura en ${selectedYear}`} />
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Libros por mes (bar chart) */}
+              <Card className="border-border/30">
+                <CardContent className="pt-6 pb-4">
+                  <p className="text-sm font-semibold font-body text-foreground mb-4">Libros por mes</p>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={monthlyBarData} barSize={24}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--foreground)" }} stroke="var(--muted-foreground)" />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "var(--foreground)" }} stroke="var(--muted-foreground)" width={24} />
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: "10px",
+                          fontSize: "13px",
+                          border: "1px solid var(--border)",
+                          backgroundColor: "var(--card)",
+                        }}
+                        formatter={(value: number) => [`${value} libros`, ""]}
                       />
-                      <Button size="sm" className="h-8" onClick={() => handleSaveGoal(m.key)}>OK</Button>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs text-muted-foreground w-full hover:text-foreground"
-                      onClick={() => { setEditingMonth(m.index); setEditValue(String(m.goal || "")); }}
-                    >
-                      {m.goal > 0 ? "Cambiar meta" : "Fijar meta"}
-                    </Button>
-                  )}
+                      <Bar dataKey="libros" fill="var(--primary)" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
-            );
-          })}
-        </div>
-      </div>
+
+              {/* Géneros (pie) */}
+              {genreData.length > 0 && (
+                <Card className="border-border/30">
+                  <CardContent className="pt-6 pb-4">
+                    <p className="text-sm font-semibold font-body text-foreground mb-4">Distribución por género</p>
+                    <div className="flex items-center gap-4">
+                      <ResponsiveContainer width="55%" height={220}>
+                        <PieChart>
+                          <Pie
+                            data={genreData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={85}
+                            innerRadius={45}
+                            paddingAngle={2}
+                            strokeWidth={0}
+                          >
+                            {genreData.map((entry, i) => (
+                              <Cell key={i} fill={genreColorMap[entry.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{
+                              borderRadius: "10px",
+                              fontSize: "12px",
+                              border: "1px solid var(--border)",
+                              backgroundColor: "var(--card)",
+                            }}
+                            formatter={(value: number) => [`${value} libros`, ""]}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="flex-1 space-y-1.5">
+                        {genreData.slice(0, 6).map((g, i) => (
+                          <div key={g.name} className="flex items-center gap-2">
+                            <div
+                              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: genreColorMap[g.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length] }}
+                            />
+                            <span className="text-xs text-foreground truncate flex-1">{g.name}</span>
+                            <span className="text-xs text-muted-foreground tabular-nums">{g.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Evolution line chart */}
+            {evolutionYears.length > 0 && (
+              <Card className="border-border/30">
+                <CardContent className="pt-6 pb-4">
+                  <p className="text-sm font-semibold font-body text-foreground mb-4">Evolución mes a mes</p>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <LineChart data={evolutionData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--foreground)" }} stroke="var(--muted-foreground)" />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "var(--foreground)" }} stroke="var(--muted-foreground)" width={24} />
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: "10px",
+                          fontSize: "13px",
+                          border: "1px solid var(--border)",
+                          backgroundColor: "var(--card)",
+                        }}
+                      />
+                      {evolutionYears.length > 1 && (
+                        <Legend wrapperStyle={{ fontSize: "12px" }} />
+                      )}
+                      {evolutionYears.map((year, i) => (
+                        <Line
+                          key={year}
+                          type="monotone"
+                          dataKey={String(year)}
+                          stroke={LINE_COLORS[i % LINE_COLORS.length]}
+                          strokeWidth={2.5}
+                          dot={{ r: 3, strokeWidth: 0 }}
+                          activeDot={{ r: 5 }}
+                          name={String(year)}
+                          connectNulls={false}
+                        />
+                      ))}
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+          </section>
+
+          {/* ═══════════════════════════════════════════
+              SECCIÓN 3: DETALLE
+              ═══════════════════════════════════════════ */}
+          <section className="space-y-6">
+            <SectionHeader icon={BookOpen} title="Detalles" subtitle="Autores, sagas y libros destacados" />
+
+            {/* Highlighted books */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {topRatedBook && (
+                <BookHighlight
+                  book={topRatedBook}
+                  label="Mejor valorado"
+                  metric={`${topRatedBook.rating} ★`}
+                  icon={Star}
+                />
+              )}
+              {mostPages && (
+                <BookHighlight
+                  book={mostPages}
+                  label="Más páginas"
+                  metric={`${mostPages.totalPages.toLocaleString()} pág.`}
+                  icon={TrendingUp}
+                />
+              )}
+              {leastPages && leastPages.id !== mostPages?.id && (
+                <BookHighlight
+                  book={leastPages}
+                  label="Menos páginas"
+                  metric={`${leastPages.totalPages.toLocaleString()} pág.`}
+                  icon={TrendingDown}
+                />
+              )}
+            </div>
+
+            {/* Reading speed */}
+            {readingTimeStats && (
+              <Card className="border-border/30">
+                <CardContent className="pt-6">
+                  <p className="text-sm font-semibold font-body text-foreground mb-4 flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-primary/60" />
+                    Velocidad de lectura
+                  </p>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center p-3 rounded-xl bg-muted/30">
+                      <p className="text-2xl font-bold text-foreground font-display">{readingTimeStats.avg}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Días/libro (media)</p>
+                    </div>
+                    <div className="text-center p-3 rounded-xl bg-muted/30">
+                      <p className="text-2xl font-bold text-foreground font-display">{readingTimeStats.fastest}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Más rápido</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{readingTimeStats.fastestBook.title}</p>
+                    </div>
+                    <div className="text-center p-3 rounded-xl bg-muted/30">
+                      <p className="text-2xl font-bold text-foreground font-display">{readingTimeStats.slowest}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Más lento</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{readingTimeStats.slowestBook.title}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Authors & Sagas */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {authorStats.length > 0 && (
+                <Card className="border-border/30">
+                  <CardContent className="pt-6">
+                    <p className="text-sm font-semibold font-body text-foreground mb-4 flex items-center gap-2">
+                      <User className="h-4 w-4 text-primary/60" />
+                      Autores leídos
+                      <span className="text-xs text-muted-foreground font-normal">({authorStats.length})</span>
+                    </p>
+                    <div className="space-y-4">
+                      {authorStats.map(({ author, titles, count, avgRating: authorAvg }) => (
+                        <div key={author} className="p-3 rounded-lg bg-muted/20 border border-border/15">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="font-semibold text-sm font-display">{author}</p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">{count} {count === 1 ? "libro" : "libros"}</span>
+                              {authorAvg !== null && (
+                                <span className="flex items-center gap-0.5 text-xs text-amber-500">
+                                  <Star className="h-3 w-3 fill-amber-500" />
+                                  {authorAvg.toFixed(1)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {titles.map((t) => (
+                              <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/8 text-muted-foreground">{t}</span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              {sagaData.length > 0 && (
+                <Card className="border-border/30">
+                  <CardContent className="pt-6">
+                    <p className="text-sm font-semibold font-body text-foreground mb-4 flex items-center gap-2">
+                      <Library className="h-4 w-4 text-primary/60" />
+                      Sagas leídas
+                      <span className="text-xs text-muted-foreground font-normal">({sagaData.length})</span>
+                    </p>
+                    <div className="space-y-4">
+                      {sagaData.map(([saga, titles]) => (
+                        <div key={saga} className="p-3 rounded-lg bg-muted/20 border border-border/15">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="font-semibold text-sm font-display">{saga}</p>
+                            <span className="text-xs text-muted-foreground">{titles.length} {titles.length === 1 ? "libro" : "libros"}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {titles.map((t) => (
+                              <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/8 text-muted-foreground">{t}</span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Book covers gallery */}
+            <Card className="border-border/30">
+              <CardContent className="pt-6">
+                <p className="text-sm font-semibold font-body text-foreground mb-4 flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-primary/60" />
+                  Portadas de {selectedYear}
+                  <span className="text-xs text-muted-foreground font-normal">({yearBooks.length} libros)</span>
+                </p>
+                <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+                  {yearBooks.map((book) => (
+                    <div key={book.id} className="group relative">
+                      <BookCoverImage
+                        src={book.coverUrl}
+                        alt={book.title}
+                        title={book.title}
+                        className="w-full aspect-[2/3] object-cover rounded-lg shadow-md group-hover:shadow-lg transition-all duration-200 group-hover:scale-105"
+                        fallbackClassName="w-full aspect-[2/3] rounded-lg"
+                      />
+                      <div className="absolute inset-0 bg-foreground/70 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg flex items-end p-1.5">
+                        <p className="text-background text-[10px] leading-tight font-medium line-clamp-3">{book.title}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        </>
+      )}
     </div>
   );
 }
