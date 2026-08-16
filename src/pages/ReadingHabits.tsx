@@ -38,7 +38,7 @@ const MONTH_NAMES = [
 ];
 
 const MONTH_SHORT = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-const DAY_NAMES = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
+const DAY_NAMES = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -364,12 +364,12 @@ export default function ReadingHabits() {
   return (
     <div className="space-y-8">
       <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
-        Habitos y Calendario
+        Hábitos y Calendario
       </h2>
 
       <Tabs defaultValue="habits" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="habits">Habitos</TabsTrigger>
+          <TabsTrigger value="habits">Hábitos</TabsTrigger>
           <TabsTrigger value="calendar">Calendario</TabsTrigger>
         </TabsList>
 
@@ -407,14 +407,14 @@ export default function ReadingHabits() {
               {streak > 0 ? (
                 <p className="text-center text-sm text-muted-foreground mt-6 font-body">
                   {streak >= 30
-                    ? "Increible! Un mes entero leyendo sin parar."
+                    ? "¡Increíble! Un mes entero leyendo sin parar."
                     : streak >= 14
-                    ? "Dos semanas seguidas! Estas en racha."
+                    ? "¡Dos semanas seguidas! Estás en racha."
                     : streak >= 7
-                    ? "Una semana! Sigue asi."
+                    ? "¡Una semana! Sigue así."
                     : streak >= 3
-                    ? "Buen ritmo! No pares ahora."
-                    : "Has empezado! Vuelve manana para mantener la racha."}
+                    ? "¡Buen ritmo! No pares ahora."
+                    : "¡Has empezado! Vuelve mañana para mantener la racha."}
                 </p>
               ) : (
                 <p className="text-center text-sm text-muted-foreground mt-6 font-body">
@@ -426,7 +426,7 @@ export default function ReadingHabits() {
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: "Dias leidos", value: totalDays, icon: CalendarDays },
+              { label: "Días leídos", value: totalDays, icon: CalendarDays },
               { label: "Media/mes", value: avgPerMonth, icon: TrendingUp },
               { label: `Mejor mes (${bestMonth.name})`, value: bestMonth.days, icon: Zap },
               { label: "Consistencia", value: `${consistencyScore}%`, icon: Trophy },
@@ -448,7 +448,7 @@ export default function ReadingHabits() {
 
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground font-body">
-              Haz clic en un dia para marcar/desmarcar que leiste
+              Haz clic en un día para marcar/desmarcar que leíste
             </p>
             <Card className="border-border/30">
               <CardContent className="p-4 flex justify-center">
@@ -476,7 +476,7 @@ export default function ReadingHabits() {
             <CardContent className="pt-6 pb-4">
               <p className="text-sm font-semibold font-body text-foreground mb-4 flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-primary/60" />
-                Dias de lectura por mes
+                Días de lectura por mes
               </p>
 
               <ResponsiveContainer width="100%" height={220}>
@@ -498,7 +498,7 @@ export default function ReadingHabits() {
                     width={24}
                   />
                   <RechartsTooltip
-                    formatter={(value: number) => [`${value} dias`, ""]}
+                    formatter={(value: number) => [`${value} días`, ""]}
                     contentStyle={{
                       borderRadius: "10px",
                       fontSize: "13px",
@@ -525,7 +525,7 @@ export default function ReadingHabits() {
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center p-4 rounded-xl bg-muted/30 border border-border/20">
               <p className="text-3xl font-bold text-foreground font-display">{daysReadingCount.size}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Dias leyendo</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Días leyendo</p>
             </div>
 
             <div className="text-center p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
