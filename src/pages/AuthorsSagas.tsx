@@ -20,7 +20,7 @@ export default function AuthorsSagas() {
     });
     return Array.from(map.entries())
       .map(([name, data]) => ({ name, ...data }))
-      .sort((a, b) => b.total - a.total);
+      .sort((a, b) => a.name.localeCompare(b.name, "es"));
   }, [finishedBooks]);
 
   const sagas = useMemo(() => {
@@ -36,7 +36,7 @@ export default function AuthorsSagas() {
     });
     return Array.from(map.entries())
       .map(([name, data]) => ({ name, ...data }))
-      .sort((a, b) => b.total - a.total);
+      .sort((a, b) => a.name.localeCompare(b.name, "es"));
   }, [finishedBooks]);
 
   return (
