@@ -39,23 +39,20 @@ function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementTyp
 }
 
 // --- KPI Card ---
-function KpiCard({ value, label, icon: Icon, tone = "teal" }: {
+function KpiCard({ value, label, icon: Icon, accent = false }: {
   value: string | number;
   label: string;
   icon: React.ElementType;
-  tone?: "teal" | "gold" | "violet" | "coral";
+  accent?: boolean;
 }) {
-  const tones = {
-    teal: "from-primary/18 via-primary/5 to-transparent text-primary",
-    gold: "from-amber-400/18 via-amber-400/5 to-transparent text-amber-300",
-    violet: "from-violet-500/18 via-violet-500/5 to-transparent text-violet-300",
-    coral: "from-rose-400/18 via-rose-400/5 to-transparent text-rose-300",
-  };
   return (
-    <Card className={`group relative overflow-hidden rounded-2xl border-border/30 bg-gradient-to-br ${tones[tone]} transition-all duration-300 hover:-translate-y-1 hover:border-primary/45 hover:shadow-[0_14px_30px_rgba(0,0,0,0.16)]`}>
-      <div className="absolute -right-7 -top-7 h-24 w-24 rounded-full bg-current opacity-10 blur-2xl" />
-      <CardContent className="relative p-6">
-        <div className="mb-5 flex items-start justify-between"><div className="rounded-xl border border-current/20 bg-background/30 p-2.5"><Icon className="h-4 w-4" /></div></div>
+    <Card className="border-border/30 hover:border-border/60 transition-colors">
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between mb-3">
+          <div className={`p-2 rounded-lg ${accent ? "bg-accent/10" : "bg-primary/8"}`}>
+            <Icon className={`h-4 w-4 ${accent ? "text-accent" : "text-primary/70"}`} />
+          </div>
+        </div>
         <p className="text-3xl font-bold font-display text-foreground tracking-tight">{typeof value === "number" ? value.toLocaleString() : value}</p>
         <p className="text-xs text-muted-foreground mt-1 font-body">{label}</p>
       </CardContent>
@@ -272,32 +269,37 @@ export default function Dashboard() {
     const rated = yearBooks.filter(b => b.rating > 0);
     return rated.length > 0 ? rated.reduce((s, b) => s + b.rating, 0) / rated.length : 0;
   }, [yearBooks]);
-  const goalProgress = currentGoal > 0 ? Math.min(100, Math.round((yearBooks.length / currentGoal) * 100)) : 0;
-  const booksRemaining = Math.max(0, currentGoal - yearBooks.length);
-  const monthlyStoryData = useMemo(() => MONTH_SHORT.map((month, index) => {
-    const monthBooks = yearBooks.filter((book) => getBookMonth(book) === index);
-    return { month, books: monthBooks, count: monthBooks.length };
-  }), [yearBooks]);
-  const topGenre = genreData[0];
 
   return (
-    <div className="space-y-12 pb-8">
-      <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card px-5 py-7 sm:p-8 shadow-[0_18px_70px_rgba(0,0,0,0.18)]">
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/15 blur-3xl" aria-hidden="true" />
-        <div className="absolute -bottom-28 left-1/3 h-52 w-52 rounded-full bg-cyan-400/10 blur-3xl" aria-hidden="true" />
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary"><TrendingUp className="h-3.5 w-3.5" /> Tu año lector</p><h2 className="mt-3 font-display text-4xl font-semibold tracking-tight sm:text-5xl">Dashboard</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">Tu ritmo, tus historias y todos los detalles que han dado forma a {selectedYear}.</p></div>
-          <div className="flex flex-wrap items-center gap-2"><Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}><SelectTrigger aria-label="Seleccionar año" className="h-11 w-28 border-border/50 bg-background/60"><SelectValue /></SelectTrigger><SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent></Select>{yearBooks.length > 0 && <><ShareableStats year={selectedYear} books={yearBooks} /><BestOfYearExport year={selectedYear} books={yearBooks} /></>}</div>
+    <div className="space-y-12">
+      {/* ═══ HEADER ═══ */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-4">
+         <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
+            📈 Dashboard
+          </h2>
+
+          <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
-        <div className="relative mt-7 grid grid-cols-3 gap-3 border-t border-border/40 pt-5 sm:max-w-2xl"><div><p className="font-display text-2xl font-semibold">{yearBooks.length}</p><p className="text-xs text-muted-foreground">libros leídos</p></div><div><p className="font-display text-2xl font-semibold">{totalPages.toLocaleString()}</p><p className="text-xs text-muted-foreground">páginas vividas</p></div><div><p className="font-display text-2xl font-semibold text-primary">{avgRating > 0 ? `${avgRating.toFixed(1)} ★` : "—"}</p><p className="text-xs text-muted-foreground">valoración media</p></div></div>
-      </section>
+        {yearBooks.length > 0 && (
+          <div className="flex items-center gap-2">
+            <ShareableStats year={selectedYear} books={yearBooks} />
+            <BestOfYearExport year={selectedYear} books={yearBooks} />
+          </div>
+        )}
+      </div>
 
       {/* ═══ OBJETIVO ANUAL ═══ */}
-      <Card className="overflow-hidden rounded-3xl border-primary/20 bg-gradient-to-r from-primary/12 via-card to-card">
-        <CardContent className="p-5 sm:p-6">
+      <Card className="border-border/30">
+        <CardContent className="p-5">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-primary/15 p-2.5">
+              <div className="p-2 rounded-lg bg-primary/10">
                 <Target className="h-4 w-4 text-primary" />
               </div>
               <div>
@@ -323,17 +325,17 @@ export default function Dashboard() {
                     value={goalInput}
                     onChange={(e) => setGoalInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter") handleGoalSave(); if (e.key === "Escape") setEditingGoal(false); }}
-                    className="h-9 w-20 rounded-lg border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-20 h-8 text-sm px-2 rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     placeholder="0"
                   />
-                  <button onClick={handleGoalSave} className="h-9 rounded-lg bg-primary px-2 text-primary-foreground hover:bg-primary/90 transition-colors">
+                  <button onClick={handleGoalSave} className="h-8 px-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
                     <Check className="h-4 w-4" />
                   </button>
                 </>
               ) : (
                 <button
                   onClick={handleGoalEdit}
-                  className="flex h-9 items-center gap-1.5 rounded-lg border border-border/60 bg-background/40 px-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-md text-sm border border-border hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
                 >
                   <Pencil className="h-3.5 w-3.5" />
                   {currentGoal > 0 ? "Editar objetivo" : "Fijar objetivo"}
@@ -348,7 +350,7 @@ export default function Dashboard() {
                 <span>{Math.round((yearBooks.length / currentGoal) * 100)}%</span>
                 <span>{Math.max(0, currentGoal - yearBooks.length)} por leer</span>
               </div>
-              <div className="h-3 overflow-hidden rounded-full bg-background/60">
+              <div className="h-2 rounded-full bg-muted/60 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-primary transition-all duration-500"
                   style={{ width: `${Math.min(100, (yearBooks.length / currentGoal) * 100)}%` }}
@@ -374,15 +376,30 @@ export default function Dashboard() {
               ═══════════════════════════════════════════ */}
           <section>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <KpiCard value={authorStats.length} label="Autores explorados" icon={User} tone="violet" />
-              <KpiCard value={genreData.length} label="Géneros leídos" icon={Library} tone="gold" />
-              <KpiCard value={avgPagesPerBook} label="Páginas de media / libro" icon={BarChart3} tone="teal" />
+              <KpiCard value={yearBooks.length} label="Libros leídos" icon={BookOpen} />
+              <KpiCard value={totalPages.toLocaleString()} label="Páginas totales" icon={BookMarked} accent />
+              <KpiCard value={avgPagesPerBook} label="Páginas de media / libro" icon={BarChart3} />
               <KpiCard
                 value={readingTimeStats ? `${readingTimeStats.avg} días` : `${streak} días`}
                 label={readingTimeStats ? "Media de lectura / libro" : "Racha de lectura"}
                 icon={readingTimeStats ? Clock : Flame}
-                tone="coral"
+                accent
               />
+            </div>
+
+            {/* Secondary stats row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+              {[
+                { label: "Autores", value: new Set(yearBooks.map(b => b.author)).size },
+                { label: "Géneros", value: new Set(yearBooks.filter(b => b.genre).map(b => b.genre)).size },
+                { label: "Racha", value: `${streak} días`, show: !!readingTimeStats },
+                { label: "Valoración media", value: avgRating > 0 ? `${avgRating.toFixed(1)} ★` : "—" },
+              ].filter(s => s.show !== false).map(stat => (
+                <div key={stat.label} className="text-center p-3 rounded-xl bg-muted/40 border border-border/20">
+                  <p className="text-lg font-bold font-display text-foreground">{stat.value}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                </div>
+              ))}
             </div>
           </section>
 
@@ -390,20 +407,6 @@ export default function Dashboard() {
               SECCIÓN 2: GRÁFICOS
               ═══════════════════════════════════════════ */}
           <section className="space-y-6">
-          <section className="space-y-6">
-            <SectionHeader icon={TrendingUp} title="El ritmo de tu año" subtitle="Tus meses de lectura, convertidos en una pequeña historia visual" />
-            <div className="grid gap-6 xl:grid-cols-[1.45fr_0.55fr]">
-              <div className="rounded-3xl border border-border/40 bg-card p-4 sm:p-6">
-                <div className="mb-5 flex items-end justify-between"><div><p className="font-display text-xl font-semibold">Mes a mes</p><p className="text-xs text-muted-foreground">Cada portada marca un capítulo terminado.</p></div><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{yearBooks.length} historias</span></div>
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-                  {monthlyStoryData.map(({ month, books: monthBooks, count }) => <div key={month} className={`min-h-[132px] rounded-2xl border p-2 transition-transform hover:-translate-y-1 ${count > 0 ? "border-primary/20 bg-primary/[0.07]" : "border-border/25 bg-muted/15"}`}><div className="flex items-center justify-between"><span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{month}</span><span className={`font-display text-lg font-semibold ${count > 0 ? "text-primary" : "text-muted-foreground/35"}`}>{count}</span></div><div className="mt-3 flex h-[82px] items-end gap-1 overflow-hidden">{monthBooks.slice(0, 3).map((book) => <BookCoverImage key={book.id} src={book.coverUrl} alt={book.title} title={book.title} className="h-[72px] min-w-0 flex-1 rounded-md object-cover shadow-md" fallbackClassName="h-[72px] min-w-0 flex-1 rounded-md bg-primary/15" iconClassName="h-3 w-3" />)}{count > 3 && <span className="self-end rounded-md bg-background/70 px-1.5 py-1 text-[10px] text-primary">+{count - 3}</span>}{count === 0 && <span className="mb-1 text-[10px] text-muted-foreground/35">En pausa</span>}</div></div>)}
-                </div>
-              </div>
-              <div className="relative overflow-hidden rounded-3xl border border-rose-400/20 bg-gradient-to-br from-rose-400/15 via-violet-500/10 to-card p-6"><div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-rose-400/20 blur-3xl" /><div className="relative"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-rose-300">Tu universo favorito</p><p className="mt-4 font-display text-3xl font-semibold leading-tight">{topGenre?.name || "Aún por descubrir"}</p><p className="mt-2 text-sm text-muted-foreground">{topGenre ? `${topGenre.value} de ${yearBooks.length} libros este año` : "Termina un libro para verlo aquí."}</p>{topGenre && <div className="mt-6 h-2 overflow-hidden rounded-full bg-background/50"><div className="h-full rounded-full bg-rose-400" style={{ width: `${Math.round((topGenre.value / yearBooks.length) * 100)}%` }} /></div>}<div className="mt-6 space-y-2">{genreData.slice(0, 4).map((genre, index) => <div key={genre.name} className="flex items-center justify-between text-xs"><span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: genreColorMap[genre.name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length] }} />{genre.name}</span><span className="font-semibold text-foreground">{genre.value}</span></div>)}</div></div></div>
-            </div>
-          </section>
-
-          <section className="hidden space-y-6">
             <SectionHeader icon={BarChart3} title="Gráficos" subtitle={`Visualización de tu lectura en ${selectedYear}`} />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -682,3 +685,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
