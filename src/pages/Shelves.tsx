@@ -383,11 +383,6 @@ export default function Shelves() {
         >
           <SortableContext items={orderedIds} strategy={rectSortingStrategy}>
             <div className="relative">
-              {shelfSettings.lights && (
-                <div className="pointer-events-none absolute inset-x-8 top-0 z-20 h-12 opacity-90" aria-hidden="true" style={{ backgroundImage: `radial-gradient(circle at 8% 30%, ${selectedTheme.accent} 0 2px, transparent 3px), radial-gradient(circle at 24% 30%, ${selectedTheme.accent} 0 2px, transparent 3px), radial-gradient(circle at 40% 30%, ${selectedTheme.accent} 0 2px, transparent 3px), radial-gradient(circle at 56% 30%, ${selectedTheme.accent} 0 2px, transparent 3px), radial-gradient(circle at 72% 30%, ${selectedTheme.accent} 0 2px, transparent 3px), radial-gradient(circle at 88% 30%, ${selectedTheme.accent} 0 2px, transparent 3px)` }} />
-              )}
-              {shelfSettings.plants && <div className="pointer-events-none absolute -left-2 bottom-0 z-20 text-4xl drop-shadow-lg sm:left-2 sm:text-5xl" aria-label="Planta decorativa">🪴</div>}
-              {shelfSettings.plants && <div className="pointer-events-none absolute -right-2 bottom-0 z-20 hidden text-4xl drop-shadow-lg sm:right-2 sm:block sm:text-5xl" aria-label="Planta decorativa">🌿</div>}
               <div
                 className="absolute top-3 bottom-0 left-0 w-3 sm:w-4"
                 style={{ background: "rgba(255,255,255,0.08)" }}
@@ -403,7 +398,7 @@ export default function Shelves() {
               >
                 <div className="space-y-0 py-1 px-1 sm:px-1">
                   {shelves.map((row, rowIndex) => (
-                    <ShelfRow key={rowIndex} row={row} plank={selectedTheme.plank} />
+                    <ShelfRow key={rowIndex} row={row} plank={selectedTheme.plank} lights={shelfSettings.lights} plants={shelfSettings.plants} lightColor={selectedTheme.accent} />
                   ))}
                 </div>
               </div>
@@ -429,17 +424,24 @@ export default function Shelves() {
   );
 }
 
-function ShelfRow({ row, plank }: { row: Book[]; plank: string }) {
+function ShelfRow({ row, plank, lights, plants, lightColor }: { row: Book[]; plank: string; lights: boolean; plants: boolean; lightColor: string }) {
+  const plantPosition = Math.max(1, Math.floor(row.length / 2));
   return (
     <div className="relative">
+      {lights && (
+        <div className="pointer-events-none absolute inset-x-3 top-0 z-20 h-11 sm:inset-x-5" aria-hidden="true">
+          <svg className="absolute inset-x-0 top-0 h-8 w-full" viewBox="0 0 100 28" preserveAspectRatio="none"><path d="M0,3 C10,24 18,8 28,16 S46,24 57,10 S77,25 100,6" fill="none" stroke="rgba(14,18,22,0.9)" strokeWidth="1.8" /></svg>
+          <div className="absolute inset-x-[4%] top-[7px] flex items-start justify-between">
+            {Array.from({ length: 12 }).map((_, index) => <span key={index} className="flex flex-col items-center" style={{ transform: `translateY(${[4, 11, 7, 14, 8, 12][index % 6]}px)` }}><span className="h-2 w-px bg-black/80" /><span className="h-2.5 w-2.5 rounded-full border border-amber-50/70 shadow-[0_0_10px_rgba(255,218,142,0.95),0_0_20px_rgba(255,194,92,0.5)]" style={{ backgroundColor: lightColor }} /></span>)}
+          </div>
+        </div>
+      )}
       <div
-        className="flex items-end gap-[3px] sm:gap-[4px] px-3 sm:px-5 pt-4 pb-0 min-h-[115px] sm:min-h-[125px] flex-wrap relative overflow-x-auto"
+        className="flex items-end gap-[3px] sm:gap-[4px] px-3 sm:px-5 pt-9 pb-0 min-h-[145px] sm:min-h-[155px] flex-wrap relative overflow-x-auto"
         style={{ background: "transparent", scrollbarWidth: "none" }}
       >
         <style>{`div::-webkit-scrollbar { display: none; }`}</style>
-        {row.map((book) => (
-          <SortableBook key={book.id} book={book} />
-        ))}
+        {row.map((book, index) => <div key={book.id} className="flex items-end gap-[3px] sm:gap-[4px]"><SortableBook book={book} />{plants && index === plantPosition && <div className="mb-1 flex h-[72px] w-[42px] shrink-0 flex-col items-center justify-end"><div className="flex -space-x-3"><Leaf className="h-8 w-8 -rotate-12 text-emerald-300/90 drop-shadow-md" fill="currentColor" /><Leaf className="h-9 w-9 rotate-12 text-emerald-400/80 drop-shadow-md" fill="currentColor" /></div><div className="h-4 w-7 rounded-b-md rounded-t-sm border border-amber-100/25 bg-gradient-to-b from-orange-200/70 to-amber-900/80 shadow-md" /></div>}</div>)}
       </div>
 
       <div
