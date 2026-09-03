@@ -202,6 +202,10 @@ export default function Achievements() {
   ], [yearFinished, maxStreak, fiveStarBooks, uniqueAuthors, uniqueGenres, totalReadDays, totalPages, uniqueSagas, formatsUsed, selectedYear]);
 
   const unlockedCount = achievements.filter(a => a.unlocked).length;
+  const nextAchievement = [...achievements]
+    .filter(a => !a.unlocked)
+    .sort((a, b) => (b.progress.current / b.progress.target) - (a.progress.current / a.progress.target))[0];
+  const achievementProgress = Math.round((unlockedCount / achievements.length) * 100);
 
   const filteredAchievements = categoryFilter === "all"
     ? achievements
@@ -253,41 +257,23 @@ export default function Achievements() {
   const yearReadTotal = monthlyData.reduce((s, m) => s + m.read, 0);
 
   return (
-    <div className="space-y-10">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
-            🎯 Logros y Retos
-          </h2>
-        <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-          <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
+    <div className="space-y-10 pb-8">
+      <section className="relative overflow-hidden rounded-3xl border border-amber-400/20 bg-card px-5 py-7 sm:p-8 shadow-[0_18px_70px_rgba(0,0,0,0.18)]">
+        <div className="absolute -right-14 -top-20 h-64 w-64 rounded-full bg-amber-400/15 blur-3xl" aria-hidden="true" />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-amber-300"><Sparkles className="h-3.5 w-3.5" /> Tu historia en progreso</p><h2 className="mt-3 font-display text-4xl font-semibold tracking-tight sm:text-5xl">Logros y Retos</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">Cada capítulo cuenta. Aquí quedan guardadas las pequeñas victorias que convierten leer en un ritual.</p></div>
+          <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}><SelectTrigger aria-label="Seleccionar año" className="h-11 w-28 border-border/50 bg-background/60"><SelectValue /></SelectTrigger><SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent></Select>
+        </div>
+        <div className="relative mt-7 grid gap-3 border-t border-border/40 pt-5 sm:grid-cols-[0.7fr_1.3fr]">
+          <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-5 py-4"><p className="text-[10px] font-semibold uppercase tracking-widest text-amber-200">Colección</p><p className="mt-1 font-display text-3xl font-semibold text-amber-300">{unlockedCount}<span className="ml-1 text-sm text-muted-foreground">/ {achievements.length}</span></p><div className="mt-3 h-2 overflow-hidden rounded-full bg-background/50"><div className="h-full rounded-full bg-amber-400 transition-all duration-700" style={{ width: `${achievementProgress}%` }} /></div></div>
+          {nextAchievement && <div className="flex items-center gap-4 rounded-2xl border border-border/45 bg-background/40 px-5 py-4"><div className="grid h-12 w-12 place-items-center rounded-xl text-white shadow-lg" style={{ backgroundColor: nextAchievement.color }}><span>{nextAchievement.icon}</span></div><div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-widest text-primary">Tu próximo logro</p><p className="truncate font-display text-lg font-semibold">{nextAchievement.title}</p><p className="text-xs text-muted-foreground">{nextAchievement.progress.current} de {nextAchievement.progress.target} · {nextAchievement.description}</p></div></div>}
+        </div>
+      </section>
 
       {/* ——— SUMMARY + CATEGORY STATS ——— */}
       {/* ── AVISO LOCALSTORAGE ── */}
     
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        {/* Total */}
-        <Card className="border-none bg-gradient-to-br from-amber-500/15 via-amber-400/5 to-transparent sm:col-span-1">
-          <CardContent className="p-5 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/20 flex items-center justify-center mx-auto mb-3">
-              <Trophy className="h-7 w-7 text-amber-500" />
-            </div>
-            <p className="text-3xl font-bold font-display">{unlockedCount}</p>
-            <p className="text-xs text-muted-foreground">de {achievements.length} logros</p>
-            <div className="mt-3">
-              <div className="h-2 rounded-full bg-muted/40 overflow-hidden">
-                <div className="h-full rounded-full bg-amber-500 transition-all duration-700" style={{ width: `${(unlockedCount / achievements.length) * 100}%` }} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Category cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {(Object.entries(CATEGORY_META) as [AchievementCategory, typeof CATEGORY_META["constancia"]][]).map(([cat, meta]) => (
           <button
             key={cat}
