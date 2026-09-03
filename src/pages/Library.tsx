@@ -464,7 +464,7 @@ export default function LibraryPage() {
           {!loading && yearBooks.length > 0 && <div className="grid grid-cols-2 gap-3 border-t border-border/40 pt-5 sm:grid-cols-4">
             <div><p className="font-display text-2xl font-semibold">{finishedYearBooks.length}</p><p className="text-xs text-muted-foreground">libros leídos</p></div>
             <div><p className="font-display text-2xl font-semibold">{totalPages.toLocaleString()}</p><p className="text-xs text-muted-foreground">páginas vividas</p></div>
-            <div><p className="font-display text-2xl font-semibold">{digitalCount + physicalCount}</p><p className="text-xs text-muted-foreground">en tu colección</p></div>
+            <div><p className="font-display text-2xl font-semibold">{digitalCount} <span className="text-base text-primary">digitales</span> <span className="text-muted-foreground/50">·</span> {physicalCount} <span className="text-base text-primary">físicos</span></p><p className="text-xs text-muted-foreground">formatos de tus lecturas</p></div>
             <div><p className="font-display text-2xl font-semibold">{totalSpent > 0 ? `${totalSpent.toFixed(0)}€` : "—"}</p><p className="text-xs text-muted-foreground">invertidos en historias</p></div>
           </div>}
         </div>
