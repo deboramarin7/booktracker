@@ -274,6 +274,11 @@ export default function Dashboard() {
   }, [yearBooks]);
   const goalProgress = currentGoal > 0 ? Math.min(100, Math.round((yearBooks.length / currentGoal) * 100)) : 0;
   const booksRemaining = Math.max(0, currentGoal - yearBooks.length);
+  const monthlyStoryData = useMemo(() => MONTH_SHORT.map((month, index) => {
+    const monthBooks = yearBooks.filter((book) => getBookMonth(book) === index);
+    return { month, books: monthBooks, count: monthBooks.length };
+  }), [yearBooks]);
+  const topGenre = genreData[0];
 
   return (
     <div className="space-y-12 pb-8">
@@ -385,6 +390,20 @@ export default function Dashboard() {
               SECCIÓN 2: GRÁFICOS
               ═══════════════════════════════════════════ */}
           <section className="space-y-6">
+          <section className="space-y-6">
+            <SectionHeader icon={TrendingUp} title="El ritmo de tu año" subtitle="Tus meses de lectura, convertidos en una pequeña historia visual" />
+            <div className="grid gap-6 xl:grid-cols-[1.45fr_0.55fr]">
+              <div className="rounded-3xl border border-border/40 bg-card p-4 sm:p-6">
+                <div className="mb-5 flex items-end justify-between"><div><p className="font-display text-xl font-semibold">Mes a mes</p><p className="text-xs text-muted-foreground">Cada portada marca un capítulo terminado.</p></div><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{yearBooks.length} historias</span></div>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+                  {monthlyStoryData.map(({ month, books: monthBooks, count }) => <div key={month} className={`min-h-[132px] rounded-2xl border p-2 transition-transform hover:-translate-y-1 ${count > 0 ? "border-primary/20 bg-primary/[0.07]" : "border-border/25 bg-muted/15"}`}><div className="flex items-center justify-between"><span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{month}</span><span className={`font-display text-lg font-semibold ${count > 0 ? "text-primary" : "text-muted-foreground/35"}`}>{count}</span></div><div className="mt-3 flex h-[82px] items-end gap-1 overflow-hidden">{monthBooks.slice(0, 3).map((book) => <BookCoverImage key={book.id} src={book.coverUrl} alt={book.title} title={book.title} className="h-[72px] min-w-0 flex-1 rounded-md object-cover shadow-md" fallbackClassName="h-[72px] min-w-0 flex-1 rounded-md bg-primary/15" iconClassName="h-3 w-3" />)}{count > 3 && <span className="self-end rounded-md bg-background/70 px-1.5 py-1 text-[10px] text-primary">+{count - 3}</span>}{count === 0 && <span className="mb-1 text-[10px] text-muted-foreground/35">En pausa</span>}</div></div>)}
+                </div>
+              </div>
+              <div className="relative overflow-hidden rounded-3xl border border-rose-400/20 bg-gradient-to-br from-rose-400/15 via-violet-500/10 to-card p-6"><div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-rose-400/20 blur-3xl" /><div className="relative"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-rose-300">Tu universo favorito</p><p className="mt-4 font-display text-3xl font-semibold leading-tight">{topGenre?.name || "Aún por descubrir"}</p><p className="mt-2 text-sm text-muted-foreground">{topGenre ? `${topGenre.value} de ${yearBooks.length} libros este año` : "Termina un libro para verlo aquí."}</p>{topGenre && <div className="mt-6 h-2 overflow-hidden rounded-full bg-background/50"><div className="h-full rounded-full bg-rose-400" style={{ width: `${Math.round((topGenre.value / yearBooks.length) * 100)}%` }} /></div>}<div className="mt-6 space-y-2">{genreData.slice(0, 4).map((genre, index) => <div key={genre.name} className="flex items-center justify-between text-xs"><span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: genreColorMap[genre.name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length] }} />{genre.name}</span><span className="font-semibold text-foreground">{genre.value}</span></div>)}</div></div></div>
+            </div>
+          </section>
+
+          <section className="hidden space-y-6">
             <SectionHeader icon={BarChart3} title="Gráficos" subtitle={`Visualización de tu lectura en ${selectedYear}`} />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
