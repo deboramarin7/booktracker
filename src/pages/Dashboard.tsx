@@ -403,128 +403,60 @@ export default function Dashboard() {
             </div>
           </section>
 
-          {/* ═══════════════════════════════════════════
-              SECCIÓN 2: GRÁFICOS
-              ═══════════════════════════════════════════ */}
+          {/* ═══ SECCIÓN 2: EL RITMO DE TU AÑO ═══ */}
           <section className="space-y-6">
-            <SectionHeader icon={BarChart3} title="Gráficos" subtitle={`Visualización de tu lectura en ${selectedYear}`} />
+            <SectionHeader icon={TrendingUp} title="El ritmo de tu año" subtitle="Cada portada es un capítulo que ya has vivido." />
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Libros por mes (bar chart) */}
-              <Card className="border-border/30">
-                <CardContent className="pt-6 pb-4">
-                  <p className="text-sm font-semibold font-body text-foreground mb-4">Libros por mes</p>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={monthlyBarData} barSize={24}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
-                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--foreground)" }} stroke="var(--muted-foreground)" />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "var(--foreground)" }} stroke="var(--muted-foreground)" width={24} />
-                      <Tooltip
-                        contentStyle={{
-                          borderRadius: "10px",
-                          fontSize: "13px",
-                          border: "1px solid var(--border)",
-                          backgroundColor: "var(--card)",
-                        }}
-                        formatter={(value: number) => [`${value} libros`, ""]}
-                      />
-                      <Bar dataKey="libros" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+            <div className="grid gap-5 xl:grid-cols-[1.45fr_0.55fr]">
+              <div className="rounded-3xl border border-border/40 bg-card p-4 sm:p-6">
+                <div className="mb-5 flex items-end justify-between gap-4">
+                  <div>
+                    <p className="font-display text-xl font-semibold">Tu historia, mes a mes</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Portadas y pequeños hitos en lugar de gráficos impersonales.</p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{yearBooks.length} lecturas</span>
+                </div>
 
-              {/* Géneros (pie) */}
-              {genreData.length > 0 && (
-                <Card className="border-border/30">
-                  <CardContent className="pt-6 pb-4">
-                    <p className="text-sm font-semibold font-body text-foreground mb-4">Distribución por género</p>
-                    <div className="flex items-center gap-4">
-                      <ResponsiveContainer width="55%" height={220}>
-                        <PieChart>
-                          <Pie
-                            data={genreData}
-                            dataKey="value"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={85}
-                            innerRadius={45}
-                            paddingAngle={2}
-                            strokeWidth={0}
-                          >
-                            {genreData.map((entry, i) => (
-                              <Cell key={i} fill={genreColorMap[entry.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            contentStyle={{
-                              borderRadius: "10px",
-                              fontSize: "12px",
-                              border: "1px solid var(--border)",
-                              backgroundColor: "var(--card)",
-                            }}
-                            formatter={(value: number) => [`${value} libros`, ""]}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className="flex-1 space-y-1.5">
-                        {genreData.slice(0, 6).map((g, i) => (
-                          <div key={g.name} className="flex items-center gap-2">
-                            <div
-                              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: genreColorMap[g.name] || FALLBACK_COLORS[i % FALLBACK_COLORS.length] }}
-                            />
-                            <span className="text-xs text-foreground truncate flex-1">{g.name}</span>
-                            <span className="text-xs text-muted-foreground tabular-nums">{g.value}</span>
-                          </div>
-                        ))}
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+                  {MONTH_SHORT.map((month, monthIndex) => {
+                    const monthBooks = yearBooks.filter((book) => getBookMonth(book) === monthIndex);
+                    return (
+                      <div key={month} className={`min-h-[132px] rounded-2xl border p-2 transition-transform duration-200 hover:-translate-y-1 ${monthBooks.length > 0 ? "border-primary/20 bg-primary/[0.07]" : "border-border/25 bg-muted/15"}`}>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{month}</span>
+                          <span className={`font-display text-lg font-semibold ${monthBooks.length > 0 ? "text-primary" : "text-muted-foreground/35"}`}>{monthBooks.length}</span>
+                        </div>
+                        <div className="mt-3 flex h-[82px] items-end gap-1 overflow-hidden">
+                          {monthBooks.slice(0, 3).map((book) => (
+                            <BookCoverImage key={book.id} src={book.coverUrl} alt={book.title} title={book.title} className="h-[72px] min-w-0 flex-1 rounded-md object-cover shadow-md" fallbackClassName="h-[72px] min-w-0 flex-1 rounded-md bg-primary/15" iconClassName="h-3 w-3" />
+                          ))}
+                          {monthBooks.length > 3 && <span className="self-end rounded-md bg-background/70 px-1.5 py-1 text-[10px] text-primary">+{monthBooks.length - 3}</span>}
+                          {monthBooks.length === 0 && <span className="mb-1 text-[10px] text-muted-foreground/35">En pausa</span>}
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-            {/* Evolution line chart */}
-            {evolutionYears.length > 0 && (
-              <Card className="border-border/30">
-                <CardContent className="pt-6 pb-4">
-                  <p className="text-sm font-semibold font-body text-foreground mb-4">Evolución mes a mes</p>
-                  <ResponsiveContainer width="100%" height={260}>
-                    <LineChart data={evolutionData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
-                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--foreground)" }} stroke="var(--muted-foreground)" />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "var(--foreground)" }} stroke="var(--muted-foreground)" width={24} />
-                      <Tooltip
-                        contentStyle={{
-                          borderRadius: "10px",
-                          fontSize: "13px",
-                          border: "1px solid var(--border)",
-                          backgroundColor: "var(--card)",
-                        }}
-                      />
-                      {evolutionYears.length > 1 && (
-                        <Legend wrapperStyle={{ fontSize: "12px" }} />
-                      )}
-                      {evolutionYears.map((year, i) => (
-                        <Line
-                          key={year}
-                          type="monotone"
-                          dataKey={String(year)}
-                          stroke={LINE_COLORS[i % LINE_COLORS.length]}
-                          strokeWidth={2.5}
-                          dot={{ r: 3, strokeWidth: 0 }}
-                          activeDot={{ r: 5 }}
-                          name={String(year)}
-                          connectNulls={false}
-                        />
-                      ))}
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
+              <div className="relative overflow-hidden rounded-3xl border border-rose-400/20 bg-gradient-to-br from-rose-400/15 via-violet-500/10 to-card p-6">
+                <div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-rose-400/20 blur-3xl" />
+                <div className="relative">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-rose-300">Tu universo favorito</p>
+                  <p className="mt-4 font-display text-3xl font-semibold leading-tight">{genreData[0]?.name || "Aún por descubrir"}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{genreData[0] ? `${genreData[0].value} de ${yearBooks.length} libros este año` : "Termina un libro para verlo aquí."}</p>
+                  {genreData[0] && <div className="mt-6 h-2 overflow-hidden rounded-full bg-background/50"><div className="h-full rounded-full bg-rose-400" style={{ width: `${Math.round((genreData[0].value / yearBooks.length) * 100)}%` }} /></div>}
+                  <div className="mt-6 space-y-2">
+                    {genreData.slice(0, 4).map((genre, index) => (
+                      <div key={genre.name} className="flex items-center justify-between text-xs">
+                        <span className="flex min-w-0 items-center gap-2"><span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: genreColorMap[genre.name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length] }} /> <span className="truncate">{genre.name}</span></span>
+                        <span className="font-semibold text-foreground">{genre.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           </section>
 
           {/* ═══════════════════════════════════════════
