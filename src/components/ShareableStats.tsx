@@ -339,5 +339,3 @@ export function BestOfYearExport({ year, books }: BestOfYearProps) {
     </Dialog>
   );
 }
-
-warning: in the working copy of 'src/components/ShareableStats.tsx', LF will be replaced by CRLF the next time Git touches it
