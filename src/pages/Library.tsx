@@ -402,21 +402,22 @@ export default function LibraryPage() {
     return result;
   }, [yearBooks, search, statusFilter, genreFilter, formatFilter, sort]);
 
+  const currentRead = books.find((book) => book.status === "reading");
+
   const groupedByStatus = useMemo(() => {
     const groups: { status: ReadingStatus; label: string; books: Book[] }[] = [];
     const statuses: ReadingStatus[] = ["reading", "finished", "want-to-read"];
     for (const s of statuses) {
-      const booksInGroup = filtered.filter((b) => b.status === s);
+      const booksInGroup = filtered.filter((b) => b.status === s && b.id !== currentRead?.id);
       if (booksInGroup.length > 0) {
         groups.push({ status: s, label: STATUS_LABELS[s] ?? s, books: booksInGroup });
       }
     }
     return groups;
-  }, [filtered]);
+  }, [filtered, currentRead?.id]);
 
   const goalPercent = currentGoal > 0 ? Math.min(100, Math.round((finishedYearBooks.length / currentGoal) * 100)) : 0;
   const booksRemaining = Math.max(0, currentGoal - finishedYearBooks.length);
-  const currentRead = books.find((book) => book.status === "reading");
   const currentReadProgress = currentRead && currentRead.totalPages > 0
     ? Math.min(100, Math.round((currentRead.pagesRead / currentRead.totalPages) * 100))
     : 0;
@@ -466,7 +467,7 @@ export default function LibraryPage() {
                     {currentRead.totalPages > 0 ? <>
                       <div className="mt-4 flex items-end justify-between gap-3"><p className="text-xs text-muted-foreground">{currentRead.pagesRead} de {currentRead.totalPages} páginas</p><p className="text-sm font-semibold text-primary">{currentReadProgress}%</p></div>
                       <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-background/60"><div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${currentReadProgress}%` }} /></div>
-                      <label className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><span className="shrink-0">Actualizar página</span><input type="number" min={0} max={currentRead.totalPages} defaultValue={currentRead.pagesRead} onBlur={(event) => { const pagesRead = Math.max(0, Math.min(currentRead.totalPages, Number(event.target.value) || 0)); if (pagesRead !== currentRead.pagesRead) updateBook(currentRead.id, { pagesRead }); }} onKeyDown={(event) => { if (event.key === "Enter") (event.target as HTMLInputElement).blur(); }} aria-label={`Página actual de ${currentRead.title}`} className="h-7 min-w-0 flex-1 rounded-md border border-border/50 bg-background/70 px-2 text-xs text-foreground outline-none focus:border-primary" /></label>
+                      <label className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><span className="shrink-0">Actualizar página</span><input type="number" min={0} max={currentRead.totalPages} defaultValue={currentRead.pagesRead} onBlur={(event) => { const pagesRead = Math.max(0, Math.min(currentRead.totalPages, Number(event.target.value) || 0)); if (pagesRead !== currentRead.pagesRead) updateBook(currentRead.id, { pagesRead }); }} onKeyDown={(event) => { if (event.key === "Enter") (event.target as HTMLInputElement).blur(); }} aria-label={`Página actual de ${currentRead.title}`} className="h-8 min-w-0 flex-1 rounded-lg border border-white/80 bg-white px-2 text-sm font-semibold text-black outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" /></label>
                     </> : <p className="mt-4 text-xs text-muted-foreground">Añade el total de páginas para seguir tu progreso.</p>}
                   </div>
                 </div>
