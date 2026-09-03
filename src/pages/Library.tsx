@@ -6,12 +6,11 @@ import { ExportBooksButton } from "@/components/ImportExportBooks";
 import { useWishlist, type WishItem } from "@/hooks/useWishlist";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, Pencil, Check, LayoutGrid, AlignJustify, Library, Target, Star, Image, Trash2 } from "lucide-react";
+import { BookOpen, Pencil, Check, LayoutGrid, AlignJustify, Target, Star, Image, Trash2, Search, SlidersHorizontal, Sparkles } from "lucide-react";
 import type { Book, ReadingStatus } from "@/hooks/useBooks";
 import { GENRES, FORMATS } from "@/lib/constants";
 import { EditBookDialog } from "@/components/EditBookDialog";
 import { BookCoverImage } from "@/components/BookCoverImage";
-import { STATUS_COLORS, GENRE_COLORS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { getBookYear, getBookMonth, getBookDate } from "@/lib/dateUtils";
 
@@ -84,12 +83,14 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1">
             <button
               onClick={(e) => { e.stopPropagation(); setEditing(true); }}
+              aria-label={`Editar ${book.title}`}
               className="w-7 h-7 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center text-white transition-colors"
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); if (window.confirm(`Eliminar "${book.title}"? Esta acción no se puede deshacer.`)) onDelete(book.id); }}
+              aria-label={`Eliminar ${book.title}`}
               className="w-7 h-7 rounded-full bg-red-500/80 hover:bg-red-500 flex items-center justify-center text-white transition-colors"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -104,7 +105,7 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
           </p>
         )}
         {book.rating > 0 && (
-          <div className="flex gap-0.5 mt-1">
+          <div className="flex gap-0.5 mt-1" aria-label={`${book.rating} de 5 estrellas`}>
             {[1, 2, 3, 4, 5].map((i) => (
               <Star
                 key={i}
@@ -299,7 +300,10 @@ export default function LibraryPage() {
   const [viewMode, setViewMode] = useState<"covers" | "grid" | "spine">("covers");
   const [genreFilter, setGenreFilter] = useState<string>("all");
   const [formatFilter, setFormatFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<ReadingStatus | "all">("all");
   const [sort, setSort] = useState<SortOption>("read-desc");
+  const [search, setSearch] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
 
   const [goals, setGoals] = useState<Record<number, number>>(loadGoals);
   const [editingGoal, setEditingGoal] = useState(false);
@@ -371,6 +375,15 @@ export default function LibraryPage() {
 
   const filtered = useMemo(() => {
     let result = [...yearBooks];
+    const normalizedSearch = search.trim().toLocaleLowerCase();
+    if (normalizedSearch) {
+      result = result.filter((b) =>
+        [b.title, b.author, b.saga, b.genre, ...(b.tags || [])]
+          .filter(Boolean)
+          .some((value) => value!.toLocaleLowerCase().includes(normalizedSearch))
+      );
+    }
+    if (statusFilter !== "all") result = result.filter((b) => b.status === statusFilter);
     if (genreFilter !== "all") result = result.filter((b) => b.genre === genreFilter);
     if (formatFilter !== "all") result = result.filter((b) => b.format === formatFilter);
     result.sort((a, b) => {
@@ -387,7 +400,7 @@ export default function LibraryPage() {
       }
     });
     return result;
-  }, [yearBooks, genreFilter, formatFilter, sort]);
+  }, [yearBooks, search, statusFilter, genreFilter, formatFilter, sort]);
 
   const groupedByStatus = useMemo(() => {
     const groups: { status: ReadingStatus; label: string; books: Book[] }[] = [];
@@ -402,78 +415,63 @@ export default function LibraryPage() {
   }, [filtered]);
 
   const goalPercent = currentGoal > 0 ? Math.min(100, Math.round((finishedYearBooks.length / currentGoal) * 100)) : 0;
+  const booksRemaining = Math.max(0, currentGoal - finishedYearBooks.length);
+  const currentRead = books.find((book) => book.status === "reading");
+  const activeFilterCount = [statusFilter !== "all", genreFilter !== "all", formatFilter !== "all"].filter(Boolean).length;
 
   return (
-    <div className="space-y-8">
-      {/* HEADER */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-3 flex-wrap">
-          <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
-            Mi Biblioteca
-          </h2>
-          <Select value={yearFilter} onValueChange={setYearFilter}>
-            <SelectTrigger className="h-8 sm:h-9 w-24 sm:w-28 text-sm font-medium rounded-[var(--radius)] border-border/50 flex-shrink-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {availableYears.map((y) => (
-                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={monthFilter} onValueChange={setMonthFilter}>
-            <SelectTrigger className="h-8 sm:h-9 w-32 sm:w-44 text-sm font-medium rounded-[var(--radius)] border-border/50 flex-shrink-0">
-              <SelectValue placeholder="Mes" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los meses</SelectItem>
-              {MONTHS.map((name, i) => (
-                <SelectItem key={i} value={String(i)}>{name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center border border-border/40 rounded-[var(--radius)] overflow-hidden flex-shrink-0">
-            <button onClick={() => setViewMode("covers")}
-              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 transition-colors ${viewMode === "covers" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}
-              title="Vista portadas">
-              <Image className="h-4 w-4" />
-            </button>
-            <button onClick={() => setViewMode("grid")}
-              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 transition-colors ${viewMode === "grid" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}
-              title="Vista detalle">
-              <LayoutGrid className="h-4 w-4" />
-            </button>
-            <button onClick={() => setViewMode("spine")}
-              className={`px-2.5 py-1.5 sm:px-3 sm:py-2 transition-colors ${viewMode === "spine" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}
-              title="Vista lomos">
-              <AlignJustify className="h-4 w-4" />
-            </button>
+    <div className="space-y-8 pb-8">
+      <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card px-5 py-6 sm:p-8 shadow-[0_18px_70px_rgba(0,0,0,0.18)]">
+        <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-primary/15 blur-3xl" aria-hidden="true" />
+        <div className="absolute -bottom-32 left-1/3 h-52 w-52 rounded-full bg-cyan-400/10 blur-3xl" aria-hidden="true" />
+        <div className="relative space-y-7">
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+            <div className="max-w-2xl">
+              <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary"><Sparkles className="h-3.5 w-3.5" /> Tu rincón lector</p>
+              <h2 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">Mi Biblioteca</h2>
+              <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">Cada portada guarda una versión de ti. Explora tu historia, encuentra tu próxima lectura y deja que tu biblioteca respire.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Select value={yearFilter} onValueChange={setYearFilter}>
+                <SelectTrigger aria-label="Filtrar por año" className="h-10 w-24 border-border/50 bg-background/50 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="all">Todos</SelectItem>{availableYears.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+              </Select>
+              <Select value={monthFilter} onValueChange={setMonthFilter}>
+                <SelectTrigger aria-label="Filtrar por mes" className="h-10 w-36 border-border/50 bg-background/50 text-sm"><SelectValue placeholder="Mes" /></SelectTrigger>
+                <SelectContent><SelectItem value="all">Todos los meses</SelectItem>{MONTHS.map((name, i) => <SelectItem key={i} value={String(i)}>{name}</SelectItem>)}</SelectContent>
+              </Select>
+              <ExportBooksButton books={books} />
+              <AddBookDialog onAdd={addBook} onAddToWishlist={addItem} />
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <ExportBooksButton books={books} />
-            <AddBookDialog onAdd={addBook} onAddToWishlist={addItem} />
+
+          <div className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
+            <label className="group flex h-14 items-center gap-3 rounded-2xl border border-border/50 bg-background/60 px-4 transition-colors focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
+              <Search className="h-5 w-5 text-muted-foreground transition-colors group-focus-within:text-primary" />
+              <input value={search} onChange={(event) => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" placeholder="Busca por título, autora, saga, género o etiqueta" aria-label="Buscar en mi biblioteca" />
+              {search && <button type="button" onClick={() => setSearch("")} className="text-xs font-medium text-primary hover:underline">Limpiar</button>}
+            </label>
+            {currentRead ? (
+              <div className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3">
+                <BookCoverImage src={currentRead.coverUrl} alt={currentRead.title} title={currentRead.title} className="h-12 w-8 rounded-md object-cover shadow-md" iconClassName="h-4 w-4" />
+                <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-widest text-primary">Leyendo ahora</p><p className="truncate text-sm font-semibold">{currentRead.title}</p><p className="truncate text-xs text-muted-foreground">{currentRead.author}</p></div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border/60 bg-background/30 px-4 py-3 text-sm text-muted-foreground"><BookOpen className="h-5 w-5 text-primary" /> Tu próxima lectura te está esperando.</div>
+            )}
           </div>
-        </div>
-      </div>
 
-      {/* STATS */}
-      {!loading && yearBooks.length > 0 && (
-        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-          <span><span className="text-lg font-semibold text-foreground">{finishedYearBooks.length}</span> libros leídos</span>
-          <span className="text-border/60">|</span>
-          <span><span className="text-lg font-semibold text-foreground">{totalPages.toLocaleString()}</span> páginas</span>
-          {totalSpent > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">{totalSpent.toFixed(2)}€</span> gastos</span></>)}
-          {digitalCount > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">📱{digitalCount}</span> digital</span></>)}
-          {physicalCount > 0 && (<><span className="text-border/60">|</span><span><span className="text-lg font-semibold text-foreground">📖{physicalCount}</span> físico</span></>)}
+          {!loading && yearBooks.length > 0 && <div className="grid grid-cols-2 gap-3 border-t border-border/40 pt-5 sm:grid-cols-4">
+            <div><p className="font-display text-2xl font-semibold">{finishedYearBooks.length}</p><p className="text-xs text-muted-foreground">libros leídos</p></div>
+            <div><p className="font-display text-2xl font-semibold">{totalPages.toLocaleString()}</p><p className="text-xs text-muted-foreground">páginas vividas</p></div>
+            <div><p className="font-display text-2xl font-semibold">{digitalCount + physicalCount}</p><p className="text-xs text-muted-foreground">en tu colección</p></div>
+            <div><p className="font-display text-2xl font-semibold">{totalSpent > 0 ? `${totalSpent.toFixed(0)}€` : "—"}</p><p className="text-xs text-muted-foreground">invertidos en historias</p></div>
+          </div>}
         </div>
-      )}
+      </section>
 
-      {/* OBJETIVO ANUAL */}
       {selectedYear && (
-        <div className="rounded-[var(--radius)] border border-border/40 bg-card p-5 sm:p-6">
+        <section className="rounded-3xl border border-border/40 bg-card p-5 sm:p-6">
           <div className="flex items-center justify-between gap-4 mb-4">
             <div className="flex items-center gap-3">
               <Target className="h-5 w-5 text-primary" />
@@ -511,7 +509,7 @@ export default function LibraryPage() {
                 </div>
                 <div className="ml-auto text-right">
                   <p className="text-3xl font-light tracking-tighter font-display text-primary">{goalPercent}%</p>
-                  {finishedYearBooks.length >= currentGoal && <p className="text-sm text-primary font-medium">Completado!</p>}
+                  <p className="text-sm text-primary font-medium">{booksRemaining === 0 ? "Objetivo conseguido" : `Faltan ${booksRemaining} libros`}</p>
                 </div>
               </div>
               <div className="h-3 rounded-full bg-muted/60 overflow-hidden">
@@ -521,38 +519,49 @@ export default function LibraryPage() {
           ) : (
             <p className="text-sm text-muted-foreground">Sin objetivo definido. Haz clic en "Fijar objetivo" para establecer cuántos libros quieres leer este año.</p>
           )}
-        </div>
+        </section>
       )}
 
-      {/* FILTROS */}
-      <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 items-center">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border/40 py-4">
+        <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-card p-1" role="group" aria-label="Cambiar vista">
+          {[{ value: "covers", label: "Vista de portadas", icon: Image }, { value: "grid", label: "Vista detallada", icon: LayoutGrid }, { value: "spine", label: "Vista de lomos", icon: AlignJustify }].map(({ value, label, icon: Icon }) => (
+            <button key={value} type="button" onClick={() => setViewMode(value as typeof viewMode)} aria-label={label} aria-pressed={viewMode === value} className={`rounded-lg p-2 transition-colors ${viewMode === value ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}><Icon className="h-4 w-4" /></button>
+          ))}
+        </div>
+        <button type="button" onClick={() => setShowFilters((visible) => !visible)} aria-expanded={showFilters} className="relative flex h-10 items-center gap-2 rounded-xl border border-border/50 bg-card px-3 text-sm font-medium transition-colors hover:border-primary/50 hover:text-primary"><SlidersHorizontal className="h-4 w-4" /> Filtros {activeFilterCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground">{activeFilterCount}</span>}</button>
+      </div>
+
+      {showFilters && <div className="grid grid-cols-1 gap-2 rounded-2xl border border-border/40 bg-card/60 p-3 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
+        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ReadingStatus | "all")}>
+          <SelectTrigger aria-label="Filtrar por estado" className="w-full lg:w-[170px] h-10 text-sm"><SelectValue placeholder="Estado" /></SelectTrigger>
+          <SelectContent><SelectItem value="all">Todos los estados</SelectItem><SelectItem value="reading">Leyendo</SelectItem><SelectItem value="finished">Terminado</SelectItem><SelectItem value="want-to-read">Quiero leer</SelectItem></SelectContent>
+        </Select>
         <Select value={genreFilter} onValueChange={setGenreFilter}>
-          <SelectTrigger className="w-full sm:w-[190px] h-9 text-sm rounded-[var(--radius)]"><SelectValue placeholder="Género" /></SelectTrigger>
+          <SelectTrigger aria-label="Filtrar por género" className="w-full lg:w-[190px] h-10 text-sm"><SelectValue placeholder="Género" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos los géneros</SelectItem>
             {GENRES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={formatFilter} onValueChange={setFormatFilter}>
-          <SelectTrigger className="w-full sm:w-[190px] h-9 text-sm rounded-[var(--radius)]"><SelectValue placeholder="Formato" /></SelectTrigger>
+          <SelectTrigger aria-label="Filtrar por formato" className="w-full lg:w-[190px] h-10 text-sm"><SelectValue placeholder="Formato" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos los formatos</SelectItem>
             {FORMATS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
-          <SelectTrigger className="w-full sm:w-[220px] h-9 text-sm rounded-[var(--radius)] col-span-2 sm:col-span-1"><SelectValue placeholder="Ordenar por" /></SelectTrigger>
+          <SelectTrigger aria-label="Ordenar libros" className="w-full lg:w-[220px] h-10 text-sm"><SelectValue placeholder="Ordenar por" /></SelectTrigger>
           <SelectContent>
             {SORT_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        {(genreFilter !== "all" || formatFilter !== "all") && (
-          <button onClick={() => { setGenreFilter("all"); setFormatFilter("all"); }}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+        {activeFilterCount > 0 && (
+          <button onClick={() => { setStatusFilter("all"); setGenreFilter("all"); setFormatFilter("all"); }} className="h-10 text-sm text-muted-foreground hover:text-foreground transition-colors">
             Limpiar filtros
           </button>
         )}
-      </div>
+      </div>}
 
       {/* CONTENIDO */}
       {loading ? (
