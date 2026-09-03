@@ -65,6 +65,13 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
   const uniqueAuthors = new Set(books.map(b => b.author)).size;
   const physicalCount = books.filter(b => b.format === "Físico").length;
   const digitalCount = books.filter(b => b.format === "Digital").length;
+  const genreRanking = Object.entries(
+    books.reduce<Record<string, number>>((genres, book) => {
+      const genre = book.genre || "Sin género";
+      genres[genre] = (genres[genre] || 0) + 1;
+      return genres;
+    }, {})
+  ).sort(([, a], [, b]) => b - a).slice(0, 3);
 
   const handleDownload = useCallback(async () => {
     if (!cardRef.current) return;
@@ -96,7 +103,7 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
           <DialogTitle className="font-display">Tu Año Lector {year}</DialogTitle>
         </DialogHeader>
 
-        {/* The shareable card — 9:16 (formato historia de Instagram/TikTok), diseño editorial con galaxia/nebulosa */}
+        {/* Tarjeta 9:16 para historias: todo es HTML/CSS para que la descarga sea fiable. */}
         <div
           ref={cardRef}
           className="rounded-2xl overflow-hidden relative mx-auto"
@@ -105,12 +112,10 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
             width: "100%",
             maxWidth: "420px",
             background: [
-              "radial-gradient(ellipse 55% 40% at 15% 12%, rgba(255,80,140,0.45) 0%, rgba(255,80,140,0) 60%)",
-              "radial-gradient(ellipse 60% 45% at 45% 30%, rgba(70,220,180,0.35) 0%, rgba(70,220,180,0) 60%)",
-              "radial-gradient(ellipse 50% 35% at 78% 18%, rgba(255,170,90,0.25) 0%, rgba(255,170,90,0) 55%)",
-              "radial-gradient(ellipse 55% 45% at 12% 80%, rgba(50,200,170,0.32) 0%, rgba(50,200,170,0) 55%)",
-              "radial-gradient(ellipse 45% 35% at 85% 85%, rgba(150,80,220,0.22) 0%, rgba(150,80,220,0) 55%)",
-              "linear-gradient(160deg, #050508 0%, #0a0712 50%, #060a0c 100%)",
+              "radial-gradient(ellipse 70% 42% at 0% 0%, rgba(220,83,130,0.42) 0%, rgba(220,83,130,0) 68%)",
+              "radial-gradient(ellipse 75% 48% at 100% 18%, rgba(230,173,91,0.24) 0%, rgba(230,173,91,0) 70%)",
+              "radial-gradient(ellipse 62% 48% at 30% 88%, rgba(43,185,163,0.34) 0%, rgba(43,185,163,0) 70%)",
+              "linear-gradient(155deg, #110d19 0%, #090b15 52%, #100d1b 100%)",
             ].join(", "),
             border: "1px solid rgba(212,175,131,0.18)",
             color: "#f3ede3",
@@ -130,79 +135,61 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
             }}
           />
 
-          {/* Contenido — header arriba, año/estadísticas centrados, footer abajo */}
-          <div style={{ position: "relative", zIndex: 1, height: "100%", display: "flex", flexDirection: "column", padding: "40px 26px 28px" }}>
-            {/* Header */}
-            <div style={{ textAlign: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                <BookOpen style={{ width: "16px", height: "16px", opacity: 0.7 }} />
-                <span style={{ fontSize: "11px", letterSpacing: "3px", textTransform: "uppercase", opacity: 0.7, fontFamily: "system-ui, sans-serif" }}>
-                  Mi Año Lector
-                </span>
+          <div style={{ position: "relative", zIndex: 1, height: "100%", display: "flex", flexDirection: "column", padding: "36px 25px 27px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <BookOpen style={{ width: "15px", height: "15px", color: "#f5d7a1" }} />
+                <span style={{ fontSize: "10px", letterSpacing: "2.7px", textTransform: "uppercase", color: "rgba(243,237,227,0.8)", fontFamily: "system-ui, sans-serif" }}>Mi rincón lector</span>
               </div>
+              <span style={{ border: "1px solid rgba(245,215,161,0.45)", borderRadius: "999px", padding: "5px 9px", fontSize: "9px", letterSpacing: "1px", fontFamily: "system-ui, sans-serif", color: "#f5d7a1" }}>RECAP</span>
             </div>
 
-            {/* Bloque central — año + estadísticas, centrado verticalmente */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-              <p style={{ fontSize: "68px", fontWeight: 300, lineHeight: 1, letterSpacing: "1px", margin: 0 }}>{year}</p>
-              <div style={{ width: "60px", height: "1px", background: "rgba(212,175,131,0.6)", margin: "20px auto 34px" }} />
+            <div style={{ marginTop: "45px", textAlign: "center" }}>
+              <p style={{ fontSize: "11px", letterSpacing: "4px", textTransform: "uppercase", color: "rgba(243,237,227,0.6)", fontFamily: "system-ui, sans-serif", margin: 0 }}>Mi año entre páginas</p>
+              <p style={{ fontSize: "82px", fontWeight: 400, lineHeight: 0.95, letterSpacing: "-3px", margin: "14px 0 0", color: "#fff8ee" }}>{year}</p>
+              <div style={{ width: "44px", height: "2px", background: "#f5d7a1", margin: "22px auto 0" }} />
+            </div>
 
-              {/* Main stats — sin cajas, estilo editorial con separadores finos */}
-              <div style={{ display: "flex", width: "100%", marginBottom: "30px" }}>
-                {[
-                  { value: totalBooks, label: "Libros" },
-                  { value: totalPages.toLocaleString(), label: "Páginas" },
-                  { value: uniqueAuthors, label: "Autores" },
-                ].map((stat, i) => (
-                  <div
-                    key={stat.label}
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      textAlign: "center",
-                      padding: "0 6px",
-                      borderLeft: i > 0 ? "1px solid rgba(243,237,227,0.2)" : "none",
-                    }}
-                  >
-                    <p style={{ fontSize: "30px", fontWeight: 400, lineHeight: 1, margin: 0 }}>{stat.value}</p>
-                    <p style={{ fontSize: "9px", opacity: 0.65, textTransform: "uppercase", letterSpacing: "0.8px", marginTop: "6px", fontFamily: "system-ui, sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {stat.label}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Físico vs Digital — mismo estilo editorial que la fila principal */}
-              <div style={{ display: "flex", justifyContent: "center" }}>
-                {[
-                  { value: physicalCount, label: "Físicos" },
-                  { value: digitalCount, label: "Digitales" },
-                ].map((stat, i) => (
-                  <div
-                    key={stat.label}
-                    style={{
-                      textAlign: "center",
-                      padding: "0 16px",
-                      borderLeft: i > 0 ? "1px solid rgba(243,237,227,0.2)" : "none",
-                    }}
-                  >
-                    <p style={{ fontSize: "26px", fontWeight: 400, lineHeight: 1, margin: 0 }}>{stat.value}</p>
-                    <p style={{ fontSize: "9px", opacity: 0.65, textTransform: "uppercase", letterSpacing: "0.8px", marginTop: "6px", fontFamily: "system-ui, sans-serif", whiteSpace: "nowrap" }}>
-                      {stat.label}
-                    </p>
+            <div style={{ marginTop: "38px", padding: "22px 14px", border: "1px solid rgba(243,237,227,0.16)", borderRadius: "18px", background: "rgba(9,8,16,0.38)" }}>
+              <p style={{ textAlign: "center", fontSize: "46px", fontWeight: 400, lineHeight: 0.9, margin: 0, color: "#ffffff" }}>{totalBooks}</p>
+              <p style={{ textAlign: "center", fontSize: "10px", letterSpacing: "2px", textTransform: "uppercase", color: "#f5d7a1", fontFamily: "system-ui, sans-serif", margin: "9px 0 0" }}>Historias terminadas</p>
+              <div style={{ height: "1px", background: "rgba(243,237,227,0.14)", margin: "19px 0" }} />
+              <div style={{ display: "flex", justifyContent: "space-around" }}>
+                {[{ value: totalPages.toLocaleString(), label: "Páginas" }, { value: uniqueAuthors, label: "Autores" }, { value: `${physicalCount}/${digitalCount}`, label: "Físico / digital" }].map((stat) => (
+                  <div key={stat.label} style={{ flex: 1, minWidth: 0, textAlign: "center", padding: "0 3px" }}>
+                    <p style={{ fontSize: "21px", fontWeight: 400, lineHeight: 1, margin: 0 }}>{stat.value}</p>
+                    <p style={{ fontSize: "8px", textTransform: "uppercase", letterSpacing: "0.7px", color: "rgba(243,237,227,0.6)", margin: "6px 0 0", fontFamily: "system-ui, sans-serif", whiteSpace: "nowrap" }}>{stat.label}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Footer */}
-            <div>
-              <p style={{ textAlign: "center", fontSize: "11px", opacity: 0.5, fontStyle: "italic", margin: "0 0 4px" }}>
-                ✨A los lectores que alzan los ojos a las estrellas y piden un deseo✨
-              </p>
-              <p style={{ textAlign: "center", fontSize: "10px", opacity: 0.4, letterSpacing: "1px", fontFamily: "system-ui, sans-serif", margin: 0 }}>
-                📚 Book Tracker
-              </p>
+            <div style={{ marginTop: "22px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                <p style={{ fontSize: "9px", letterSpacing: "1.5px", textTransform: "uppercase", color: "#f5d7a1", fontFamily: "system-ui, sans-serif", margin: 0 }}>Tu mapa de géneros</p>
+                <span style={{ fontSize: "8px", letterSpacing: "1px", color: "rgba(243,237,227,0.52)", fontFamily: "system-ui, sans-serif" }}>TOP 3</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
+                {genreRanking.length > 0 ? genreRanking.map(([genre, count], index) => {
+                  const colours = ["#e75086", "#8061df", "#e88946"];
+                  const max = genreRanking[0][1];
+                  return (
+                    <div key={genre} style={{ display: "grid", gridTemplateColumns: "24px 1fr 24px", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontSize: "16px", color: "#f5d7a1" }}>0{index + 1}</span>
+                      <div style={{ position: "relative", overflow: "hidden", background: "rgba(243,237,227,0.12)", padding: "7px 9px" }}>
+                        <div style={{ position: "absolute", inset: 0, width: `${Math.round((count / max) * 100)}%`, background: colours[index], opacity: 0.55 }} />
+                        <span style={{ position: "relative", zIndex: 1, fontSize: "11px", fontFamily: "system-ui, sans-serif" }}>{genre}</span>
+                      </div>
+                      <span style={{ textAlign: "right", fontSize: "16px" }}>{count}</span>
+                    </div>
+                  );
+                }) : <p style={{ margin: 0, fontSize: "12px", color: "rgba(243,237,227,0.65)" }}>Tu ranking aparecerá con tus próximas lecturas.</p>}
+              </div>
+            </div>
+
+            <div style={{ marginTop: "auto", paddingTop: "24px" }}>
+              <p style={{ textAlign: "center", fontSize: "11px", color: "rgba(243,237,227,0.62)", fontStyle: "italic", margin: "0 0 7px" }}>Cada libro deja una luz encendida.</p>
+              <p style={{ textAlign: "center", fontSize: "9px", opacity: 0.48, letterSpacing: "1.8px", fontFamily: "system-ui, sans-serif", margin: 0 }}>BOOK TRACKER</p>
             </div>
           </div>
         </div>
@@ -352,3 +339,5 @@ export function BestOfYearExport({ year, books }: BestOfYearProps) {
     </Dialog>
   );
 }
+
+warning: in the working copy of 'src/components/ShareableStats.tsx', LF will be replaced by CRLF the next time Git touches it
