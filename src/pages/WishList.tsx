@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useWishlist } from "@/hooks/useWishlist";
 import type { WishItem, WishStatus } from "@/hooks/useWishlist";
-import { Heart, Plus, Pencil, Trash2, BookHeart, BookOpen, Loader as Loader2, Search, Filter, BookMarked, Flame, Library } from "lucide-react";
+import { Heart, Plus, Pencil, Trash2, BookHeart, BookOpen, Loader as Loader2, Search, Filter, BookMarked, Flame, Library, Sparkles, SlidersHorizontal } from "lucide-react";
 import { BookCoverImage } from "@/components/BookCoverImage";
 import { useBooksContext } from "@/components/Layout";
 import { useToast } from "@/hooks/use-toast";
@@ -255,6 +255,7 @@ function WishListContent() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [sagaFilter, setSagaFilter] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
 
   const handleMoveToLibrary = async (item: WishItem) => {
     try {
@@ -328,6 +329,9 @@ function WishListContent() {
       standalone.push(item);
     }
   });
+  const mustReadCount = items.filter((item) => item.priority >= 5).length;
+  const ownedCount = items.filter((item) => item.status === "Comprado" || item.status === "En kindle" || item.status === "En biblioteca").length;
+  const activeFilterCount = [filterPriority !== null, filterGenre !== "all", filterStatus !== "all", sagaFilter !== "all"].filter(Boolean).length;
 
   if (loading) {
     return (
@@ -338,42 +342,19 @@ function WishListContent() {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-        <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
-            ❤️ Wish List
-          </h2>
+    <div className="space-y-8 pb-8">
+      <section className="relative overflow-hidden rounded-3xl border border-rose-400/20 bg-card px-5 py-7 sm:p-8 shadow-[0_18px_70px_rgba(0,0,0,0.18)]">
+        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-rose-500/15 blur-3xl" aria-hidden="true" />
+        <div className="relative"><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-rose-400"><Sparkles className="h-3.5 w-3.5" /> Próximas obsesiones</p><div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"><div><h2 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">Wish List</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">Los mundos que todavía no has abierto, pero que ya tienen un hueco reservado para ti.</p></div><WishForm onSave={addItem} trigger={<button className="flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 hover:bg-primary/90"><Plus className="h-4 w-4" /> Añadir deseo</button>} /></div>
+          <div className="mt-7 grid grid-cols-3 gap-3 border-t border-border/40 pt-5"><div><p className="font-display text-2xl font-semibold">{items.length}</p><p className="text-xs text-muted-foreground">por descubrir</p></div><div><p className="font-display text-2xl font-semibold text-rose-400">{mustReadCount}</p><p className="text-xs text-muted-foreground">must read</p></div><div><p className="font-display text-2xl font-semibold">{ownedCount}</p><p className="text-xs text-muted-foreground">ya contigo</p></div></div>
+          <label className="mt-5 flex h-14 max-w-2xl items-center gap-3 rounded-2xl border border-border/50 bg-background/60 px-4 transition-colors focus-within:border-rose-400/70 focus-within:ring-2 focus-within:ring-rose-400/15"><Search className="h-5 w-5 text-muted-foreground" /><input placeholder="Busca por título, autor o saga" value={search} onChange={(event) => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" aria-label="Buscar en Wish List" />{search && <button type="button" onClick={() => setSearch("")} className="text-xs font-medium text-primary hover:underline">Limpiar</button>}</label></div>
+      </section>
 
-          <span className="text-sm text-muted-foreground font-body">({items.length})</span>
-        </div>
-        <div className="flex items-center gap-1">
-          {[1, 2, 3, 4, 5].map((v) => (
-            <button
-              key={v}
-              onClick={() => setFilterPriority(filterPriority === v ? null : v)}
-              className={`p-1 rounded transition-colors ${filterPriority && v <= filterPriority ? "bg-red-100 dark:bg-red-900/30" : "hover:bg-secondary"}`}
-            >
-              <Heart className={`h-4 w-4 ${filterPriority && v <= filterPriority ? "fill-red-500 text-red-500" : "text-muted-foreground/40"}`} />
-            </button>
-          ))}
-          {filterPriority && (
-            <button onClick={() => setFilterPriority(null)} className="text-xs text-muted-foreground ml-1 hover:text-foreground">X</button>
-          )}
-        </div>
-      </div>
+      <div className="flex items-center justify-between border-y border-border/40 py-4"><div className="flex items-center gap-1"><span className="mr-2 text-sm text-muted-foreground">Prioridad</span>{[1, 2, 3, 4, 5].map((v) => <button key={v} type="button" onClick={() => setFilterPriority(filterPriority === v ? null : v)} aria-label={`Filtrar por ${v} corazones`} aria-pressed={filterPriority === v} className={`rounded-lg p-1.5 transition-colors ${filterPriority && v <= filterPriority ? "bg-rose-500/15" : "hover:bg-secondary"}`}><Heart className={`h-4 w-4 ${filterPriority && v <= filterPriority ? "fill-rose-400 text-rose-400" : "text-muted-foreground/40"}`} /></button>)}</div><button type="button" onClick={() => setShowFilters((visible) => !visible)} aria-expanded={showFilters} className="flex h-10 items-center gap-2 rounded-xl border border-border/50 bg-card px-3 text-sm font-medium hover:border-primary/50"><SlidersHorizontal className="h-4 w-4" /> Filtros {activeFilterCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground">{activeFilterCount}</span>}</button></div>
 
-      {/* Search + filters */}
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar por título, autor o saga..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 font-body" />
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      {showFilters && <div className="flex flex-wrap gap-2 rounded-2xl border border-border/40 bg-card/60 p-3">
           <Select value={filterGenre} onValueChange={setFilterGenre}>
-            <SelectTrigger className="w-[180px] h-8 text-xs font-body">
+            <SelectTrigger aria-label="Filtrar por género" className="w-full sm:w-[180px] h-10 text-xs font-body">
               <SelectValue placeholder="Género" />
             </SelectTrigger>
             <SelectContent>
@@ -382,7 +363,7 @@ function WishListContent() {
             </SelectContent>
           </Select>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[180px] h-8 text-xs font-body">
+            <SelectTrigger aria-label="Filtrar por estado" className="w-full sm:w-[180px] h-10 text-xs font-body">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
@@ -391,7 +372,7 @@ function WishListContent() {
             </SelectContent>
           </Select>
           <Select value={sagaFilter} onValueChange={setSagaFilter}>
-            <SelectTrigger className="w-[180px] h-8 text-xs font-body">
+            <SelectTrigger aria-label="Filtrar por saga" className="w-full sm:w-[180px] h-10 text-xs font-body">
               <Filter className="h-3 w-3 mr-1.5 text-muted-foreground" />
               <SelectValue placeholder="Saga" />
             </SelectTrigger>
@@ -403,7 +384,7 @@ function WishListContent() {
               ))}
             </SelectContent>
           </Select>
-          {(filterGenre !== "all" || filterStatus !== "all" || filterPriority || sagaFilter !== "all") && (
+          {activeFilterCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
@@ -413,8 +394,7 @@ function WishListContent() {
               Limpiar filtros
             </Button>
           )}
-        </div>
-      </div>
+      </div>}
 
       {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-4">
