@@ -361,16 +361,23 @@ export default function ReadingHabits() {
     if (val.reading.length > 0) daysReadingCount.add(day);
   });
 
+  const todayKey = `${today2.getFullYear()}-${String(today2.getMonth() + 1).padStart(2, "0")}-${String(today2.getDate()).padStart(2, "0")}`;
+  const readToday = readDays.includes(todayKey);
+
   return (
-    <div className="space-y-8">
-      <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
-        Hábitos y Calendario
-      </h2>
+    <div className="space-y-8 pb-8">
+      <section className="relative overflow-hidden rounded-3xl border border-orange-400/20 bg-card px-5 py-7 sm:p-8 shadow-[0_18px_70px_rgba(0,0,0,0.18)]">
+        <div className="absolute -right-16 -top-20 h-60 w-60 rounded-full bg-orange-500/15 blur-3xl" aria-hidden="true" />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-orange-400"><Flame className="h-3.5 w-3.5" /> Tu ritual lector</p><h2 className="mt-3 font-display text-4xl font-semibold tracking-tight sm:text-5xl">Hábitos y Calendario</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">Los pequeños días de lectura son los que acaban construyendo tu historia.</p></div>
+          <div className="flex flex-wrap items-center gap-3"><div className="rounded-2xl border border-orange-400/20 bg-orange-500/10 px-4 py-3"><p className="text-[10px] font-semibold uppercase tracking-widest text-orange-300">Racha actual</p><p className="mt-1 font-display text-3xl font-semibold text-orange-400">{streak}<span className="ml-1 text-sm text-muted-foreground">días</span></p></div><button type="button" onClick={() => toggleDay(today2)} className={`h-12 rounded-xl px-4 text-sm font-semibold transition-transform hover:-translate-y-0.5 ${readToday ? "border border-emerald-400/30 bg-emerald-500/15 text-emerald-300" : "bg-primary text-primary-foreground hover:bg-primary/90"}`}>{readToday ? "✓ Hoy ya has leído" : "Marcar lectura de hoy"}</button></div>
+        </div>
+      </section>
 
       <Tabs defaultValue="habits" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="habits">Hábitos</TabsTrigger>
-          <TabsTrigger value="calendar">Calendario</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 rounded-xl border border-border/40 bg-card p-1">
+          <TabsTrigger value="habits" className="rounded-lg">Ritmo de lectura</TabsTrigger>
+          <TabsTrigger value="calendar" className="rounded-lg">Calendario de libros</TabsTrigger>
         </TabsList>
 
         <TabsContent value="habits" className="space-y-8 mt-6">
