@@ -190,15 +190,6 @@ function BookOfYear({ year, books }: { year: number; books: Book[] }) {
               <div key={month} className={`min-h-[102px] rounded-2xl border p-2.5 ${pickedBook ? "border-amber-400/30 bg-background/45" : "border-border/30 bg-muted/15"}`}>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">{month}</p>
                 {monthBooks.length > 0 ? (
-                  <select
-                    value={monthlyPicks[String(index)] || ""}
-                    onChange={(event) => selectMonth(index, event.target.value)}
-                    className="mt-2 w-full bg-transparent text-xs font-medium text-foreground outline-none"
-                    aria-label={`Elegir lectura favorita de ${month}`}
-                  >
-                    <option value="">Elegir libro…</option>
-                    {monthBooks.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}
-                  </select>
                   <Select value={monthlyPicks[String(index)] || "none"} onValueChange={(value) => selectMonth(index, value === "none" ? "" : value)}>
                     <SelectTrigger className="mt-2 h-8 w-full border-0 bg-transparent px-0 text-xs font-medium shadow-none focus:ring-0">
                       <SelectValue placeholder="Elegir libro…" />
@@ -789,3 +780,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
