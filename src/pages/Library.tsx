@@ -622,24 +622,25 @@ export default function LibraryPage() {
                   ))}
                 </div>
               ) : (
-                <div className="flex gap-1.5 overflow-x-auto pb-4 pt-1">
-                  {groupBooks.map((book) => (
-                    <div key={book.id}
-                      className="relative flex-shrink-0 w-[44px] h-[190px] rounded-sm overflow-hidden cursor-pointer group shadow-md hover:scale-105 transition-transform duration-150 book-3d"
-                      title={`${book.title} - ${book.author}`}>
-                      {book.coverUrl ? (
-                        <img src={book.coverUrl} alt={book.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-end justify-center pb-2 px-1"
-                          style={{ background: `hsl(${Math.abs(book.title.charCodeAt(0) * 7 + book.title.charCodeAt(1) * 13) % 360}, 35%, 25%)` }}>
-                          <span className="text-[8px] text-white/70 text-center leading-tight font-display" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
-                            {book.title}
-                          </span>
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                    </div>
-                  ))}
+                <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-b from-muted/40 via-card to-background px-4 pb-7 pt-5 shadow-inner sm:px-6">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-primary/[0.06] to-transparent" aria-hidden="true" />
+                  <div className="relative flex gap-1.5 overflow-x-auto px-1 pb-2 pt-1 sm:gap-2">
+                    {groupBooks.map((book, index) => (
+                      <div key={book.id}
+                        className="group relative h-[205px] w-[48px] flex-shrink-0 cursor-pointer overflow-hidden rounded-sm border border-white/10 shadow-[3px_4px_8px_rgba(0,0,0,0.4)] transition-all duration-200 hover:-translate-y-2 hover:shadow-[5px_12px_18px_rgba(0,0,0,0.45)] sm:h-[230px] sm:w-[56px]"
+                        title={`${book.title} — ${book.author}`}
+                        style={{ zIndex: index }}>
+                        {book.coverUrl ? (
+                          <img src={book.coverUrl} alt="" className="h-full w-full object-cover object-center opacity-90 transition-opacity group-hover:opacity-100" />
+                        ) : (
+                          <div className="h-full w-full" style={{ background: `linear-gradient(135deg, hsl(${Math.abs(book.title.charCodeAt(0) * 7 + book.title.charCodeAt(1) * 13) % 360}, 42%, 34%), hsl(${Math.abs(book.title.charCodeAt(0) * 11 + book.title.charCodeAt(1) * 5) % 360}, 38%, 18%))` }} />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/45 via-transparent to-black/40" />
+                        <span className="absolute inset-x-1 bottom-2 line-clamp-3 text-center text-[9px] font-semibold leading-tight text-white drop-shadow-md" style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}>{book.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 h-5 border-t border-amber-100/10 bg-gradient-to-b from-amber-100/15 via-amber-900/50 to-amber-950/80 shadow-[0_-4px_10px_rgba(0,0,0,0.25)]" aria-hidden="true" />
                 </div>
               )}
             </div>
