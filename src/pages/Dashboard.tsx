@@ -199,6 +199,15 @@ function BookOfYear({ year, books }: { year: number; books: Book[] }) {
                     <option value="">Elegir libro…</option>
                     {monthBooks.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}
                   </select>
+                  <Select value={monthlyPicks[String(index)] || "none"} onValueChange={(value) => selectMonth(index, value === "none" ? "" : value)}>
+                    <SelectTrigger className="mt-2 h-8 w-full border-0 bg-transparent px-0 text-xs font-medium shadow-none focus:ring-0">
+                      <SelectValue placeholder="Elegir libro…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Elegir libro…</SelectItem>
+                      {monthBooks.map((book) => <SelectItem key={book.id} value={book.id}>{book.title}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 ) : <p className="mt-3 text-xs text-muted-foreground/55">Sin lecturas</p>}
                 {pickedBook && <div className="mt-2 flex items-center gap-2"><BookCoverImage src={pickedBook.coverUrl} alt="" title={pickedBook.title} className="h-9 w-6 rounded object-cover shadow-sm" fallbackClassName="h-9 w-6 rounded" /><p className="line-clamp-2 text-[10px] leading-tight text-muted-foreground">{pickedBook.title}</p></div>}
               </div>
@@ -780,4 +789,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
