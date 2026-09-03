@@ -20,18 +20,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Book } from "@/hooks/useBooks";
-import { LampDesk, Leaf, Palette, Sparkles } from "lucide-react";
 
 const SHELF_ORDER_KEY = "book-tracker-shelf-order";
-const SHELF_STYLE_KEY = "book-tracker-shelf-style";
-type ShelfTheme = "midnight" | "walnut" | "forest";
-type ShelfSettings = { theme: ShelfTheme; plants: boolean; lights: boolean };
-
-const SHELF_THEMES: Record<ShelfTheme, { label: string; panel: string; plank: string; accent: string }> = {
-  midnight: { label: "Noche", panel: "linear-gradient(180deg, #111827 0%, #080b12 100%)", plank: "linear-gradient(to bottom, #596271 0%, #303846 45%, #151a23 100%)", accent: "#5eead4" },
-  walnut: { label: "Nogal", panel: "linear-gradient(180deg, #33251f 0%, #19110f 100%)", plank: "linear-gradient(to bottom, #9a6a47 0%, #67442f 45%, #2b1914 100%)", accent: "#fbbf77" },
-  forest: { label: "Bosque", panel: "linear-gradient(180deg, #172820 0%, #0b1410 100%)", plank: "linear-gradient(to bottom, #55745c 0%, #35513d 45%, #17261c 100%)", accent: "#a7f3b2" },
-};
 
 function getBooksPerShelf() {
   const w = window.innerWidth;
@@ -52,14 +42,6 @@ function loadOrder(): string[] {
 
 function saveOrder(order: string[]) {
   localStorage.setItem(SHELF_ORDER_KEY, JSON.stringify(order));
-}
-
-function loadShelfSettings(): ShelfSettings {
-  try {
-    return { theme: "midnight", plants: true, lights: true, ...JSON.parse(localStorage.getItem(SHELF_STYLE_KEY) || "{}") };
-  } catch {
-    return { theme: "midnight", plants: true, lights: true };
-  }
 }
 
 function getSpineColor(title: string): string {
@@ -198,19 +180,12 @@ export default function Shelves() {
   const [booksPerShelf, setBooksPerShelf] = useState(getBooksPerShelf);
   const [groupBySaga, setGroupBySaga] = useState(false);
   const [orderedIds, setOrderedIds] = useState<string[]>([]);
-  const [showCustomizer, setShowCustomizer] = useState(false);
-  const [shelfSettings, setShelfSettings] = useState<ShelfSettings>(loadShelfSettings);
-  const selectedTheme = SHELF_THEMES[shelfSettings.theme];
 
   useEffect(() => {
     const handleResize = () => setBooksPerShelf(getBooksPerShelf());
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem(SHELF_STYLE_KEY, JSON.stringify(shelfSettings));
-  }, [shelfSettings]);
 
   const finishedBooks = useMemo(
     () => books.filter((b) => b.status === "finished"),
@@ -315,14 +290,6 @@ export default function Shelves() {
 
         <div className="flex items-center gap-3">
           <button
-            type="button"
-            onClick={() => setShowCustomizer((visible) => !visible)}
-            aria-expanded={showCustomizer}
-            className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${showCustomizer ? "bg-primary text-primary-foreground border-primary" : "text-muted-foreground border-border/40 hover:text-foreground hover:border-border"}`}
-          >
-            <Palette className="h-3.5 w-3.5" /> Personalizar
-          </button>
-          <button
             onClick={() => setGroupBySaga(!groupBySaga)}
             className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
               groupBySaga
@@ -338,19 +305,6 @@ export default function Shelves() {
           </span>
         </div>
       </div>
-
-      {showCustomizer && (
-        <section className="rounded-2xl border border-border/45 bg-card p-4 sm:p-5">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary"><Sparkles className="h-3.5 w-3.5" /> Hazla tuya</p><p className="mt-1 text-sm text-muted-foreground">Elige un ambiente y añade los detalles que quieres ver en tu rincón lector.</p></div>
-            <div className="flex flex-wrap items-center gap-2">
-              {(Object.keys(SHELF_THEMES) as ShelfTheme[]).map((theme) => <button key={theme} type="button" onClick={() => setShelfSettings((current) => ({ ...current, theme }))} aria-pressed={shelfSettings.theme === theme} className={`h-10 rounded-xl border px-3 text-xs font-medium transition-colors ${shelfSettings.theme === theme ? "border-primary bg-primary/15 text-primary" : "border-border/50 text-muted-foreground hover:text-foreground"}`}>{SHELF_THEMES[theme].label}</button>)}
-              <button type="button" onClick={() => setShelfSettings((current) => ({ ...current, plants: !current.plants }))} aria-pressed={shelfSettings.plants} className={`flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${shelfSettings.plants ? "border-primary/40 bg-primary/10 text-primary" : "border-border/50 text-muted-foreground"}`}><Leaf className="h-3.5 w-3.5" /> Plantas</button>
-              <button type="button" onClick={() => setShelfSettings((current) => ({ ...current, lights: !current.lights }))} aria-pressed={shelfSettings.lights} className={`flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${shelfSettings.lights ? "border-amber-300/40 bg-amber-300/10 text-amber-100" : "border-border/50 text-muted-foreground"}`}><LampDesk className="h-3.5 w-3.5" /> Luces</button>
-            </div>
-          </div>
-        </section>
-      )}
 
       {finishedBooks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-4 rounded-2xl border border-border/30 bg-card/30">
@@ -385,7 +339,7 @@ export default function Shelves() {
             <div className="relative">
               <div
                 className="absolute top-3 bottom-0 left-0 w-3 sm:w-4"
-                style={{ background: "rgba(255,255,255,0.08)" }}
+                style={{ background: "rgba(255,255,255,0.04)" }}
               />
               <div
                 className="absolute top-3 bottom-0 right-0 w-3 sm:w-4"
@@ -394,11 +348,11 @@ export default function Shelves() {
 
               <div
                 className="relative mt-3 rounded-xl overflow-hidden border border-white/10 backdrop-blur-sm"
-                style={{ background: selectedTheme.panel }}
+                style={{ background: "rgba(5, 10, 20, 0.28)" }}
               >
                 <div className="space-y-0 py-1 px-1 sm:px-1">
                   {shelves.map((row, rowIndex) => (
-                    <ShelfRow key={rowIndex} row={row} plank={selectedTheme.plank} lights={shelfSettings.lights} plants={shelfSettings.plants} lightColor={selectedTheme.accent} />
+                    <ShelfRow key={rowIndex} row={row} />
                   ))}
                 </div>
               </div>
@@ -424,30 +378,24 @@ export default function Shelves() {
   );
 }
 
-function ShelfRow({ row, plank, lights, plants, lightColor }: { row: Book[]; plank: string; lights: boolean; plants: boolean; lightColor: string }) {
-  const plantPosition = Math.max(1, Math.floor(row.length / 2));
+function ShelfRow({ row }: { row: Book[] }) {
   return (
     <div className="relative">
-      {lights && (
-        <div className="pointer-events-none absolute inset-x-3 top-0 z-20 h-11 sm:inset-x-5" aria-hidden="true">
-          <svg className="absolute inset-x-0 top-0 h-8 w-full" viewBox="0 0 100 28" preserveAspectRatio="none"><path d="M0,3 C10,24 18,8 28,16 S46,24 57,10 S77,25 100,6" fill="none" stroke="rgba(14,18,22,0.9)" strokeWidth="1.8" /></svg>
-          <div className="absolute inset-x-[4%] top-[7px] flex items-start justify-between">
-            {Array.from({ length: 12 }).map((_, index) => <span key={index} className="flex flex-col items-center" style={{ transform: `translateY(${[4, 11, 7, 14, 8, 12][index % 6]}px)` }}><span className="h-2 w-px bg-black/80" /><span className="h-2.5 w-2.5 rounded-full border border-amber-50/70 shadow-[0_0_10px_rgba(255,218,142,0.95),0_0_20px_rgba(255,194,92,0.5)]" style={{ backgroundColor: lightColor }} /></span>)}
-          </div>
-        </div>
-      )}
       <div
-        className="flex items-end gap-[3px] sm:gap-[4px] px-3 sm:px-5 pt-9 pb-0 min-h-[145px] sm:min-h-[155px] flex-wrap relative overflow-x-auto"
+        className="flex items-end gap-[3px] sm:gap-[4px] px-3 sm:px-5 pt-4 pb-0 min-h-[115px] sm:min-h-[125px] flex-wrap relative overflow-x-auto"
         style={{ background: "transparent", scrollbarWidth: "none" }}
       >
         <style>{`div::-webkit-scrollbar { display: none; }`}</style>
-        {row.map((book, index) => <div key={book.id} className="flex items-end gap-[3px] sm:gap-[4px]"><SortableBook book={book} />{plants && index === plantPosition && <div className="mb-1 flex h-[72px] w-[42px] shrink-0 flex-col items-center justify-end"><div className="flex -space-x-3"><Leaf className="h-8 w-8 -rotate-12 text-emerald-300/90 drop-shadow-md" fill="currentColor" /><Leaf className="h-9 w-9 rotate-12 text-emerald-400/80 drop-shadow-md" fill="currentColor" /></div><div className="h-4 w-7 rounded-b-md rounded-t-sm border border-amber-100/25 bg-gradient-to-b from-orange-200/70 to-amber-900/80 shadow-md" /></div>}</div>)}
+        {row.map((book) => (
+          <SortableBook key={book.id} book={book} />
+        ))}
       </div>
 
       <div
         className="h-[16px] sm:h-[20px]"
         style={{
-          background: plank,
+          background:
+            "linear-gradient(to bottom, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.07) 100%)",
           boxShadow:
             "0 6px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)",
           borderTop: "1px solid rgba(255,255,255,0.08)",
