@@ -406,7 +406,7 @@ export default function LibraryPage() {
 
   const groupedByStatus = useMemo(() => {
     const groups: { status: ReadingStatus; label: string; books: Book[] }[] = [];
-    const statuses: ReadingStatus[] = ["reading", "finished", "want-to-read"];
+    const statuses: ReadingStatus[] = ["reading", "finished"];
     for (const s of statuses) {
       const booksInGroup = filtered.filter((b) => b.status === s && b.id !== currentRead?.id);
       if (booksInGroup.length > 0) {
@@ -550,7 +550,7 @@ export default function LibraryPage() {
       {showFilters && <div className="grid grid-cols-1 gap-2 rounded-2xl border border-border/40 bg-card/60 p-3 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
         <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ReadingStatus | "all")}>
           <SelectTrigger aria-label="Filtrar por estado" className="w-full lg:w-[170px] h-10 text-sm"><SelectValue placeholder="Estado" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Todos los estados</SelectItem><SelectItem value="reading">Leyendo</SelectItem><SelectItem value="finished">Terminado</SelectItem><SelectItem value="want-to-read">Quiero leer</SelectItem></SelectContent>
+          <SelectContent><SelectItem value="all">Todos los estados</SelectItem><SelectItem value="reading">Leyendo</SelectItem><SelectItem value="finished">Terminado</SelectItem></SelectContent>
         </Select>
         <Select value={genreFilter} onValueChange={setGenreFilter}>
           <SelectTrigger aria-label="Filtrar por género" className="w-full lg:w-[190px] h-10 text-sm"><SelectValue placeholder="Género" /></SelectTrigger>
