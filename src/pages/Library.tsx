@@ -417,6 +417,9 @@ export default function LibraryPage() {
   const goalPercent = currentGoal > 0 ? Math.min(100, Math.round((finishedYearBooks.length / currentGoal) * 100)) : 0;
   const booksRemaining = Math.max(0, currentGoal - finishedYearBooks.length);
   const currentRead = books.find((book) => book.status === "reading");
+  const currentReadProgress = currentRead && currentRead.totalPages > 0
+    ? Math.min(100, Math.round((currentRead.pagesRead / currentRead.totalPages) * 100))
+    : 0;
   const activeFilterCount = [statusFilter !== "all", genreFilter !== "all", formatFilter !== "all"].filter(Boolean).length;
 
   return (
@@ -452,9 +455,21 @@ export default function LibraryPage() {
               {search && <button type="button" onClick={() => setSearch("")} className="text-xs font-medium text-primary hover:underline">Limpiar</button>}
             </label>
             {currentRead ? (
-              <div className="flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3">
-                <BookCoverImage src={currentRead.coverUrl} alt={currentRead.title} title={currentRead.title} className="h-12 w-8 rounded-md object-cover shadow-md" iconClassName="h-4 w-4" />
-                <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-widest text-primary">Leyendo ahora</p><p className="truncate text-sm font-semibold">{currentRead.title}</p><p className="truncate text-xs text-muted-foreground">{currentRead.author}</p></div>
+              <div className="relative overflow-hidden rounded-2xl border border-primary/25 bg-primary/10 p-4">
+                <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-primary/20 blur-2xl" aria-hidden="true" />
+                <div className="relative flex gap-4">
+                  <BookCoverImage src={currentRead.coverUrl} alt={currentRead.title} title={currentRead.title} className="h-28 w-[76px] rounded-lg object-cover shadow-xl" iconClassName="h-5 w-5" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Leyendo ahora</p>
+                    <p className="mt-1 truncate font-display text-lg font-semibold">{currentRead.title}</p>
+                    <p className="truncate text-sm text-muted-foreground">{currentRead.author}</p>
+                    {currentRead.totalPages > 0 ? <>
+                      <div className="mt-4 flex items-end justify-between gap-3"><p className="text-xs text-muted-foreground">{currentRead.pagesRead} de {currentRead.totalPages} páginas</p><p className="text-sm font-semibold text-primary">{currentReadProgress}%</p></div>
+                      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-background/60"><div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${currentReadProgress}%` }} /></div>
+                      <label className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><span className="shrink-0">Actualizar página</span><input type="number" min={0} max={currentRead.totalPages} defaultValue={currentRead.pagesRead} onBlur={(event) => { const pagesRead = Math.max(0, Math.min(currentRead.totalPages, Number(event.target.value) || 0)); if (pagesRead !== currentRead.pagesRead) updateBook(currentRead.id, { pagesRead }); }} onKeyDown={(event) => { if (event.key === "Enter") (event.target as HTMLInputElement).blur(); }} aria-label={`Página actual de ${currentRead.title}`} className="h-7 min-w-0 flex-1 rounded-md border border-border/50 bg-background/70 px-2 text-xs text-foreground outline-none focus:border-primary" /></label>
+                    </> : <p className="mt-4 text-xs text-muted-foreground">Añade el total de páginas para seguir tu progreso.</p>}
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border/60 bg-background/30 px-4 py-3 text-sm text-muted-foreground"><BookOpen className="h-5 w-5 text-primary" /> Tu próxima lectura te está esperando.</div>
