@@ -20,8 +20,18 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Book } from "@/hooks/useBooks";
+import { LampDesk, Leaf, Palette, Sparkles } from "lucide-react";
 
 const SHELF_ORDER_KEY = "book-tracker-shelf-order";
+const SHELF_STYLE_KEY = "book-tracker-shelf-style";
+type ShelfTheme = "midnight" | "walnut" | "forest";
+type ShelfSettings = { theme: ShelfTheme; plants: boolean; lights: boolean };
+
+const SHELF_THEMES: Record<ShelfTheme, { label: string; panel: string; plank: string; accent: string }> = {
+  midnight: { label: "Noche", panel: "linear-gradient(180deg, #111827 0%, #080b12 100%)", plank: "linear-gradient(to bottom, #596271 0%, #303846 45%, #151a23 100%)", accent: "#5eead4" },
+  walnut: { label: "Nogal", panel: "linear-gradient(180deg, #33251f 0%, #19110f 100%)", plank: "linear-gradient(to bottom, #9a6a47 0%, #67442f 45%, #2b1914 100%)", accent: "#fbbf77" },
+  forest: { label: "Bosque", panel: "linear-gradient(180deg, #172820 0%, #0b1410 100%)", plank: "linear-gradient(to bottom, #55745c 0%, #35513d 45%, #17261c 100%)", accent: "#a7f3b2" },
+};
 
 function getBooksPerShelf() {
   const w = window.innerWidth;
@@ -42,6 +52,14 @@ function loadOrder(): string[] {
 
 function saveOrder(order: string[]) {
   localStorage.setItem(SHELF_ORDER_KEY, JSON.stringify(order));
+}
+
+function loadShelfSettings(): ShelfSettings {
+  try {
+    return { theme: "midnight", plants: true, lights: true, ...JSON.parse(localStorage.getItem(SHELF_STYLE_KEY) || "{}") };
+  } catch {
+    return { theme: "midnight", plants: true, lights: true };
+  }
 }
 
 function getSpineColor(title: string): string {
@@ -180,12 +198,19 @@ export default function Shelves() {
   const [booksPerShelf, setBooksPerShelf] = useState(getBooksPerShelf);
   const [groupBySaga, setGroupBySaga] = useState(false);
   const [orderedIds, setOrderedIds] = useState<string[]>([]);
+  const [showCustomizer, setShowCustomizer] = useState(false);
+  const [shelfSettings, setShelfSettings] = useState<ShelfSettings>(loadShelfSettings);
+  const selectedTheme = SHELF_THEMES[shelfSettings.theme];
 
   useEffect(() => {
     const handleResize = () => setBooksPerShelf(getBooksPerShelf());
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(SHELF_STYLE_KEY, JSON.stringify(shelfSettings));
+  }, [shelfSettings]);
 
   const finishedBooks = useMemo(
     () => books.filter((b) => b.status === "finished"),
@@ -290,6 +315,14 @@ export default function Shelves() {
 
         <div className="flex items-center gap-3">
           <button
+            type="button"
+            onClick={() => setShowCustomizer((visible) => !visible)}
+            aria-expanded={showCustomizer}
+            className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition-colors ${showCustomizer ? "bg-primary text-primary-foreground border-primary" : "text-muted-foreground border-border/40 hover:text-foreground hover:border-border"}`}
+          >
+            <Palette className="h-3.5 w-3.5" /> Personalizar
+          </button>
+          <button
             onClick={() => setGroupBySaga(!groupBySaga)}
             className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
               groupBySaga
@@ -305,6 +338,19 @@ export default function Shelves() {
           </span>
         </div>
       </div>
+
+      {showCustomizer && (
+        <section className="rounded-2xl border border-border/45 bg-card p-4 sm:p-5">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary"><Sparkles className="h-3.5 w-3.5" /> Hazla tuya</p><p className="mt-1 text-sm text-muted-foreground">Elige un ambiente y añade los detalles que quieres ver en tu rincón lector.</p></div>
+            <div className="flex flex-wrap items-center gap-2">
+              {(Object.keys(SHELF_THEMES) as ShelfTheme[]).map((theme) => <button key={theme} type="button" onClick={() => setShelfSettings((current) => ({ ...current, theme }))} aria-pressed={shelfSettings.theme === theme} className={`h-10 rounded-xl border px-3 text-xs font-medium transition-colors ${shelfSettings.theme === theme ? "border-primary bg-primary/15 text-primary" : "border-border/50 text-muted-foreground hover:text-foreground"}`}>{SHELF_THEMES[theme].label}</button>)}
+              <button type="button" onClick={() => setShelfSettings((current) => ({ ...current, plants: !current.plants }))} aria-pressed={shelfSettings.plants} className={`flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${shelfSettings.plants ? "border-primary/40 bg-primary/10 text-primary" : "border-border/50 text-muted-foreground"}`}><Leaf className="h-3.5 w-3.5" /> Plantas</button>
+              <button type="button" onClick={() => setShelfSettings((current) => ({ ...current, lights: !current.lights }))} aria-pressed={shelfSettings.lights} className={`flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-medium ${shelfSettings.lights ? "border-amber-300/40 bg-amber-300/10 text-amber-100" : "border-border/50 text-muted-foreground"}`}><LampDesk className="h-3.5 w-3.5" /> Luces</button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {finishedBooks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-4 rounded-2xl border border-border/30 bg-card/30">
@@ -337,9 +383,14 @@ export default function Shelves() {
         >
           <SortableContext items={orderedIds} strategy={rectSortingStrategy}>
             <div className="relative">
+              {shelfSettings.lights && (
+                <div className="pointer-events-none absolute inset-x-8 top-0 z-20 h-12 opacity-90" aria-hidden="true" style={{ backgroundImage: `radial-gradient(circle at 8% 30%, ${selectedTheme.accent} 0 2px, transparent 3px), radial-gradient(circle at 24% 30%, ${selectedTheme.accent} 0 2px, transparent 3px), radial-gradient(circle at 40% 30%, ${selectedTheme.accent} 0 2px, transparent 3px), radial-gradient(circle at 56% 30%, ${selectedTheme.accent} 0 2px, transparent 3px), radial-gradient(circle at 72% 30%, ${selectedTheme.accent} 0 2px, transparent 3px), radial-gradient(circle at 88% 30%, ${selectedTheme.accent} 0 2px, transparent 3px)` }} />
+              )}
+              {shelfSettings.plants && <div className="pointer-events-none absolute -left-2 bottom-0 z-20 text-4xl drop-shadow-lg sm:left-2 sm:text-5xl" aria-label="Planta decorativa">🪴</div>}
+              {shelfSettings.plants && <div className="pointer-events-none absolute -right-2 bottom-0 z-20 hidden text-4xl drop-shadow-lg sm:right-2 sm:block sm:text-5xl" aria-label="Planta decorativa">🌿</div>}
               <div
                 className="absolute top-3 bottom-0 left-0 w-3 sm:w-4"
-                style={{ background: "rgba(255,255,255,0.04)" }}
+                style={{ background: "rgba(255,255,255,0.08)" }}
               />
               <div
                 className="absolute top-3 bottom-0 right-0 w-3 sm:w-4"
@@ -348,11 +399,11 @@ export default function Shelves() {
 
               <div
                 className="relative mt-3 rounded-xl overflow-hidden border border-white/10 backdrop-blur-sm"
-                style={{ background: "rgba(5, 10, 20, 0.28)" }}
+                style={{ background: selectedTheme.panel }}
               >
                 <div className="space-y-0 py-1 px-1 sm:px-1">
                   {shelves.map((row, rowIndex) => (
-                    <ShelfRow key={rowIndex} row={row} />
+                    <ShelfRow key={rowIndex} row={row} plank={selectedTheme.plank} />
                   ))}
                 </div>
               </div>
@@ -378,7 +429,7 @@ export default function Shelves() {
   );
 }
 
-function ShelfRow({ row }: { row: Book[] }) {
+function ShelfRow({ row, plank }: { row: Book[]; plank: string }) {
   return (
     <div className="relative">
       <div
@@ -394,8 +445,7 @@ function ShelfRow({ row }: { row: Book[] }) {
       <div
         className="h-[16px] sm:h-[20px]"
         style={{
-          background:
-            "linear-gradient(to bottom, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.07) 100%)",
+          background: plank,
           boxShadow:
             "0 6px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)",
           borderTop: "1px solid rgba(255,255,255,0.08)",
