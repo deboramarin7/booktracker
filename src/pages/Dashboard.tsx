@@ -1,9 +1,9 @@
-import { useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { GENRE_COLORS } from "@/lib/constants";
 import { useBooksContext } from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, TrendingUp, TrendingDown, User, Library, ChartBar as BarChart3, Clock, CalendarRange, Star, Flame, BookMarked, Target, Pencil, Check } from "lucide-react";
+import { BookOpen, TrendingUp, TrendingDown, User, Library, ChartBar as BarChart3, Clock, CalendarRange, Star, Flame, BookMarked, Target, Pencil, Check, Trophy } from "lucide-react";
 import { BookCoverImage } from "@/components/BookCoverImage";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
@@ -12,6 +12,7 @@ import {
 import { ShareableStats, BestOfYearExport } from "@/components/ShareableStats";
 import { getBookYear, getBookMonth, parseFlexibleDate } from "@/lib/dateUtils";
 import { useReadingHabits } from "@/hooks/useReadingHabits";
+import type { Book } from "@/hooks/useBooks";
 
 const GOALS_KEY = "book-tracker-reading-goals";
 function loadGoals(): Record<number, number> {
@@ -86,6 +87,166 @@ function BookHighlight({ book, label, metric, icon: Icon }: {
         <p className="text-xs text-primary font-semibold mt-0.5">{metric}</p>
       </div>
     </div>
+  );
+}
+
+const BOOK_OF_YEAR_KEY = "book-tracker-book-of-year";
+
+function BookOfYear({ year, books }: { year: number; books: Book[] }) {
+  const [monthlyPicks, setMonthlyPicks] = useState<Record<string, string>>({});
+  const [semifinalists, setSemifinalists] = useState<string[]>([]);
+  const [finalists, setFinalists] = useState<string[]>([]);
+  const [winnerId, setWinnerId] = useState("");
+
+  useEffect(() => {
+    try {
+      const allSelections = JSON.parse(localStorage.getItem(BOOK_OF_YEAR_KEY) || "{}");
+      const selection = allSelections[String(year)] || {};
+      setMonthlyPicks(selection.monthlyPicks || {});
+      setSemifinalists(selection.semifinalists || []);
+      setFinalists(selection.finalists || []);
+      setWinnerId(selection.winnerId || "");
+    } catch {
+      setMonthlyPicks({});
+      setSemifinalists([]);
+      setFinalists([]);
+      setWinnerId("");
+    }
+  }, [year]);
+
+  const saveSelection = (nextPicks: Record<string, string>, nextSemifinalists: string[], nextFinalists: string[], nextWinner: string) => {
+    try {
+      const allSelections = JSON.parse(localStorage.getItem(BOOK_OF_YEAR_KEY) || "{}");
+      allSelections[String(year)] = { monthlyPicks: nextPicks, semifinalists: nextSemifinalists, finalists: nextFinalists, winnerId: nextWinner };
+      localStorage.setItem(BOOK_OF_YEAR_KEY, JSON.stringify(allSelections));
+    } catch {
+      // Si el navegador no permite guardar localmente, la selección sigue viva durante esta sesión.
+    }
+  };
+
+  const selectMonth = (month: number, bookId: string) => {
+    const nextPicks = { ...monthlyPicks, [String(month)]: bookId };
+    const nextNomineeIds = new Set(Object.values(nextPicks));
+    const nextSemifinalists = semifinalists.filter((id) => nextNomineeIds.has(id));
+    const nextFinalists = finalists.filter((id) => nextSemifinalists.includes(id));
+    const nextWinner = nextFinalists.includes(winnerId) ? winnerId : "";
+    setMonthlyPicks(nextPicks);
+    setSemifinalists(nextSemifinalists);
+    setFinalists(nextFinalists);
+    setWinnerId(nextWinner);
+    saveSelection(nextPicks, nextSemifinalists, nextFinalists, nextWinner);
+  };
+
+  const toggleSemifinalist = (id: string) => {
+    const nextSemifinalists = semifinalists.includes(id)
+      ? semifinalists.filter((item) => item !== id)
+      : semifinalists.length < 4 ? [...semifinalists, id] : semifinalists;
+    const nextFinalists = finalists.filter((item) => nextSemifinalists.includes(item));
+    const nextWinner = nextFinalists.includes(winnerId) ? winnerId : "";
+    setSemifinalists(nextSemifinalists); setFinalists(nextFinalists); setWinnerId(nextWinner);
+    saveSelection(monthlyPicks, nextSemifinalists, nextFinalists, nextWinner);
+  };
+
+  const toggleFinalist = (id: string) => {
+    const nextFinalists = finalists.includes(id)
+      ? finalists.filter((item) => item !== id)
+      : finalists.length < 2 ? [...finalists, id] : finalists;
+    const nextWinner = nextFinalists.includes(winnerId) ? winnerId : "";
+    setFinalists(nextFinalists); setWinnerId(nextWinner);
+    saveSelection(monthlyPicks, semifinalists, nextFinalists, nextWinner);
+  };
+
+  const nominees = Array.from(new Set(Object.values(monthlyPicks)))
+    .map((id) => books.find((book) => book.id === id))
+    .filter((book): book is Book => Boolean(book));
+  const semiBooks = semifinalists.map((id) => books.find((book) => book.id === id)).filter((book): book is Book => Boolean(book));
+  const finalBooks = finalists.map((id) => books.find((book) => book.id === id)).filter((book): book is Book => Boolean(book));
+  const winner = books.find((book) => book.id === winnerId);
+  const pickedMonths = Object.values(monthlyPicks).filter(Boolean).length;
+
+  return (
+    <section className="relative overflow-hidden rounded-3xl border border-amber-400/20 bg-gradient-to-br from-amber-300/[0.10] via-card to-primary/[0.08] p-5 sm:p-7">
+      <div className="absolute -right-16 -top-16 h-44 w-44 rounded-full bg-amber-300/15 blur-3xl" />
+      <div className="relative">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-400/15 text-amber-400">
+              <Trophy className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-400">Tu historia favorita</p>
+              <h3 className="mt-1 font-display text-2xl font-semibold">El libro del año</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Elige una lectura de cada mes y deja que tus finalistas se encuentren aquí.</p>
+            </div>
+          </div>
+          <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-300">{pickedMonths}/12 meses</span>
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          {MONTH_SHORT.map((month, index) => {
+            const monthBooks = books.filter((book) => getBookMonth(book) === index);
+            const pickedBook = books.find((book) => book.id === monthlyPicks[String(index)]);
+            return (
+              <div key={month} className={`min-h-[102px] rounded-2xl border p-2.5 ${pickedBook ? "border-amber-400/30 bg-background/45" : "border-border/30 bg-muted/15"}`}>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">{month}</p>
+                {monthBooks.length > 0 ? (
+                  <select
+                    value={monthlyPicks[String(index)] || ""}
+                    onChange={(event) => selectMonth(index, event.target.value)}
+                    className="mt-2 w-full bg-transparent text-xs font-medium text-foreground outline-none"
+                    aria-label={`Elegir lectura favorita de ${month}`}
+                  >
+                    <option value="">Elegir libro…</option>
+                    {monthBooks.map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}
+                  </select>
+                ) : <p className="mt-3 text-xs text-muted-foreground/55">Sin lecturas</p>}
+                {pickedBook && <div className="mt-2 flex items-center gap-2"><BookCoverImage src={pickedBook.coverUrl} alt="" title={pickedBook.title} className="h-9 w-6 rounded object-cover shadow-sm" fallbackClassName="h-9 w-6 rounded" /><p className="line-clamp-2 text-[10px] leading-tight text-muted-foreground">{pickedBook.title}</p></div>}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-6 grid gap-5 border-t border-border/35 pt-5 lg:grid-cols-3">
+          <div>
+            <div className="flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">1 · Semifinales</p><span className="text-xs text-amber-300">{semifinalists.length}/4</span></div>
+            <p className="mt-1 text-xs text-muted-foreground">Elige tus cuatro favoritos del mes.</p>
+            <div className="mt-3 space-y-2">
+              {nominees.map((book) => {
+                const selected = semifinalists.includes(book.id);
+                const blocked = !selected && semifinalists.length >= 4;
+                return <button type="button" key={book.id} disabled={blocked} onClick={() => toggleSemifinalist(book.id)} className={`flex w-full items-center gap-2 rounded-xl border p-2 text-left transition-all disabled:opacity-40 ${selected ? "border-primary bg-primary/10" : "border-border/35 bg-background/35 hover:border-primary/45"}`}><BookCoverImage src={book.coverUrl} alt="" title={book.title} className="h-10 w-7 shrink-0 rounded object-cover" fallbackClassName="h-10 w-7 shrink-0 rounded" /><span className="line-clamp-2 text-xs font-medium">{book.title}</span></button>;
+              })}
+              {nominees.length === 0 && <p className="rounded-xl bg-muted/20 p-3 text-xs text-muted-foreground">Tus elegidos mensuales aparecerán aquí.</p>}
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">2 · La final</p><span className="text-xs text-amber-300">{finalists.length}/2</span></div>
+            <p className="mt-1 text-xs text-muted-foreground">De los cuatro, escoge los dos finalistas.</p>
+            <div className="mt-3 space-y-2">
+              {semiBooks.map((book) => {
+                const selected = finalists.includes(book.id);
+                const blocked = !selected && finalists.length >= 2;
+                return <button type="button" key={book.id} disabled={blocked} onClick={() => toggleFinalist(book.id)} className={`flex w-full items-center gap-2 rounded-xl border p-2 text-left transition-all disabled:opacity-40 ${selected ? "border-violet-400 bg-violet-400/10" : "border-border/35 bg-background/35 hover:border-violet-400/45"}`}><BookCoverImage src={book.coverUrl} alt="" title={book.title} className="h-10 w-7 shrink-0 rounded object-cover" fallbackClassName="h-10 w-7 shrink-0 rounded" /><span className="line-clamp-2 text-xs font-medium">{book.title}</span></button>;
+              })}
+              {semiBooks.length === 0 && <p className="rounded-xl bg-muted/20 p-3 text-xs text-muted-foreground">Primero necesitas cuatro semifinalistas.</p>}
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-[0.15em] text-muted-foreground">3 · Libro del año</p>{winner && <Trophy className="h-4 w-4 text-amber-300" />}</div>
+            <p className="mt-1 text-xs text-muted-foreground">La elección definitiva entre tus dos finalistas.</p>
+            <div className="mt-3 space-y-2">
+              {finalBooks.map((book) => {
+                const selected = winnerId === book.id;
+                return <button type="button" key={book.id} onClick={() => { const nextWinner = selected ? "" : book.id; setWinnerId(nextWinner); saveSelection(monthlyPicks, semifinalists, finalists, nextWinner); }} className={`flex w-full items-center gap-2 rounded-xl border p-2 text-left transition-all ${selected ? "border-amber-400 bg-amber-400/15 shadow-md shadow-amber-400/10" : "border-border/35 bg-background/35 hover:border-amber-400/45"}`}><BookCoverImage src={book.coverUrl} alt="" title={book.title} className="h-12 w-8 shrink-0 rounded object-cover" fallbackClassName="h-12 w-8 shrink-0 rounded" /><span className="min-w-0"><span className="line-clamp-2 block text-xs font-semibold">{book.title}</span><span className={`mt-1 block text-[10px] ${selected ? "text-amber-300" : "text-muted-foreground"}`}>{selected ? "Tu libro del año" : "Elegir ganador"}</span></span></button>;
+              })}
+              {finalBooks.length === 0 && <p className="rounded-xl bg-muted/20 p-3 text-xs text-muted-foreground">Tus dos finalistas se enfrentarán aquí.</p>}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -458,6 +619,8 @@ export default function Dashboard() {
               </div>
             </div>
           </section>
+
+          <BookOfYear year={selectedYear} books={yearBooks} />
 
           {/* ═══════════════════════════════════════════
               SECCIÓN 3: DETALLE
