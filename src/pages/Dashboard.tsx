@@ -241,6 +241,21 @@ function BookOfYear({ year, books }: { year: number; books: Book[] }) {
                 const selected = winnerId === book.id;
                 return <button type="button" key={book.id} onClick={() => { const nextWinner = selected ? "" : book.id; setWinnerId(nextWinner); saveSelection(monthlyPicks, semifinalists, finalists, nextWinner); }} className={`flex w-full items-center gap-2 rounded-xl border p-2 text-left transition-all ${selected ? "border-amber-400 bg-amber-400/15 shadow-md shadow-amber-400/10" : "border-border/35 bg-background/35 hover:border-amber-400/45"}`}><BookCoverImage src={book.coverUrl} alt="" title={book.title} className="h-12 w-8 shrink-0 rounded object-cover" fallbackClassName="h-12 w-8 shrink-0 rounded" /><span className="min-w-0"><span className="line-clamp-2 block text-xs font-semibold">{book.title}</span><span className={`mt-1 block text-[10px] ${selected ? "text-amber-300" : "text-muted-foreground"}`}>{selected ? "Tu libro del año" : "Elegir ganador"}</span></span></button>;
               })}
+              {winner && (
+                <div className="relative mt-4 overflow-hidden rounded-2xl border border-amber-400/35 bg-gradient-to-b from-amber-400/[0.13] to-background/20 p-4 text-center">
+                  <div className="absolute -top-10 left-1/2 h-24 w-24 -translate-x-1/2 rounded-full bg-amber-300/20 blur-2xl" />
+                  <p className="relative text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-300">Ganador del año</p>
+                  <BookCoverImage
+                    src={winner.coverUrl}
+                    alt={winner.title}
+                    title={winner.title}
+                    className="relative mx-auto mt-3 h-52 w-auto max-w-[75%] rounded-lg object-cover shadow-2xl shadow-black/45"
+                    fallbackClassName="relative mx-auto mt-3 flex h-52 w-32 items-center justify-center rounded-lg shadow-2xl shadow-black/45"
+                  />
+                  <p className="relative mt-3 font-display text-base font-semibold leading-tight">{winner.title}</p>
+                  <p className="relative mt-1 text-xs text-muted-foreground">{winner.author}</p>
+                </div>
+              )}
               {finalBooks.length === 0 && <p className="rounded-xl bg-muted/20 p-3 text-xs text-muted-foreground">Tus dos finalistas se enfrentarán aquí.</p>}
             </div>
           </div>
