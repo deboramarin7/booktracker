@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useBooks } from "@/hooks/useBooks";
 import { BookCard } from "@/components/BookCard";
 import { AddBookDialog } from "@/components/AddBookDialog";
@@ -11,6 +11,7 @@ import type { Book, ReadingStatus } from "@/hooks/useBooks";
 import { GENRES, FORMATS } from "@/lib/constants";
 import { EditBookDialog } from "@/components/EditBookDialog";
 import { BookCoverImage } from "@/components/BookCoverImage";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { getBookYear, getBookMonth, getBookDate } from "@/lib/dateUtils";
 
@@ -45,6 +46,68 @@ const STATUS_LABELS: Record<string, string> = {
   reading: "Leyendo",
   finished: "Terminado",
 };
+
+function FinishReadingDialog({ book, open, onOpenChange, onFinish }: {
+  book: Book | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onFinish: (id: string, data: Partial<Omit<Book, "id" | "addedAt">>) => void;
+}) {
+  const [rating, setRating] = useState(0);
+  const [review, setReview] = useState("");
+
+  useEffect(() => {
+    if (open && book) {
+      setRating(book.rating || 0);
+      setReview(book.notes || "");
+    }
+  }, [open, book]);
+
+  if (!book) return null;
+
+  const completeBook = () => {
+    onFinish(book.id, {
+      status: "finished",
+      pagesRead: book.totalPages || book.pagesRead,
+      endDate: new Date().toISOString().slice(0, 10),
+      rating,
+      notes: review.trim() || book.notes,
+    });
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Capítulo cerrado</p>
+          <DialogTitle className="font-display text-2xl">¡Libro terminado!</DialogTitle>
+          <DialogDescription>Si quieres, deja tu valoración y una pequeña reseña. También puedes guardarlo sin escribir nada.</DialogDescription>
+        </DialogHeader>
+        <div className="flex gap-3 rounded-2xl border border-border/40 bg-muted/[0.16] p-3">
+          <BookCoverImage src={book.coverUrl} alt={book.title} title={book.title} className="h-20 w-14 shrink-0 rounded-lg object-cover shadow-md" fallbackClassName="h-20 w-14 shrink-0 rounded-lg" />
+          <div className="min-w-0 self-center"><p className="font-display font-semibold leading-tight">{book.title}</p><p className="mt-1 text-sm text-muted-foreground">{book.author}</p></div>
+        </div>
+        <div>
+          <p className="mb-2 text-sm font-medium">¿Cuánto te gustó?</p>
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((value) => (
+              <button key={value} type="button" onClick={() => setRating(value)} aria-label={`${value} estrellas`} className="rounded-lg p-1 text-amber-400 transition-transform hover:scale-110">
+                <Star className={`h-8 w-8 ${value <= rating ? "fill-current" : "text-muted-foreground/30"}`} />
+              </button>
+            ))}
+            <span className="ml-2 self-center text-sm text-muted-foreground">{rating ? `${rating}/5` : "Opcional"}</span>
+          </div>
+        </div>
+        <div>
+          <label className="mb-2 block text-sm font-medium" htmlFor="finish-review">Tu reseña <span className="font-normal text-muted-foreground">opcional</span></label>
+          <textarea id="finish-review" value={review} onChange={(event) => setReview(event.target.value)} placeholder="¿Qué te ha parecido esta historia?" className="min-h-28 w-full resize-y rounded-xl border border-border bg-background p-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40" />
+        </div>
+        <button type="button" onClick={completeBook} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary font-medium text-primary-foreground transition-opacity hover:opacity-90"><Check className="h-4 w-4" /> Guardar como terminado</button>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: string, data: Partial<Omit<Book, "id" | "addedAt">>) => void; onDelete: (id: string) => void }) {
   const [editing, setEditing] = useState(false);
@@ -304,6 +367,7 @@ export default function LibraryPage() {
   const [sort, setSort] = useState<SortOption>("read-desc");
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [showFinishCurrent, setShowFinishCurrent] = useState(false);
 
   const [goals, setGoals] = useState<Record<number, number>>(loadGoals);
   const [editingGoal, setEditingGoal] = useState(false);
@@ -468,6 +532,7 @@ export default function LibraryPage() {
                       <div className="mt-4 flex items-end justify-between gap-3"><p className="text-xs text-muted-foreground">{currentRead.pagesRead} de {currentRead.totalPages} páginas</p><p className="text-sm font-semibold text-primary">{currentReadProgress}%</p></div>
                       <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-background/60"><div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${currentReadProgress}%` }} /></div>
                       <label className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><span className="shrink-0">Actualizar página</span><input type="number" min={0} max={currentRead.totalPages} defaultValue={currentRead.pagesRead} onBlur={(event) => { const pagesRead = Math.max(0, Math.min(currentRead.totalPages, Number(event.target.value) || 0)); if (pagesRead !== currentRead.pagesRead) updateBook(currentRead.id, { pagesRead }); }} onKeyDown={(event) => { if (event.key === "Enter") (event.target as HTMLInputElement).blur(); }} aria-label={`Página actual de ${currentRead.title}`} className="h-8 min-w-0 flex-1 rounded-lg border border-white/80 bg-white px-2 text-sm font-semibold text-black outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" /></label>
+                      <button type="button" onClick={() => setShowFinishCurrent(true)} className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-primary/35 bg-primary/10 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"><Check className="h-3.5 w-3.5" /> He terminado este libro</button>
                     </> : <p className="mt-4 text-xs text-muted-foreground">Añade el total de páginas para seguir tu progreso.</p>}
                   </div>
                 </div>
@@ -475,6 +540,7 @@ export default function LibraryPage() {
             ) : (
               <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border/60 bg-background/30 px-4 py-3 text-sm text-muted-foreground"><BookOpen className="h-5 w-5 text-primary" /> Tu próxima lectura te está esperando.</div>
             )}
+            <FinishReadingDialog book={currentRead || null} open={showFinishCurrent} onOpenChange={setShowFinishCurrent} onFinish={updateBook} />
           </div>
 
           {!loading && yearBooks.length > 0 && <div className="grid grid-cols-2 gap-3 border-t border-border/40 pt-5 sm:grid-cols-4">
@@ -650,3 +716,4 @@ export default function LibraryPage() {
     </div>
   );
 }
+
