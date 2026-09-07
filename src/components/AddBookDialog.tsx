@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, ChevronDown, Image, Plus, Search, Sparkles, Star } from "lucide-react";
+import { BookOpen, ChevronDown, Heart, Image, Plus, Search, Sparkles, Star } from "lucide-react";
 import type { ReadingStatus, Book } from "@/hooks/useBooks";
 import type { WishItem } from "@/hooks/useWishlist";
 import { GENRES, FORMATS, SOURCES, STATUSES } from "@/lib/constants";
@@ -55,6 +55,7 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
   const [rating, setRating] = useState("0");
   const [tags, setTags] = useState<string[]>([]);
   const [wishStatus, setWishStatus] = useState<"Buscar" | "Comprado" | "En biblioteca" | "En kindle">("Buscar");
+  const [wishPriority, setWishPriority] = useState(3);
   const [showCoverEditor, setShowCoverEditor] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
 
@@ -63,7 +64,7 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
     setGenre(GENRES[0]); setFormat(FORMATS[0]); setSource(SOURCES[0]); setPrice("");
     setStatus("reading"); setTotalPages(""); setPagesRead("");
     setStartDate(new Date().toISOString().slice(0, 10)); setEndDate(""); setRating("0");
-    setTags([]); setWishStatus("Buscar"); setShowCoverEditor(false); setShowMoreDetails(false);
+    setTags([]); setWishStatus("Buscar"); setWishPriority(3); setShowCoverEditor(false); setShowMoreDetails(false);
   };
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -74,7 +75,7 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
       onAddToWishlist({
         title: title.trim(), author: author.trim(), coverUrl: coverUrl.trim() || undefined,
         hasSaga: !!sagaName.trim(), saga: sagaName.trim() || undefined, sagaOrder: sagaOrder.trim() || undefined,
-        genre, priority: 3, status: wishStatus, totalPages: Number(totalPages) || 0,
+        genre, priority: wishPriority, status: wishStatus, totalPages: Number(totalPages) || 0,
         format, source, price: source === "Comprado" ? price.trim() || undefined : undefined, tags,
       });
       toast({ title: "Añadido a Wish List", description: `"${title.trim()}" ya está en tu lista de deseos.` });
@@ -227,6 +228,19 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
                   </div>
                 )}
               </div>
+              {status === "want-to-read" && (
+                <div className="mt-4 border-t border-border/35 pt-4">
+                  <Label className="font-body text-sm">¿Cuánto quieres leerlo?</Label>
+                  <div className="mt-2 flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <button key={value} type="button" onClick={() => setWishPriority(value)} aria-label="Seleccionar prioridad" className="rounded-md p-1 text-red-500 transition-transform hover:scale-110">
+                        <Heart className={`h-6 w-6 ${value <= wishPriority ? "fill-current" : "text-muted-foreground/30"}`} />
+                      </button>
+                    ))}
+                    <span className="ml-2 text-xs text-muted-foreground">{wishPriority}/5</span>
+                  </div>
+                </div>
+              )}
             </FormSection>
 
             {status !== "want-to-read" && (
@@ -263,6 +277,15 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
               </FormSection>
             )}
 
+            {status === "want-to-read" ? (
+              <section className="rounded-2xl border border-border/35 bg-muted/[0.16] p-4">
+                <div className="mb-4 flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /><div><h3 className="font-display text-base font-semibold">Saga</h3><p className="text-xs text-muted-foreground">Si forma parte de una, déjala registrada desde el principio.</p></div></div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="space-y-1.5 sm:col-span-2"><Label className="font-body text-sm">Nombre de saga</Label><Input value={sagaName} onChange={(event) => setSagaName(event.target.value)} placeholder="Ej.: Ciudad Medialuna" /></div>
+                  <div className="space-y-1.5"><Label className="font-body text-sm">Orden</Label><Input value={sagaOrder} onChange={(event) => setSagaOrder(event.target.value)} placeholder="1" /></div>
+                </div>
+              </section>
+            ) : (
             <div>
               <button type="button" onClick={() => setShowMoreDetails((value) => !value)} className="flex w-full items-center justify-between rounded-xl px-1 py-2 text-left text-sm font-medium text-muted-foreground hover:text-foreground">
                 <span className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> Saga y etiquetas <span className="text-xs font-normal">opcional</span></span>
@@ -276,6 +299,7 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
                 </div>
               )}
             </div>
+            )}
           </div>
 
           <div className="sticky bottom-0 border-t border-border/35 bg-background/95 px-5 py-4 backdrop-blur sm:px-7">
