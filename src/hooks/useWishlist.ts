@@ -36,6 +36,10 @@ export interface WishItem {
   synopsis?: string;
   status: WishStatus;
   totalPages: number;
+  format?: string;
+  source?: string;
+  price?: string;
+  tags?: string[];
 }
 
 interface DbWish {
@@ -60,6 +64,10 @@ interface ExtraFields {
   sagaOrder?: string;
   genre?: string;
   wishStatus?: WishStatus;
+  format?: string;
+  source?: string;
+  price?: string;
+  tags?: string[];
 }
 
 function dbToWish(db: DbWish): WishItem {
@@ -77,6 +85,10 @@ function dbToWish(db: DbWish): WishItem {
     priority: db.priority,
     status: extra.wishStatus || "Buscar",
     totalPages: db.total_pages || 0,
+    format: extra.format,
+    source: extra.source,
+    price: extra.price,
+    tags: extra.tags || [],
   };
 }
 
@@ -87,6 +99,10 @@ function wishToExtra(item: Omit<WishItem, "id">): string {
     sagaOrder: item.sagaOrder,
     genre: item.genre,
     wishStatus: item.status,
+    format: item.format,
+    source: item.source,
+    price: item.price,
+    tags: item.tags || [],
   });
 }
 
@@ -206,3 +222,4 @@ export function useWishlist() {
 
   return { items, loading, addItem, updateItem, deleteItem, refetch: fetchItems };
 }
+
