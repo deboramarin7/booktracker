@@ -75,6 +75,7 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
         title: title.trim(), author: author.trim(), coverUrl: coverUrl.trim() || undefined,
         hasSaga: !!sagaName.trim(), saga: sagaName.trim() || undefined, sagaOrder: sagaOrder.trim() || undefined,
         genre, priority: 3, status: wishStatus, totalPages: Number(totalPages) || 0,
+        format, source, price: source === "Comprado" ? price.trim() || undefined : undefined, tags,
       });
       toast({ title: "Añadido a Wish List", description: `"${title.trim()}" ya está en tu lista de deseos.` });
     } else {
@@ -187,15 +188,13 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
 
             <FormSection title={status === "want-to-read" ? "Para tu Wish List" : "Tu edición"} description={status === "want-to-read" ? "Unos pocos detalles y ya estará guardado." : "Cómo es el ejemplar que tienes entre manos."}>
               <div className="grid gap-4 sm:grid-cols-2">
-                {status !== "want-to-read" && (
-                  <div className="space-y-1.5">
-                    <Label className="font-body text-sm">Formato</Label>
-                    <Select value={format} onValueChange={setFormat}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{FORMATS.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                )}
+                <div className="space-y-1.5">
+                  <Label className="font-body text-sm">Formato</Label>
+                  <Select value={format} onValueChange={setFormat}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{FORMATS.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-1.5">
                   <Label className="font-body text-sm">{status === "want-to-read" ? "Estado en Wish List" : "Páginas totales"}</Label>
                   {status === "want-to-read" ? (
@@ -214,16 +213,14 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
                     <Input type="number" value={totalPages} onChange={(event) => setTotalPages(event.target.value)} placeholder="350" min={0} />
                   </div>
                 )}
-                {status !== "want-to-read" && (
-                  <div className="space-y-1.5">
-                    <Label className="font-body text-sm">Procedencia</Label>
-                    <Select value={source} onValueChange={setSource}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{SOURCES.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                )}
-                {status !== "want-to-read" && source === "Comprado" && (
+                <div className="space-y-1.5">
+                  <Label className="font-body text-sm">Procedencia</Label>
+                  <Select value={source} onValueChange={setSource}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{SOURCES.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                {source === "Comprado" && (
                   <div className="space-y-1.5 animate-fade-in">
                     <Label className="font-body text-sm">Precio</Label>
                     <Input value={price} onChange={(event) => setPrice(event.target.value)} placeholder="22,90 €" />
