@@ -414,6 +414,7 @@ export default function LibraryPage() {
       title: book.title, author: book.author, coverUrl: book.coverUrl,
       hasSaga: book.hasSaga, saga: book.saga, sagaOrder: book.sagaOrder,
       genre: book.genre, priority: 3, status: "Buscar", totalPages: book.totalPages,
+      format: book.format, source: book.source, price: book.price, tags: book.tags,
     };
     await addItem(wishItem);
     await deleteBook(book.id);
@@ -716,4 +717,3 @@ export default function LibraryPage() {
     </div>
   );
 }
-
