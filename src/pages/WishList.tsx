@@ -67,7 +67,12 @@ function WishForm({ initial, onSave, trigger }: {
 
   const handleSubmit = () => {
     if (!title.trim() || !author.trim()) return;
-    onSave({ title: title.trim(), author: author.trim(), coverUrl: coverUrl.trim() || undefined, hasSaga, saga: hasSaga ? saga : undefined, sagaOrder: hasSaga ? sagaOrder : undefined, genre, priority, status, totalPages: parseInt(totalPages) || 0 });
+    onSave({
+      title: title.trim(), author: author.trim(), coverUrl: coverUrl.trim() || undefined,
+      hasSaga, saga: hasSaga ? saga : undefined, sagaOrder: hasSaga ? sagaOrder : undefined,
+      genre, priority, status, totalPages: parseInt(totalPages) || 0,
+      format: initial?.format, source: initial?.source, price: initial?.price, tags: initial?.tags || [],
+    });
     setOpen(false);
     if (!initial) reset();
   };
@@ -210,6 +215,9 @@ function WishCoverCard({ item, updateItem, deleteItem, onMoveToLibrary }: {
               {item.genre && <><span className="text-muted-foreground">Género</span><span className="text-foreground font-medium">{item.genre}</span></>}
               <><span className="text-muted-foreground">Estado</span><span className={`font-medium ${statusColors[item.status]} px-2 py-0.5 rounded-full text-xs inline-block w-fit`}>{item.status}</span></>
               {item.totalPages > 0 && <><span className="text-muted-foreground">Páginas</span><span className="text-foreground font-medium">{item.totalPages}</span></>}
+              {item.format && <><span className="text-muted-foreground">Formato</span><span className="text-foreground font-medium">{item.format}</span></>}
+              {item.source && <><span className="text-muted-foreground">Procedencia</span><span className="text-foreground font-medium">{item.source}</span></>}
+              {item.price && <><span className="text-muted-foreground">Precio</span><span className="text-foreground font-medium">{item.price}</span></>}
             </div>
             {/* Actions */}
             <div className="flex flex-col gap-2 pt-1">
@@ -267,14 +275,15 @@ function WishListContent() {
         saga: item.saga,
         sagaOrder: item.sagaOrder,
         genre: item.genre,
-        format: "",
-        source: "",
+        format: item.format || "Físico",
+        source: item.source || "Comprado",
+        price: item.price,
         status: "reading",
         totalPages: item.totalPages || 0,
         pagesRead: 0,
         rating: 0,
         notes: "",
-        tags: [],
+        tags: item.tags || [],
       });
       await deleteItem(item.id);
       toast({ title: "Movido a biblioteca", description: `"${item.title}" ahora está en Leyendo` });
@@ -444,3 +453,4 @@ function WishListContent() {
     </div>
   );
 }
+
