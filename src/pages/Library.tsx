@@ -490,11 +490,11 @@ export default function LibraryPage() {
 
   return (
     <div className="space-y-8 pb-8">
-      <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card px-5 py-6 sm:p-8 shadow-[0_18px_70px_rgba(0,0,0,0.18)]">
+      <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card px-5 py-5 sm:px-8 sm:py-6 shadow-[0_18px_70px_rgba(0,0,0,0.18)]">
         <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-primary/15 blur-3xl" aria-hidden="true" />
         <div className="absolute -bottom-32 left-1/3 h-52 w-52 rounded-full bg-cyan-400/10 blur-3xl" aria-hidden="true" />
-        <div className="relative space-y-7">
-          <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+        <div className="relative space-y-5">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-2xl">
               <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary"><Sparkles className="h-3.5 w-3.5" /> Tu rincón lector</p>
               <h2 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">Mi Biblioteca</h2>
@@ -527,7 +527,7 @@ export default function LibraryPage() {
                   <BookCoverImage src={currentRead.coverUrl} alt={currentRead.title} title={currentRead.title} className="h-28 w-[76px] rounded-lg object-cover shadow-xl" iconClassName="h-5 w-5" />
                   <div className="min-w-0 flex-1">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Leyendo ahora</p>
-                    <p className="mt-1 truncate font-display text-lg font-semibold">{currentRead.title}</p>
+                    <p className="mt-1 line-clamp-2 break-words font-display text-lg font-semibold leading-tight">{currentRead.title}</p>
                     <p className="truncate text-sm text-muted-foreground">{currentRead.author}</p>
                     {currentRead.totalPages > 0 ? <>
                       <div className="mt-4 flex items-end justify-between gap-3"><p className="text-xs text-muted-foreground">{currentRead.pagesRead} de {currentRead.totalPages} páginas</p><p className="text-sm font-semibold text-primary">{currentReadProgress}%</p></div>
@@ -605,13 +605,20 @@ export default function LibraryPage() {
         </section>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border/40 py-4">
-        <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-card p-1" role="group" aria-label="Cambiar vista">
-          {[{ value: "covers", label: "Vista de portadas", icon: Image }, { value: "grid", label: "Vista detallada", icon: LayoutGrid }, { value: "spine", label: "Vista de lomos", icon: AlignJustify }].map(({ value, label, icon: Icon }) => (
-            <button key={value} type="button" onClick={() => setViewMode(value as typeof viewMode)} aria-label={label} aria-pressed={viewMode === value} className={`rounded-lg p-2 transition-colors ${viewMode === value ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}><Icon className="h-4 w-4" /></button>
-          ))}
+      <div className="sticky top-3 z-30 rounded-2xl border border-border/50 bg-background/90 p-2.5 shadow-lg shadow-black/10 backdrop-blur-xl">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <label className="order-3 flex h-10 w-full items-center gap-2 rounded-xl border border-border/50 bg-card/70 px-3 lg:order-none lg:w-[min(360px,36vw)]">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" placeholder="Buscar en tu biblioteca" aria-label="Buscar en mi biblioteca (controles fijos)" />
+            {search && <button type="button" onClick={() => setSearch("")} className="text-xs font-medium text-primary hover:underline">Limpiar</button>}
+          </label>
+          <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-card p-1" role="group" aria-label="Cambiar vista">
+            {[{ value: "covers", label: "Vista de portadas", icon: Image }, { value: "grid", label: "Vista detallada", icon: LayoutGrid }, { value: "spine", label: "Vista de lomos", icon: AlignJustify }].map(({ value, label, icon: Icon }) => (
+              <button key={value} type="button" onClick={() => setViewMode(value as typeof viewMode)} aria-label={label} aria-pressed={viewMode === value} className={`rounded-lg p-2 transition-colors ${viewMode === value ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}><Icon className="h-4 w-4" /></button>
+            ))}
+          </div>
+          <button type="button" onClick={() => setShowFilters((visible) => !visible)} aria-expanded={showFilters} className="relative flex h-10 items-center gap-2 rounded-xl border border-border/50 bg-card px-3 text-sm font-medium transition-colors hover:border-primary/50 hover:text-primary"><SlidersHorizontal className="h-4 w-4" /> Filtros {activeFilterCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground">{activeFilterCount}</span>}</button>
         </div>
-        <button type="button" onClick={() => setShowFilters((visible) => !visible)} aria-expanded={showFilters} className="relative flex h-10 items-center gap-2 rounded-xl border border-border/50 bg-card px-3 text-sm font-medium transition-colors hover:border-primary/50 hover:text-primary"><SlidersHorizontal className="h-4 w-4" /> Filtros {activeFilterCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground">{activeFilterCount}</span>}</button>
       </div>
 
       {showFilters && <div className="grid grid-cols-1 gap-2 rounded-2xl border border-border/40 bg-card/60 p-3 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
