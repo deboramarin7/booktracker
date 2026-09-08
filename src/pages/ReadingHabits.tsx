@@ -505,13 +505,18 @@ export default function ReadingHabits() {
                     width={24}
                   />
                   <RechartsTooltip
-                    formatter={(value: number) => [`${value} días`, ""]}
+                    cursor={{ fill: "rgba(45, 212, 191, 0.08)" }}
+                    formatter={(value: number) => [`${value} días`, "Lectura"]}
                     contentStyle={{
                       borderRadius: "10px",
                       fontSize: "13px",
                       border: "1px solid var(--border)",
                       backgroundColor: "var(--card)",
+                      color: "var(--foreground)",
+                      boxShadow: "0 12px 28px rgba(0, 0, 0, 0.28)",
                     }}
+                    itemStyle={{ color: "var(--foreground)", fontWeight: 600 }}
+                    labelStyle={{ color: "var(--primary)", fontWeight: 700, marginBottom: "4px" }}
                   />
                   <Bar dataKey="days" radius={[6, 6, 0, 0]}>
                     {chartData.map((entry, index) => (
