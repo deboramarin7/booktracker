@@ -22,7 +22,7 @@ const BG_COLORS = [
 export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
   const { user } = useAuth();
   const { profile, saveProfile, saving } = useProfile();
-  const { dark, setDark, themeId, setThemeId, customAccent, setCustomAccent, customBg, setCustomBg } = useTheme();
+  const { dark, setDark, themeId, setThemeId, customAccent, setCustomAccent, customBg, setCustomBg, titleStyle, setTitleStyle, decoration, setDecoration } = useTheme();
   const [name, setName] = useState("");
   const [birthday, setBirthday] = useState("");
   const [avatarPreview, setAvatarPreview] = useState("");
@@ -191,6 +191,8 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
                 </div>
               </div>
           </section>
+
+          <section className="space-y-3 rounded-2xl border border-border/40 bg-muted/[0.16] p-4"><p className="text-xs font-semibold uppercase tracking-[.14em] text-muted-foreground">Estilo lector</p><div className="grid grid-cols-3 gap-2">{[["editorial","Editorial"],["fantasy","Fantasía"],["soft","Suave"]].map(([id,label]) => <button key={id} onClick={() => setTitleStyle(id)} className={`rounded-xl border px-2 py-2 text-xs ${titleStyle === id ? "border-primary bg-primary/10 text-primary" : "border-transparent bg-background/50 text-muted-foreground"}`}>{label}</button>)}</div><div className="grid grid-cols-4 gap-2">{[["none","Ninguna"],["stars","Estrellas"],["constellation","Constelación"],["flowers","Flores"]].map(([id,label]) => <button key={id} onClick={() => setDecoration(id)} className={`rounded-xl border px-1 py-2 text-[10px] ${decoration === id ? "border-primary bg-primary/10 text-primary" : "border-transparent bg-background/50 text-muted-foreground"}`}>{label}</button>)}</div></section>
 
           {/* Dark/Light toggle */}
           <section className="flex items-center gap-3 rounded-2xl border border-border/40 bg-muted/[0.16] p-4">
