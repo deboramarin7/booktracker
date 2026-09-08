@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
-import { Camera, X, Check, Calendar, User, Sun, Moon, Palette, Type, PaintBucket } from "lucide-react";
+import { Camera, X, Check, Calendar, Sun, Moon, Type, PaintBucket } from "lucide-react";
 
 interface ProfileDialogProps {
   open: boolean;
@@ -22,7 +22,7 @@ const BG_COLORS = [
 export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
   const { user } = useAuth();
   const { profile, saveProfile, saving } = useProfile();
-  const { dark, setDark, themeId, setThemeId, themes, customAccent, setCustomAccent, customBg, setCustomBg } = useTheme();
+  const { dark, setDark, themeId, setThemeId, customAccent, setCustomAccent, customBg, setCustomBg } = useTheme();
   const [name, setName] = useState("");
   const [birthday, setBirthday] = useState("");
   const [avatarPreview, setAvatarPreview] = useState("");
@@ -84,8 +84,6 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
     ? name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : user?.email?.charAt(0).toUpperCase() || "?";
 
-  const presetThemes = Object.values(themes).filter((t) => t.id !== "custom");
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => onOpenChange(false)} />
@@ -145,38 +143,12 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
               className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" />
           </section>
 
-          {/* Theme selector: 3 presets + custom */}
-          <section className="space-y-3 rounded-2xl border border-border/40 bg-muted/[0.16] p-4">
+          {/* Color pickers */}
+          <section className="space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.045] p-4">
             <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-              <Palette className="h-3.5 w-3.5" />
-              El ambiente de tu biblioteca
-            </label>
-            <p className="mt-1 text-xs text-muted-foreground">Elige una atmósfera o crea la tuya.</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Colores de tu biblioteca</p>
+              <p className="mt-1 text-xs text-muted-foreground">Elige el acento y el fondo que más te representen.</p>
             </div>
-            <div className="grid grid-cols-4 gap-2">
-              {presetThemes.map((theme) => (
-                <button key={theme.id} onClick={() => setThemeId(theme.id)}
-                  className={`flex flex-col items-center gap-1.5 rounded-xl border p-2 text-[11px] transition-all ${
-                    themeId === theme.id ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/35" : "border-transparent bg-background/50 text-muted-foreground hover:border-border hover:text-foreground"
-                  }`}>
-                  <span className="flex h-8 w-full items-center justify-center rounded-lg text-base" style={{ background: `linear-gradient(135deg, ${theme.dark["--background"]}, ${theme.dark["--primary"]})` }}>{theme.emoji}</span>
-                  <span className="truncate w-full text-center leading-tight">{theme.name.split(" ").pop()}</span>
-                </button>
-              ))}
-              <button onClick={() => setThemeId("custom")}
-                className={`flex flex-col items-center gap-1.5 rounded-xl border p-2 text-[11px] transition-all ${
-                  themeId === "custom" ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/35" : "border-transparent bg-background/50 text-muted-foreground hover:border-border hover:text-foreground"
-                }`}>
-                <div className="flex h-8 w-full items-center justify-center rounded-lg" style={{ background: `linear-gradient(135deg, ${customBg}, ${customAccent})` }}><div className="h-3 w-3 rounded-full border border-white/50" style={{ backgroundColor: customAccent }} /></div>
-                <span className="truncate w-full text-center leading-tight">Custom</span>
-              </button>
-            </div>
-          </section>
-
-          {/* Custom color pickers */}
-          {themeId === "custom" && (
-            <div className="space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.045] p-4">
               {/* Accent color */}
               <div className="space-y-1.5">
                 <label className="text-[11px] text-muted-foreground flex items-center gap-1.5">
@@ -218,8 +190,7 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
                     onChange={(e) => { setCustomBg(e.target.value); selectCustom(); }} className="sr-only" />
                 </div>
               </div>
-            </div>
-          )}
+          </section>
 
           {/* Dark/Light toggle */}
           <section className="flex items-center gap-3 rounded-2xl border border-border/40 bg-muted/[0.16] p-4">
@@ -254,4 +225,3 @@ export function ProfileDialog({ open, onOpenChange }: ProfileDialogProps) {
     </div>
   );
 }
-
