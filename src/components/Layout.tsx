@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Outlet, NavLink, Link, useNavigate } from "react-router-dom";
 import {
   BookOpen, Library, Users, Heart, BookMarked, CalendarDays,
-  Trophy, Sparkles, Menu, X,
+  Trophy, Sparkles, Menu, X, Layers,
   TrendingUp, HelpCircle, LogOut,
 } from "lucide-react";
 import { useBooks } from "@/hooks/useBooks";
@@ -39,6 +39,7 @@ const navLinks = [
   { to: "/biblioteca", label: "Biblioteca", icon: <Library className="h-5 w-5" /> },
   { to: "/autores-sagas", label: "Autores y Sagas", icon: <Users className="h-5 w-5" /> },
   { to: "/wishlist", label: "Wish List", icon: <Heart className="h-5 w-5" /> },
+  { to: "/colecciones", label: "Colecciones", icon: <Layers className="h-5 w-5" /> },
   { to: "/estanterias", label: "Estantería", icon: <BookMarked className="h-5 w-5" /> },
   { to: "/reading-habits", label: "Hábitos", icon: <CalendarDays className="h-5 w-5" /> },
   { to: "/logros", label: "Logros", icon: <Trophy className="h-5 w-5" /> },
