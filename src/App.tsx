@@ -13,6 +13,7 @@ import ReadingHabits from "./pages/ReadingHabits";
 import Achievements from "./pages/Achievements";
 import Dashboard from "./pages/Dashboard";
 import Help from "./pages/Help";
+import Collections from "./pages/Collections";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ function ProtectedRoutes() {
         <Route path="biblioteca" element={<Library />} />
         <Route path="autores-sagas" element={<AuthorsSagas />} />
         <Route path="wishlist" element={<WishList />} />
+        <Route path="colecciones" element={<Collections />} />
         <Route path="estanterias" element={<Shelves />} />
         <Route path="reading-habits" element={<ReadingHabits />} />
         <Route path="logros" element={<Achievements />} />
