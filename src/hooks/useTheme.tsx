@@ -229,6 +229,8 @@ interface ThemeContextType {
   setCustomAccent: (color: string) => void;
   customBg: string;
   setCustomBg: (color: string) => void;
+  titleStyle: string; setTitleStyle: (style: string) => void;
+  decoration: string; setDecoration: (style: string) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -262,6 +264,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [customBg, setCustomBgState] = useState(
     () => localStorage.getItem("booktracker-custom-bg") || "#1a1025"
   );
+  const [titleStyle, setTitleStyleState] = useState(() => localStorage.getItem("booktracker-title-style") || "editorial");
+  const [decoration, setDecorationState] = useState(() => localStorage.getItem("booktracker-decoration") || "stars");
 
   const setDark = useCallback((d: boolean) => {
     setDarkState(d);
@@ -283,6 +287,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setCustomBgState(color);
     localStorage.setItem("booktracker-custom-bg", color);
   }, []);
+  const setTitleStyle = useCallback((style: string) => { setTitleStyleState(style); localStorage.setItem("booktracker-title-style", style); }, []);
+  const setDecoration = useCallback((style: string) => { setDecorationState(style); localStorage.setItem("booktracker-decoration", style); }, []);
 
   const allThemes: Record<string, ThemeDefinition> = {
     ...THEMES,
@@ -295,13 +301,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const vars = dark ? theme.dark : theme.light;
     applyVars(vars);
     document.documentElement.setAttribute("data-theme", themeId);
-  }, [dark, themeId, customAccent, customBg]);
+    document.documentElement.setAttribute("data-title-style", titleStyle);
+    document.documentElement.setAttribute("data-decoration", decoration);
+  }, [dark, themeId, customAccent, customBg, titleStyle, decoration]);
 
   const currentTheme = allThemes[themeId] || allThemes.night;
 
   return (
     <ThemeContext.Provider
-      value={{ dark, setDark, themeId, setThemeId, themes: allThemes, currentTheme, customAccent, setCustomAccent, customBg, setCustomBg }}
+      value={{ dark, setDark, themeId, setThemeId, themes: allThemes, currentTheme, customAccent, setCustomAccent, customBg, setCustomBg, titleStyle, setTitleStyle, decoration, setDecoration }}
     >
       {children}
     </ThemeContext.Provider>
