@@ -506,7 +506,7 @@ export default function LibraryPage() {
                 <SelectContent><SelectItem value="all">Todos</SelectItem>{availableYears.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
               </Select>
               <Select value={monthFilter} onValueChange={setMonthFilter}>
-                <SelectTrigger aria-label="Filtrar por mes" className="h-10 w-36 border-border/50 bg-background/50 text-sm"><SelectValue placeholder="Mes" /></SelectTrigger>
+                <SelectTrigger aria-label="Filtrar por mes" className="h-10 w-48 border-border/50 bg-background/50 text-sm"><SelectValue placeholder="Mes" /></SelectTrigger>
                 <SelectContent><SelectItem value="all">Todos los meses</SelectItem>{MONTHS.map((name, i) => <SelectItem key={i} value={String(i)}>{name}</SelectItem>)}</SelectContent>
               </Select>
               <ExportBooksButton books={books} />
@@ -514,7 +514,7 @@ export default function LibraryPage() {
             </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(350px,0.85fr)]">
             <label className="group flex h-14 items-center gap-3 rounded-2xl border border-border/50 bg-background/60 px-4 transition-colors focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20">
               <Search className="h-5 w-5 text-muted-foreground transition-colors group-focus-within:text-primary" />
               <input value={search} onChange={(event) => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" placeholder="Busca por título, autora, saga, género o etiqueta" aria-label="Buscar en mi biblioteca" />
@@ -532,7 +532,7 @@ export default function LibraryPage() {
                     {currentRead.totalPages > 0 ? <>
                       <div className="mt-4 flex items-end justify-between gap-3"><p className="text-xs text-muted-foreground">{currentRead.pagesRead} de {currentRead.totalPages} páginas</p><p className="text-sm font-semibold text-primary">{currentReadProgress}%</p></div>
                       <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-background/60"><div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${currentReadProgress}%` }} /></div>
-                      <label className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><span className="shrink-0">Actualizar página</span><input type="number" min={0} max={currentRead.totalPages} defaultValue={currentRead.pagesRead} onBlur={(event) => { const pagesRead = Math.max(0, Math.min(currentRead.totalPages, Number(event.target.value) || 0)); if (pagesRead !== currentRead.pagesRead) updateBook(currentRead.id, { pagesRead }); }} onKeyDown={(event) => { if (event.key === "Enter") (event.target as HTMLInputElement).blur(); }} aria-label={`Página actual de ${currentRead.title}`} className="h-8 min-w-0 flex-1 rounded-lg border border-white/80 bg-white px-2 text-sm font-semibold text-black outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" /></label>
+                      <label className="mt-3 grid grid-cols-[minmax(0,1fr)_76px] items-center gap-2 text-xs text-muted-foreground"><span className="min-w-0">Actualizar página</span><input type="number" min={0} max={currentRead.totalPages} defaultValue={currentRead.pagesRead} onBlur={(event) => { const pagesRead = Math.max(0, Math.min(currentRead.totalPages, Number(event.target.value) || 0)); if (pagesRead !== currentRead.pagesRead) updateBook(currentRead.id, { pagesRead }); }} onKeyDown={(event) => { if (event.key === "Enter") (event.target as HTMLInputElement).blur(); }} aria-label={`Página actual de ${currentRead.title}`} className="h-9 w-full rounded-lg border border-white/80 bg-white px-2 text-sm font-semibold text-black outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" /></label>
                       <button type="button" onClick={() => setShowFinishCurrent(true)} className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-primary/35 bg-primary/10 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"><Check className="h-3.5 w-3.5" /> He terminado este libro</button>
                     </> : <p className="mt-4 text-xs text-muted-foreground">Añade el total de páginas para seguir tu progreso.</p>}
                   </div>
@@ -605,20 +605,13 @@ export default function LibraryPage() {
         </section>
       )}
 
-      <div className="sticky top-3 z-30 rounded-2xl border border-border/50 bg-background/90 p-2.5 shadow-lg shadow-black/10 backdrop-blur-xl">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <label className="order-3 flex h-10 w-full items-center gap-2 rounded-xl border border-border/50 bg-card/70 px-3 lg:order-none lg:w-[min(360px,36vw)]">
-            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <input value={search} onChange={(event) => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" placeholder="Buscar en tu biblioteca" aria-label="Buscar en mi biblioteca (controles fijos)" />
-            {search && <button type="button" onClick={() => setSearch("")} className="text-xs font-medium text-primary hover:underline">Limpiar</button>}
-          </label>
-          <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-card p-1" role="group" aria-label="Cambiar vista">
-            {[{ value: "covers", label: "Vista de portadas", icon: Image }, { value: "grid", label: "Vista detallada", icon: LayoutGrid }, { value: "spine", label: "Vista de lomos", icon: AlignJustify }].map(({ value, label, icon: Icon }) => (
-              <button key={value} type="button" onClick={() => setViewMode(value as typeof viewMode)} aria-label={label} aria-pressed={viewMode === value} className={`rounded-lg p-2 transition-colors ${viewMode === value ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}><Icon className="h-4 w-4" /></button>
-            ))}
-          </div>
-          <button type="button" onClick={() => setShowFilters((visible) => !visible)} aria-expanded={showFilters} className="relative flex h-10 items-center gap-2 rounded-xl border border-border/50 bg-card px-3 text-sm font-medium transition-colors hover:border-primary/50 hover:text-primary"><SlidersHorizontal className="h-4 w-4" /> Filtros {activeFilterCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground">{activeFilterCount}</span>}</button>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-y border-border/40 py-4">
+        <div className="flex items-center gap-1 rounded-xl border border-border/50 bg-card p-1" role="group" aria-label="Cambiar vista">
+          {[{ value: "covers", label: "Vista de portadas", icon: Image }, { value: "grid", label: "Vista detallada", icon: LayoutGrid }, { value: "spine", label: "Vista de lomos", icon: AlignJustify }].map(({ value, label, icon: Icon }) => (
+            <button key={value} type="button" onClick={() => setViewMode(value as typeof viewMode)} aria-label={label} aria-pressed={viewMode === value} className={`rounded-lg p-2 transition-colors ${viewMode === value ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}><Icon className="h-4 w-4" /></button>
+          ))}
         </div>
+        <button type="button" onClick={() => setShowFilters((visible) => !visible)} aria-expanded={showFilters} className="relative flex h-10 items-center gap-2 rounded-xl border border-border/50 bg-card px-3 text-sm font-medium transition-colors hover:border-primary/50 hover:text-primary"><SlidersHorizontal className="h-4 w-4" /> Filtros {activeFilterCount > 0 && <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground">{activeFilterCount}</span>}</button>
       </div>
 
       {showFilters && <div className="grid grid-cols-1 gap-2 rounded-2xl border border-border/40 bg-card/60 p-3 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
