@@ -13,6 +13,8 @@ import { ShareableStats, BestOfYearExport } from "@/components/ShareableStats";
 import { getBookYear, getBookMonth, parseFlexibleDate } from "@/lib/dateUtils";
 import { useReadingHabits } from "@/hooks/useReadingHabits";
 import type { Book } from "@/hooks/useBooks";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const GOALS_KEY = "book-tracker-reading-goals";
 function loadGoals(): Record<number, number> {
@@ -92,27 +94,34 @@ function BookHighlight({ book, label, metric, icon: Icon }: {
 
 const BOOK_OF_YEAR_KEY = "book-tracker-book-of-year";
 
-function BookOfYear({ year, books }: { year: number; books: Book[] }) {
+function BookOfYear({ year, books, userId }: { year: number; books: Book[]; userId?: string }) {
   const [monthlyPicks, setMonthlyPicks] = useState<Record<string, string>>({});
   const [semifinalists, setSemifinalists] = useState<string[]>([]);
   const [finalists, setFinalists] = useState<string[]>([]);
   const [winnerId, setWinnerId] = useState("");
 
   useEffect(() => {
-    try {
+    const load = async () => { try {
+      if (userId) {
+        const { data } = await (supabase as any).from("book_of_year_selections").select("*").eq("user_id", userId).eq("year", year).maybeSingle();
+        if (data) { setMonthlyPicks(data.monthly_picks || {}); setSemifinalists(data.semifinalists || []); setFinalists(data.finalists || []); setWinnerId(data.winner_id || ""); return; }
+      }
       const allSelections = JSON.parse(localStorage.getItem(BOOK_OF_YEAR_KEY) || "{}");
       const selection = allSelections[String(year)] || {};
       setMonthlyPicks(selection.monthlyPicks || {});
       setSemifinalists(selection.semifinalists || []);
       setFinalists(selection.finalists || []);
       setWinnerId(selection.winnerId || "");
+      if (userId && (Object.keys(selection.monthlyPicks || {}).length || (selection.semifinalists || []).length || (selection.finalists || []).length || selection.winnerId)) {
+        await (supabase as any).from("book_of_year_selections").upsert({ user_id: userId, year, monthly_picks: selection.monthlyPicks || {}, semifinalists: selection.semifinalists || [], finalists: selection.finalists || [], winner_id: selection.winnerId || "", updated_at: new Date().toISOString() }, { onConflict: "user_id,year" });
+      }
     } catch {
       setMonthlyPicks({});
       setSemifinalists([]);
       setFinalists([]);
       setWinnerId("");
-    }
-  }, [year]);
+    }}; load();
+  }, [year, userId]);
 
   const saveSelection = (nextPicks: Record<string, string>, nextSemifinalists: string[], nextFinalists: string[], nextWinner: string) => {
     try {
@@ -122,6 +131,7 @@ function BookOfYear({ year, books }: { year: number; books: Book[] }) {
     } catch {
       // Si el navegador no permite guardar localmente, la selección sigue viva durante esta sesión.
     }
+    if (userId) (supabase as any).from("book_of_year_selections").upsert({ user_id: userId, year, monthly_picks: nextPicks, semifinalists: nextSemifinalists, finalists: nextFinalists, winner_id: nextWinner, updated_at: new Date().toISOString() }, { onConflict: "user_id,year" });
   };
 
   const selectMonth = (month: number, bookId: string) => {
@@ -267,6 +277,7 @@ function BookOfYear({ year, books }: { year: number; books: Book[] }) {
 
 export default function Dashboard() {
   const { books } = useBooksContext();
+  const { user } = useAuth();
   const { habits } = useReadingHabits();
 
   const years = useMemo(() => {
@@ -551,13 +562,14 @@ export default function Dashboard() {
               SECCIÓN 1: KPIs GRANDES
               ═══════════════════════════════════════════ */}
           <section>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Resumen de {selectedYear}</p>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <KpiCard value={yearBooks.length} label="Libros leídos" icon={BookOpen} />
-              <KpiCard value={totalPages.toLocaleString()} label="Páginas totales" icon={BookMarked} accent />
-              <KpiCard value={avgPagesPerBook} label="Páginas de media / libro" icon={BarChart3} />
+              <KpiCard value={yearBooks.length} label={`Libros leídos · ${selectedYear}`} icon={BookOpen} />
+              <KpiCard value={totalPages.toLocaleString()} label={`Páginas totales · ${selectedYear}`} icon={BookMarked} accent />
+              <KpiCard value={avgPagesPerBook} label={`Media / libro · ${selectedYear}`} icon={BarChart3} />
               <KpiCard
                 value={readingTimeStats ? `${readingTimeStats.avg} días` : `${streak} días`}
-                label={readingTimeStats ? "Media de lectura / libro" : "Racha de lectura"}
+                label={readingTimeStats ? `Media de lectura · ${selectedYear}` : "Racha de lectura"}
                 icon={readingTimeStats ? Clock : Flame}
                 accent
               />
@@ -566,8 +578,8 @@ export default function Dashboard() {
             {/* Secondary stats row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
               {[
-                { label: "Autores", value: new Set(yearBooks.map(b => b.author)).size },
-                { label: "Géneros", value: new Set(yearBooks.filter(b => b.genre).map(b => b.genre)).size },
+                { label: `Autores · ${selectedYear}`, value: new Set(yearBooks.map(b => b.author)).size },
+                { label: `Géneros · ${selectedYear}`, value: new Set(yearBooks.filter(b => b.genre).map(b => b.genre)).size },
                 { label: "Racha", value: `${streak} días`, show: !!readingTimeStats },
                 { label: "Valoración media", value: avgRating > 0 ? `${avgRating.toFixed(1)} ★` : "—" },
               ].filter(s => s.show !== false).map(stat => (
@@ -635,7 +647,7 @@ export default function Dashboard() {
             </div>
           </section>
 
-          <BookOfYear year={selectedYear} books={yearBooks} />
+      <BookOfYear year={selectedYear} books={yearBooks} userId={user?.id} />
 
           {/* ═══════════════════════════════════════════
               SECCIÓN 3: DETALLE
@@ -795,4 +807,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
