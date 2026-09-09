@@ -15,6 +15,7 @@ import { useReadingHabits } from "@/hooks/useReadingHabits";
 import type { Book } from "@/hooks/useBooks";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useReadingGoals } from "@/hooks/useReadingGoals";
 
 const GOALS_KEY = "book-tracker-reading-goals";
 function loadGoals(): Record<number, number> {
@@ -289,7 +290,7 @@ export default function Dashboard() {
 
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
-  const [goals, setGoals] = useState<Record<number, number>>(loadGoals);
+  const { goals, saveGoal } = useReadingGoals();
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState("");
   const goalInputRef = useRef<HTMLInputElement>(null);
@@ -299,9 +300,7 @@ export default function Dashboard() {
   const handleGoalSave = () => {
     const val = parseInt(goalInput, 10);
     if (!isNaN(val) && val >= 0) {
-      const updated = { ...goals, [selectedYear]: val };
-      setGoals(updated);
-      saveGoals(updated);
+      saveGoal(selectedYear, val);
     }
     setEditingGoal(false);
   };
