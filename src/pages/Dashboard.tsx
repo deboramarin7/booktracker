@@ -459,26 +459,17 @@ export default function Dashboard() {
   return (
     <div className="space-y-12">
       {/* ═══ HEADER ═══ */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-4">
-         <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
-            📈 Dashboard
-          </h2>
-
-          <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+      <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card px-5 py-7 shadow-[0_18px_70px_rgba(0,0,0,0.18)] sm:p-8"><div className="absolute -right-16 -top-20 h-60 w-60 rounded-full bg-primary/15 blur-3xl" /><div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"><div><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary"><TrendingUp className="h-3.5 w-3.5" /> Tu historia en cifras</p><h2 className="mt-3 font-display text-4xl font-semibold tracking-tight sm:text-5xl">Dashboard</h2><p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">Descubre el ritmo de tus lecturas y guarda los capítulos más especiales de tu año.</p></div><div className="flex flex-wrap items-center gap-2"><Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+            <SelectTrigger className="h-10 w-28 border-border/50 bg-background/50"><SelectValue /></SelectTrigger>
             <SelectContent>
               {years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
             </SelectContent>
-          </Select>
-        </div>
-        {yearBooks.length > 0 && (
+          </Select>{yearBooks.length > 0 && (
           <div className="flex items-center gap-2">
             <ShareableStats year={selectedYear} books={yearBooks} />
             <BestOfYearExport year={selectedYear} books={yearBooks} />
           </div>
-        )}
-      </div>
+        )}</div></div></section>
 
       {/* ═══ OBJETIVO ANUAL ═══ */}
       <Card className="border-border/30">
