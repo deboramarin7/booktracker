@@ -272,12 +272,7 @@ export default function Shelves() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-end justify-between">
-        <div>
-          <h2 className="text-2xl sm:text-3xl font-bold font-display tracking-tight">
-            📖 Mi Estantería
-          </h2>
-          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
+      <section className="relative overflow-hidden rounded-3xl border border-primary/20 bg-card px-5 py-7 shadow-[0_18px_70px_rgba(0,0,0,0.18)] sm:p-8"><div className="absolute -right-16 -top-20 h-60 w-60 rounded-full bg-primary/15 blur-3xl" /><div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between"><div><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary"><BookOpen className="h-3.5 w-3.5" /> Tu refugio lector</p><h2 className="mt-3 font-display text-4xl font-semibold tracking-tight sm:text-5xl">Mi Estantería</h2><p className="mt-3 text-sm text-muted-foreground sm:text-base">
             <span className="font-semibold text-foreground">{finishedBooks.length}</span>{" "}
             libro{finishedBooks.length !== 1 ? "s" : ""} leído
             {finishedBooks.length !== 1 ? "s" : ""}
@@ -285,8 +280,7 @@ export default function Shelves() {
             <span className="mx-2 opacity-30">·</span>
             <span className="opacity-60 hidden sm:inline">arrastra para reorganizar</span>
             <span className="opacity-60 sm:hidden">mantén pulsado para mover</span>
-          </p>
-        </div>
+          </p></div>
 
         <div className="flex items-center gap-3">
           <button
@@ -303,8 +297,7 @@ export default function Shelves() {
           <span className="text-right text-xs text-muted-foreground/50 hidden sm:block">
             {shelves.length} estante{shelves.length !== 1 ? "s" : ""}
           </span>
-        </div>
-      </div>
+        </div></div></section>
 
       {finishedBooks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-4 rounded-2xl border border-border/30 bg-card/30">
