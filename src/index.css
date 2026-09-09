@@ -103,10 +103,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 [data-title-style="fantasy"] h1, [data-title-style="fantasy"] h2, [data-title-style="fantasy"] h3 { font-family: 'Cinzel', serif; }
 [data-title-style="soft"] h1, [data-title-style="soft"] h2, [data-title-style="soft"] h3 { font-family: 'Cormorant Garamond', serif; }
-[data-decoration="stars"] main > div > section:first-child, [data-decoration="constellation"] main > div > section:first-child, [data-decoration="flowers"] main > div > section:first-child { position: relative; overflow: hidden; }
-[data-decoration="stars"] main > div > section:first-child::after { content: '✦  ·  ✧  ·  ✦'; position: absolute; right: 2rem; top: 1.25rem; color: var(--primary); opacity: .35; letter-spacing: .5rem; pointer-events: none; }
-[data-decoration="constellation"] main > div > section:first-child::after { content: '✦ ── ✧ ── ✦'; position: absolute; right: 2rem; top: 1.25rem; color: var(--primary); opacity: .35; pointer-events: none; }
-[data-decoration="flowers"] main > div > section:first-child::after { content: '❀  ❁  ❀'; position: absolute; right: 2rem; top: 1.25rem; color: var(--primary); opacity: .35; font-size: 1.25rem; pointer-events: none; }
 
 /* ============================================================
    RADIUS POR TEMA
