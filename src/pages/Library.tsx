@@ -14,6 +14,7 @@ import { BookCoverImage } from "@/components/BookCoverImage";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { getBookYear, getBookMonth, getBookDate } from "@/lib/dateUtils";
+import { useReadingGoals } from "@/hooks/useReadingGoals";
 
 const GOALS_KEY = "book-tracker-reading-goals";
 function loadGoals(): Record<number, number> {
@@ -369,7 +370,7 @@ export default function LibraryPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [showFinishCurrent, setShowFinishCurrent] = useState(false);
 
-  const [goals, setGoals] = useState<Record<number, number>>(loadGoals);
+  const { goals, saveGoal } = useReadingGoals();
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState("");
   const goalInputRef = useRef<HTMLInputElement>(null);
@@ -387,9 +388,7 @@ export default function LibraryPage() {
   const handleGoalSave = () => {
     const val = parseInt(goalInput, 10);
     if (!isNaN(val) && val >= 0 && selectedYear) {
-      const updated = { ...goals, [selectedYear]: val };
-      setGoals(updated);
-      saveGoals(updated);
+      saveGoal(selectedYear, val);
     }
     setEditingGoal(false);
   };
