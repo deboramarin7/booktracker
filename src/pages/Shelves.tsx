@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Book } from "@/hooks/useBooks";
+import { BookOpen } from "lucide-react";
 
 const SHELF_ORDER_KEY = "book-tracker-shelf-order";
 
