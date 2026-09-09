@@ -1,11 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&family=Lora:wght@500;600;700&display=swap');
 
 /* ============================================================
    BOOK TRACKER - SISTEMA DE 3 TEMAS + LIGHT/DARK
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Cinzel:wght@600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -72,14 +70,14 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Quicksand', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 400;
     font-size: 1rem;
     line-height: 1.6;
   }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'Quicksand', sans-serif;
+    font-family: 'Cormorant Garamond', serif;
     font-weight: 700;
     line-height: 1.2;
   }
@@ -91,18 +89,12 @@ h1, h2, h3, h4, h5, h6 {
   h5 { font-size: 1.125rem; }
   h6 { font-size: 1rem; }
 
-  p, span, button, input, textarea, select, li, a {
-    font-family: 'Quicksand', sans-serif;
-    font-weight: 400;
-    font-size: 1rem;
-  }
-
   small {
     font-size: 0.92rem;
   }
 }
 [data-title-style="fantasy"] h1, [data-title-style="fantasy"] h2, [data-title-style="fantasy"] h3 { font-family: 'Cinzel', serif; }
-[data-title-style="soft"] h1, [data-title-style="soft"] h2, [data-title-style="soft"] h3 { font-family: 'Cormorant Garamond', serif; }
+[data-title-style="soft"] h1, [data-title-style="soft"] h2, [data-title-style="soft"] h3 { font-family: 'Lora', serif; }
 
 /* ============================================================
    RADIUS POR TEMA
@@ -111,15 +103,6 @@ h1, h2, h3, h4, h5, h6 {
 [data-theme="night"] { --radius: 1rem; }
 [data-theme="editorial"] { --radius: 0.5rem; }
 
-
-/* ============================================================
-   INTER FONT
-   ============================================================ */
-
-body {
-  font-family: 'Inter', sans-serif !important;
-  font-size: 15px !important;
-}
 
 /* ============================================================
    NIGHT THEME — SETUP PRO COMPLETO
