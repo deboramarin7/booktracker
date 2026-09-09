@@ -71,9 +71,12 @@ export default function Auth() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label className="text-white/60 text-xs mb-1 block">Email</label>
+              <label htmlFor="auth-email" className="text-white/60 text-xs mb-1 block">Email</label>
               <input
+                id="auth-email"
+                name="email"
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -84,20 +87,23 @@ export default function Auth() {
             </div>
 
             <div>
-              <label className="text-white/60 text-xs mb-1 block">Contrasena</label>
+              <label htmlFor="auth-password" className="text-white/60 text-xs mb-1 block">Contraseña</label>
               <input
+                id="auth-password"
+                name="password"
                 type="password"
+                autoComplete={isLogin ? "current-password" : "new-password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="w-full px-4 py-2.5 rounded-xl text-white text-sm outline-none border border-white/10 focus:border-emerald-500/50 transition-colors"
                 style={{ background: "rgba(255,255,255,0.06)", colorScheme: "dark" }}
-                placeholder="••••••••"
+                placeholder="Mínimo 6 caracteres"
               />
             </div>
 
-            {error && <p className="text-red-400 text-xs text-center">{error}</p>}
-            {message && <p className="text-emerald-400 text-xs text-center">{message}</p>}
+            {error && <p role="alert" className="text-red-400 text-xs text-center">{error}</p>}
+            {message && <p aria-live="polite" className="text-emerald-400 text-xs text-center">{message}</p>}
 
             <button
               type="submit"
