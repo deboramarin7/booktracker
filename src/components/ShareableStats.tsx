@@ -18,36 +18,20 @@ function proxiedCoverUrl(url?: string): string | undefined {
 }
 
 /**
- * En móvil (sobre todo iOS Safari) el atributo `download` de un <a> no
- * siempre descarga el archivo: el navegador simplemente abre la imagen en
- * una pestaña. Usamos el Web Share API cuando está disponible — además de
- * guardar la imagen, permite compartirla directamente a Instagram/TikTok,
- * que es justo para lo que se genera esta tarjeta. En escritorio (u otros
- * navegadores sin soporte) recurrimos a la descarga clásica.
+ * Se descarga siempre de forma directa. Esto evita que el botón "Descargar"
+ * abra solamente la hoja de compartir en algunos móviles y parezca que no ha
+ * hecho nada. En iPhone Safari puede abrir la imagen en otra pestaña: desde
+ * ahí se guarda con una pulsación mantenida sobre la tarjeta.
  */
-async function shareOrDownloadImage(node: HTMLElement, filename: string, title: string) {
+async function shareOrDownloadImage(node: HTMLElement, filename: string) {
   const dataUrl = await toPng(node, { pixelRatio: 3, cacheBust: true, skipFonts: true });
-
-  const nav = typeof navigator !== "undefined" ? navigator : undefined;
-  if (nav?.canShare) {
-    try {
-      const blob = await (await fetch(dataUrl)).blob();
-      const file = new File([blob], filename, { type: "image/png" });
-      if (nav.canShare({ files: [file] })) {
-        await nav.share({ files: [file], title });
-        return;
-      }
-    } catch (err) {
-      // El usuario cerró el panel de compartir: no es un error real.
-      if (err instanceof Error && err.name === "AbortError") return;
-      throw err;
-    }
-  }
-
   const link = document.createElement("a");
   link.download = filename;
   link.href = dataUrl;
+  link.style.display = "none";
+  document.body.appendChild(link);
   link.click();
+  link.remove();
 }
 
 interface ShareableStatsProps {
@@ -67,7 +51,7 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
     if (!cardRef.current) return;
     setIsGenerating(true);
     try {
-      await shareOrDownloadImage(cardRef.current, `mi-año-lector-${year}.png`, `Mi Año Lector ${year}`);
+      await shareOrDownloadImage(cardRef.current, `mi-año-lector-${year}.png`);
     } catch (err) {
       console.error("Error generating image", err);
       toast({
@@ -101,9 +85,11 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
             aspectRatio: "9 / 16",
             width: "100%",
             maxWidth: "420px",
-            background: "#f6d673",
-            border: "1px solid rgba(67, 50, 27, 0.12)",
-            color: "#201b18",
+            backgroundImage: "linear-gradient(180deg, rgba(5, 9, 16, 0.2) 0%, rgba(5, 9, 16, 0.58) 100%), url('/nebulosa.png')",
+            backgroundPosition: "center",
+            backgroundSize: "cover",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            color: "#fffdf8",
             fontFamily: "Georgia, 'Times New Roman', serif",
           }}
         >
@@ -113,17 +99,10 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
             style={{
               position: "absolute",
               inset: 0,
-              opacity: 0.3,
-              backgroundImage: "radial-gradient(rgba(53, 39, 24, 0.34) 0.7px, transparent 0.7px)",
-              backgroundSize: "5px 5px",
+              background: "linear-gradient(180deg, rgba(3, 7, 14, 0.04) 20%, rgba(3, 7, 14, 0.32) 100%)",
               pointerEvents: "none",
             }}
           />
-          <div aria-hidden style={{ position: "absolute", width: "270px", height: "155px", background: "#ddd9f4", left: "-86px", top: "34px", transform: "rotate(-18deg)", opacity: 0.9 }} />
-          <div aria-hidden style={{ position: "absolute", width: "230px", height: "130px", background: "#f7e7c9", right: "-72px", top: "116px", transform: "rotate(17deg)", opacity: 0.96 }} />
-          <div aria-hidden style={{ position: "absolute", width: "160px", height: "160px", borderRadius: "50%", background: "#f1b94c", right: "-60px", top: "10px", opacity: 0.82 }} />
-          <div aria-hidden style={{ position: "absolute", width: "210px", height: "140px", borderRadius: "50% 45% 35% 50%", background: "#d8e0c2", left: "-85px", bottom: "-36px", transform: "rotate(13deg)", opacity: 0.98 }} />
-          <div aria-hidden style={{ position: "absolute", width: "180px", height: "135px", borderRadius: "48% 52% 42% 56%", background: "#efd7d9", right: "-76px", bottom: "-18px", transform: "rotate(-20deg)", opacity: 0.95 }} />
 
           <div style={{ position: "relative", zIndex: 1, height: "100%", display: "flex", flexDirection: "column", padding: "36px 28px 30px" }}>
             <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "8px" }}>
@@ -134,7 +113,7 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
             <div style={{ marginTop: "105px", textAlign: "center" }}>
               <p style={{ fontSize: "18px", margin: 0, letterSpacing: "0.5px" }}>{year}</p>
               <p style={{ fontSize: "47px", fontWeight: 400, lineHeight: 0.98, letterSpacing: "-1.8px", margin: "13px 0 0" }}>Mi año<br />en libros</p>
-              <div style={{ width: "42px", height: "2px", background: "#201b18", margin: "22px auto 0", opacity: 0.75 }} />
+              <div style={{ width: "42px", height: "2px", background: "#74eee0", margin: "22px auto 0" }} />
             </div>
 
             <div style={{ marginTop: "74px", display: "grid", gridTemplateColumns: "1fr 1px 1fr", alignItems: "center", gap: "13px" }}>
@@ -142,7 +121,7 @@ export function ShareableStats({ year, books }: ShareableStatsProps) {
                 <p style={{ fontSize: "44px", lineHeight: 0.95, margin: 0, letterSpacing: "-1.6px" }}>{totalPages.toLocaleString("es-ES")}</p>
                 <p style={{ fontSize: "16px", margin: "10px 0 0" }}>páginas leídas</p>
               </div>
-              <div style={{ width: "1px", height: "72px", background: "rgba(32, 27, 24, 0.34)" }} />
+              <div style={{ width: "1px", height: "72px", background: "rgba(255, 255, 255, 0.44)" }} />
               <div style={{ textAlign: "center" }}>
                 <p style={{ fontSize: "44px", lineHeight: 0.95, margin: 0, letterSpacing: "-1.6px" }}>{totalBooks}</p>
                 <p style={{ fontSize: "16px", margin: "10px 0 0" }}>libros leídos</p>
@@ -184,7 +163,7 @@ export function BestOfYearExport({ year, books }: BestOfYearProps) {
     if (!cardRef.current) return;
     setIsGenerating(true);
     try {
-      await shareOrDownloadImage(cardRef.current, `mejores-libros-${year}.png`, `Mejores Libros de ${year}`);
+      await shareOrDownloadImage(cardRef.current, `mejores-libros-${year}.png`);
     } catch (err) {
       console.error("Error generating image", err);
       toast({
