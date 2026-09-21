@@ -53,6 +53,7 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [endDate, setEndDate] = useState("");
   const [rating, setRating] = useState("0");
+  const [review, setReview] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [wishStatus, setWishStatus] = useState<"Buscar" | "Comprado" | "En biblioteca" | "En kindle">("Buscar");
   const [wishPriority, setWishPriority] = useState(3);
@@ -63,7 +64,7 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
     setTitle(""); setAuthor(""); setCoverUrl(""); setSagaName(""); setSagaOrder("");
     setGenre(GENRES[0]); setFormat(FORMATS[0]); setSource(SOURCES[0]); setPrice("");
     setStatus("reading"); setTotalPages(""); setPagesRead("");
-    setStartDate(new Date().toISOString().slice(0, 10)); setEndDate(""); setRating("0");
+    setStartDate(new Date().toISOString().slice(0, 10)); setEndDate(""); setRating("0"); setReview("");
     setTags([]); setWishStatus("Buscar"); setWishPriority(3); setShowCoverEditor(false); setShowMoreDetails(false);
   };
 
@@ -87,7 +88,9 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
         status, totalPages: Number(totalPages) || 0,
         pagesRead: status === "finished" ? (Number(totalPages) || 0) : (Number(pagesRead) || 0),
         startDate: startDate || undefined, endDate: endDate || undefined,
-        rating: status === "finished" ? (Number(rating) || 0) : 0, notes: "", tags,
+        rating: status === "finished" ? (Number(rating) || 0) : 0,
+        notes: status === "finished" ? review.trim() : "",
+        tags,
       });
       toast({ title: "Libro añadido", description: `"${title.trim()}" ya forma parte de tu biblioteca.` });
     }
@@ -271,6 +274,20 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
                           <span className="ml-2 text-xs text-muted-foreground">{Number(rating) > 0 ? `${rating}/5` : "Sin valorar"}</span>
                         </div>
                       </div>
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <Label className="font-body text-sm" htmlFor="finished-review">
+                          Tu reseña <span className="font-normal text-muted-foreground">opcional</span>
+                        </Label>
+                        <textarea
+                          id="finished-review"
+                          value={review}
+                          onChange={(event) => setReview(event.target.value)}
+                          maxLength={2000}
+                          placeholder="¿Qué te ha parecido esta historia?"
+                          className="min-h-28 w-full resize-y rounded-xl border border-border bg-background p-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40"
+                        />
+                        <p className="text-right text-[11px] text-muted-foreground">{review.length}/2000</p>
+                      </div>
                     </>
                   )}
                 </div>
@@ -310,4 +327,3 @@ export function AddBookDialog({ onAdd, onAddToWishlist }: AddBookDialogProps) {
     </Dialog>
   );
 }
-
