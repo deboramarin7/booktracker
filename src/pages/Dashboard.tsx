@@ -16,6 +16,7 @@ import type { Book } from "@/hooks/useBooks";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useReadingGoals } from "@/hooks/useReadingGoals";
+import { useRereads } from "@/hooks/useRereads";
 
 const GOALS_KEY = "book-tracker-reading-goals";
 function loadGoals(): Record<number, number> {
@@ -26,6 +27,14 @@ function saveGoals(goals: Record<number, number>) {
 }
 
 const MONTH_SHORT = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+function rereadYear(date: string) {
+  return new Date(`${date}T12:00:00`).getFullYear();
+}
+
+function rereadMonth(date: string) {
+  return new Date(`${date}T12:00:00`).getMonth();
+}
 
 // --- Section header component ---
 function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementType; title: string; subtitle?: string }) {
@@ -280,13 +289,15 @@ export default function Dashboard() {
   const { books } = useBooksContext();
   const { user } = useAuth();
   const { habits } = useReadingHabits();
+  const { rereads } = useRereads();
 
   const years = useMemo(() => {
     const yearSet = new Set<number>();
     yearSet.add(new Date().getFullYear());
     books.forEach((b) => yearSet.add(getBookYear(b)));
+    rereads.forEach((reread) => yearSet.add(rereadYear(reread.finishedAt)));
     return Array.from(yearSet).sort((a, b) => b - a);
-  }, [books]);
+  }, [books, rereads]);
 
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
@@ -316,11 +327,35 @@ export default function Dashboard() {
     [books, selectedYear]
   );
 
-  const totalPages = useMemo(() => yearBooks.reduce((s, b) => s + b.totalPages, 0), [yearBooks]);
+  const yearRereads = useMemo(
+    () => rereads.filter((reread) => rereadYear(reread.finishedAt) === selectedYear),
+    [rereads, selectedYear]
+  );
+
+  // Una relectura se transforma en un evento de lectura solo para los totales
+  // anuales. No se usa en autores, sagas, estantería ni libro del año.
+  const yearReadingEvents = useMemo(() => {
+    const rereadEvents = yearRereads.flatMap((reread) => {
+      const originalBook = books.find((book) => book.id === reread.bookId);
+      if (!originalBook) return [];
+      return [{
+        ...originalBook,
+        id: `reread-${reread.id}`,
+        endDate: reread.finishedAt,
+        pagesRead: reread.pagesRead || originalBook.totalPages,
+        totalPages: reread.pagesRead || originalBook.totalPages,
+        rating: reread.rating || originalBook.rating,
+        notes: reread.notes,
+      }];
+    });
+    return [...yearBooks, ...rereadEvents];
+  }, [books, yearBooks, yearRereads]);
+
+  const totalPages = useMemo(() => yearReadingEvents.reduce((s, b) => s + b.totalPages, 0), [yearReadingEvents]);
 
   const avgPagesPerBook = useMemo(() => {
-    return yearBooks.length > 0 ? Math.round(totalPages / yearBooks.length) : 0;
-  }, [yearBooks, totalPages]);
+    return yearReadingEvents.length > 0 ? Math.round(totalPages / yearReadingEvents.length) : 0;
+  }, [yearReadingEvents, totalPages]);
 
   // Racha de lectura: se calcula a partir de los mismos datos que la
   // página de Hábitos (Supabase, vía useReadingHabits), en lugar de leer
@@ -396,15 +431,20 @@ export default function Dashboard() {
   const monthlyBarData = useMemo(() => {
     return MONTH_SHORT.map((month, i) => ({
       month,
-      libros: yearBooks.filter(b => getBookMonth(b) === i).length,
+      libros: yearReadingEvents.filter(b => getBookMonth(b) === i).length,
     }));
-  }, [yearBooks]);
+  }, [yearReadingEvents]);
 
   // Evolution line chart (multi-year)
   const evolutionData = useMemo(() => {
     const finishedBooks = books.filter(b => b.status === "finished");
+    const rereadEvents = rereads.flatMap((reread) => {
+      const originalBook = books.find((book) => book.id === reread.bookId);
+      return originalBook ? [{ ...originalBook, id: `reread-${reread.id}`, endDate: reread.finishedAt }] : [];
+    });
+    const allReadings = [...finishedBooks, ...rereadEvents];
     const yearsInData = new Set<number>();
-    finishedBooks.forEach(b => yearsInData.add(getBookYear(b)));
+    allReadings.forEach(b => yearsInData.add(getBookYear(b)));
     const sortedYears = Array.from(yearsInData).sort();
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -419,19 +459,23 @@ export default function Dashboard() {
         if (y === currentYear && i > currentMonth) {
           row[String(y)] = null;
         } else {
-          row[String(y)] = finishedBooks.filter(b => getBookYear(b) === y && getBookMonth(b) === i).length;
+          row[String(y)] = allReadings.filter(b => getBookYear(b) === y && getBookMonth(b) === i).length;
         }
       });
       return row;
     });
-  }, [books]);
+  }, [books, rereads]);
 
   const evolutionYears = useMemo(() => {
     const finishedBooks = books.filter(b => b.status === "finished");
+    const rereadEvents = rereads.flatMap((reread) => {
+      const originalBook = books.find((book) => book.id === reread.bookId);
+      return originalBook ? [{ ...originalBook, id: `reread-${reread.id}`, endDate: reread.finishedAt }] : [];
+    });
     const yearsInData = new Set<number>();
-    finishedBooks.forEach(b => yearsInData.add(getBookYear(b)));
+    [...finishedBooks, ...rereadEvents].forEach(b => yearsInData.add(getBookYear(b)));
     return Array.from(yearsInData).sort();
-  }, [books]);
+  }, [books, rereads]);
 
   const LINE_COLORS = ["hsl(28,56%,36%)", "hsl(38,72%,50%)", "hsl(142,52%,36%)", "hsl(340,65%,55%)", "hsl(270,50%,50%)"];
 
@@ -448,9 +492,9 @@ export default function Dashboard() {
             <SelectContent>
               {years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
             </SelectContent>
-          </Select>{yearBooks.length > 0 && (
+          </Select>{yearReadingEvents.length > 0 && (
           <div className="flex items-center gap-2">
-            <ShareableStats year={selectedYear} books={yearBooks} />
+            <ShareableStats year={selectedYear} books={yearReadingEvents} />
             <BestOfYearExport year={selectedYear} books={yearBooks} />
           </div>
         )}</div></div></section>
@@ -467,8 +511,8 @@ export default function Dashboard() {
                 <p className="text-sm font-semibold font-body">Objetivo de lectura {selectedYear}</p>
                 {currentGoal > 0 ? (
                   <p className="text-xs text-muted-foreground">
-                    {yearBooks.length} de {currentGoal} libros
-                    {yearBooks.length >= currentGoal && <span className="text-emerald-500 ml-1 font-medium">Completado!</span>}
+                    {yearReadingEvents.length} de {currentGoal} libros
+                    {yearReadingEvents.length >= currentGoal && <span className="text-emerald-500 ml-1 font-medium">Completado!</span>}
                   </p>
                 ) : (
                   <p className="text-xs text-muted-foreground">Sin objetivo definido</p>
@@ -508,13 +552,13 @@ export default function Dashboard() {
           {currentGoal > 0 && (
             <div className="mt-4">
               <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                <span>{Math.round((yearBooks.length / currentGoal) * 100)}%</span>
-                <span>{Math.max(0, currentGoal - yearBooks.length)} por leer</span>
+                <span>{Math.round((yearReadingEvents.length / currentGoal) * 100)}%</span>
+                <span>{Math.max(0, currentGoal - yearReadingEvents.length)} por leer</span>
               </div>
               <div className="h-2 rounded-full bg-muted/60 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-primary transition-all duration-500"
-                  style={{ width: `${Math.min(100, (yearBooks.length / currentGoal) * 100)}%` }}
+                  style={{ width: `${Math.min(100, (yearReadingEvents.length / currentGoal) * 100)}%` }}
                 />
               </div>
             </div>
@@ -522,7 +566,7 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {yearBooks.length === 0 ? (
+      {yearReadingEvents.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
             <BookOpen className="h-9 w-9 text-primary/40" />
@@ -538,7 +582,7 @@ export default function Dashboard() {
           <section>
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Resumen de {selectedYear}</p>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <KpiCard value={yearBooks.length} label={`Libros leídos · ${selectedYear}`} icon={BookOpen} />
+              <KpiCard value={yearReadingEvents.length} label={`Libros leídos · ${selectedYear}`} icon={BookOpen} />
               <KpiCard value={totalPages.toLocaleString()} label={`Páginas totales · ${selectedYear}`} icon={BookMarked} accent />
               <KpiCard value={avgPagesPerBook} label={`Media / libro · ${selectedYear}`} icon={BarChart3} />
               <KpiCard value={`${streak} días`} label="Racha de lectura" icon={Flame} accent />
@@ -570,7 +614,7 @@ export default function Dashboard() {
                     <p className="font-display text-xl font-semibold">Tu historia, mes a mes</p>
                     <p className="mt-1 text-xs text-muted-foreground">Portadas y pequeños hitos en lugar de gráficos impersonales.</p>
                   </div>
-                  <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{yearBooks.length} lecturas</span>
+                  <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{yearReadingEvents.length} lecturas</span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
