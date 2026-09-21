@@ -3,14 +3,14 @@ import { GENRE_COLORS } from "@/lib/constants";
 import { useBooksContext } from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, TrendingUp, TrendingDown, User, Library, ChartBar as BarChart3, Clock, CalendarRange, Star, Flame, BookMarked, Target, Pencil, Check, Trophy } from "lucide-react";
+import { BookOpen, TrendingUp, TrendingDown, User, Library, ChartBar as BarChart3, CalendarRange, Star, Flame, BookMarked, Target, Pencil, Check, Trophy } from "lucide-react";
 import { BookCoverImage } from "@/components/BookCoverImage";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
   BarChart, Bar, XAxis, YAxis, LineChart, Line, CartesianGrid, Legend,
 } from "recharts";
 import { ShareableStats, BestOfYearExport } from "@/components/ShareableStats";
-import { getBookYear, getBookMonth, parseFlexibleDate } from "@/lib/dateUtils";
+import { getBookYear, getBookMonth } from "@/lib/dateUtils";
 import { useReadingHabits } from "@/hooks/useReadingHabits";
 import type { Book } from "@/hooks/useBooks";
 import { useAuth } from "@/hooks/useAuth";
@@ -392,22 +392,6 @@ export default function Dashboard() {
   );
   const FALLBACK_COLORS = ["hsl(28,56%,36%)", "hsl(38,72%,50%)", "hsl(142,52%,36%)", "hsl(270,50%,50%)"];
 
-  const readingTimeStats = useMemo(() => {
-    const booksWithDates = yearBooks.filter(b => b.startDate && b.endDate);
-    if (booksWithDates.length === 0) return null;
-    const times = booksWithDates.map(b => {
-      const start = parseFlexibleDate(b.startDate!) ?? new Date(b.startDate!);
-      const end = parseFlexibleDate(b.endDate!) ?? new Date(b.endDate!);
-      return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
-    });
-    const avg = times.reduce((s, t) => s + t, 0) / times.length;
-    const fastest = Math.min(...times);
-    const slowest = Math.max(...times);
-    const fastestBook = booksWithDates[times.indexOf(fastest)];
-    const slowestBook = booksWithDates[times.indexOf(slowest)];
-    return { avg: avg.toFixed(0), fastest, slowest, fastestBook, slowestBook, count: booksWithDates.length };
-  }, [yearBooks]);
-
   // Monthly books bar chart data
   const monthlyBarData = useMemo(() => {
     return MONTH_SHORT.map((month, i) => ({
@@ -557,12 +541,7 @@ export default function Dashboard() {
               <KpiCard value={yearBooks.length} label={`Libros leídos · ${selectedYear}`} icon={BookOpen} />
               <KpiCard value={totalPages.toLocaleString()} label={`Páginas totales · ${selectedYear}`} icon={BookMarked} accent />
               <KpiCard value={avgPagesPerBook} label={`Media / libro · ${selectedYear}`} icon={BarChart3} />
-              <KpiCard
-                value={readingTimeStats ? `${readingTimeStats.avg} días` : `${streak} días`}
-                label={readingTimeStats ? `Media de lectura · ${selectedYear}` : "Racha de lectura"}
-                icon={readingTimeStats ? Clock : Flame}
-                accent
-              />
+              <KpiCard value={`${streak} días`} label="Racha de lectura" icon={Flame} accent />
             </div>
 
             {/* Secondary stats row */}
@@ -570,7 +549,6 @@ export default function Dashboard() {
               {[
                 { label: `Autores · ${selectedYear}`, value: new Set(yearBooks.map(b => b.author)).size },
                 { label: `Géneros · ${selectedYear}`, value: new Set(yearBooks.filter(b => b.genre).map(b => b.genre)).size },
-                { label: "Racha", value: `${streak} días`, show: !!readingTimeStats },
                 { label: "Valoración media", value: avgRating > 0 ? `${avgRating.toFixed(1)} ★` : "—" },
               ].filter(s => s.show !== false).map(stat => (
                 <div key={stat.label} className="text-center p-3 rounded-xl bg-muted/40 border border-border/20">
@@ -672,34 +650,6 @@ export default function Dashboard() {
                 />
               )}
             </div>
-
-            {/* Reading speed */}
-            {readingTimeStats && (
-              <Card className="border-border/30">
-                <CardContent className="pt-6">
-                  <p className="text-sm font-semibold font-body text-foreground mb-4 flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-primary/60" />
-                    Velocidad de lectura
-                  </p>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-3 rounded-xl bg-muted/30">
-                      <p className="text-2xl font-bold text-foreground font-display">{readingTimeStats.avg}</p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Días/libro (media)</p>
-                    </div>
-                    <div className="text-center p-3 rounded-xl bg-muted/30">
-                      <p className="text-2xl font-bold text-foreground font-display">{readingTimeStats.fastest}</p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Más rápido</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{readingTimeStats.fastestBook.title}</p>
-                    </div>
-                    <div className="text-center p-3 rounded-xl bg-muted/30">
-                      <p className="text-2xl font-bold text-foreground font-display">{readingTimeStats.slowest}</p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Más lento</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{readingTimeStats.slowestBook.title}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Authors & Sagas */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
