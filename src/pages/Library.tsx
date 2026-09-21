@@ -6,7 +6,7 @@ import { ExportBooksButton } from "@/components/ImportExportBooks";
 import { useWishlist, type WishItem } from "@/hooks/useWishlist";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, Pencil, Check, LayoutGrid, AlignJustify, Target, Star, Image, Trash2, Search, SlidersHorizontal, Sparkles } from "lucide-react";
+import { BookOpen, Pencil, Check, LayoutGrid, AlignJustify, Target, Star, Image, Trash2, Search, SlidersHorizontal, Sparkles, RotateCcw } from "lucide-react";
 import type { Book, ReadingStatus } from "@/hooks/useBooks";
 import { GENRES, FORMATS } from "@/lib/constants";
 import { EditBookDialog } from "@/components/EditBookDialog";
@@ -15,6 +15,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { cn } from "@/lib/utils";
 import { getBookYear, getBookMonth, getBookDate } from "@/lib/dateUtils";
 import { useReadingGoals } from "@/hooks/useReadingGoals";
+import { useRereads } from "@/hooks/useRereads";
+import { RereadBookDialog } from "@/components/RereadBookDialog";
 
 const GOALS_KEY = "book-tracker-reading-goals";
 function loadGoals(): Record<number, number> {
@@ -110,7 +112,7 @@ function FinishReadingDialog({ book, open, onOpenChange, onFinish }: {
   );
 }
 
-function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: string, data: Partial<Omit<Book, "id" | "addedAt">>) => void; onDelete: (id: string) => void }) {
+function CoverCard({ book, onUpdate, onDelete, onReread }: { book: Book; onUpdate: (id: string, data: Partial<Omit<Book, "id" | "addedAt">>) => void; onDelete: (id: string) => void; onReread: (book: Book) => void }) {
   const [editing, setEditing] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [showFinishForm, setShowFinishForm] = useState(false);
@@ -338,6 +340,12 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
               </div>
             )}
 
+            {book.status === "finished" && (
+              <button type="button" onClick={() => { setShowDetail(false); onReread(book); }} className="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-primary/35 bg-primary/10 text-sm font-medium text-primary transition-colors hover:bg-primary/20">
+                <RotateCcw className="h-4 w-4" /> Registrar relectura
+              </button>
+            )}
+
             {/* Actions */}
             <div className="flex gap-2 pt-1">
               <button onClick={() => { setShowDetail(false); setShowFinishForm(false); setEditing(true); }} className="flex-1 flex items-center justify-center gap-2 h-9 rounded-[var(--radius)] border border-border/50 text-sm font-medium hover:bg-muted/50 transition-colors text-foreground">
@@ -357,6 +365,7 @@ function CoverCard({ book, onUpdate, onDelete }: { book: Book; onUpdate: (id: st
 export default function LibraryPage() {
   const { books, loading, addBook, addBooksInBatch, updateBook, deleteBook } = useBooks();
   const { addItem } = useWishlist();
+  const { rereads, addReread } = useRereads();
 
   const currentYear = new Date().getFullYear();
   const [yearFilter, setYearFilter] = useState<string>(String(currentYear));
@@ -369,6 +378,7 @@ export default function LibraryPage() {
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [showFinishCurrent, setShowFinishCurrent] = useState(false);
+  const [rereadBook, setRereadBook] = useState<Book | null>(null);
 
   const { goals, saveGoal } = useReadingGoals();
   const [editingGoal, setEditingGoal] = useState(false);
@@ -379,8 +389,9 @@ export default function LibraryPage() {
     const yearSet = new Set<number>();
     yearSet.add(currentYear);
     books.forEach((b) => yearSet.add(getBookYear(b)));
+    rereads.forEach((reread) => yearSet.add(new Date(`${reread.finishedAt}T12:00:00`).getFullYear()));
     return Array.from(yearSet).sort((a, b) => b - a);
-  }, [books, currentYear]);
+  }, [books, rereads, currentYear]);
 
   const selectedYear = yearFilter === "all" ? null : Number(yearFilter);
   const currentGoal = selectedYear ? (goals[selectedYear] ?? 0) : 0;
@@ -427,7 +438,9 @@ export default function LibraryPage() {
   }, [books, selectedYear, monthFilter]);
 
   const finishedYearBooks = useMemo(() => yearBooks.filter((b) => b.status === "finished"), [yearBooks]);
-  const totalPages = useMemo(() => finishedYearBooks.reduce((s, b) => s + b.totalPages, 0), [finishedYearBooks]);
+  const yearRereads = useMemo(() => selectedYear ? rereads.filter((reread) => new Date(`${reread.finishedAt}T12:00:00`).getFullYear() === selectedYear) : [], [rereads, selectedYear]);
+  const finishedReadingsCount = finishedYearBooks.length + yearRereads.length;
+  const totalPages = useMemo(() => finishedYearBooks.reduce((s, b) => s + b.totalPages, 0) + yearRereads.reduce((s, reread) => s + reread.pagesRead, 0), [finishedYearBooks, yearRereads]);
   const totalSpent = useMemo(() => {
     return finishedYearBooks.reduce((s, b) => {
       const p = parseFloat(b.price || "0");
@@ -480,8 +493,8 @@ export default function LibraryPage() {
     return groups;
   }, [filtered, currentRead?.id]);
 
-  const goalPercent = currentGoal > 0 ? Math.min(100, Math.round((finishedYearBooks.length / currentGoal) * 100)) : 0;
-  const booksRemaining = Math.max(0, currentGoal - finishedYearBooks.length);
+  const goalPercent = currentGoal > 0 ? Math.min(100, Math.round((finishedReadingsCount / currentGoal) * 100)) : 0;
+  const booksRemaining = Math.max(0, currentGoal - finishedReadingsCount);
   const currentReadProgress = currentRead && currentRead.totalPages > 0
     ? Math.min(100, Math.round((currentRead.pagesRead / currentRead.totalPages) * 100))
     : 0;
@@ -543,8 +556,8 @@ export default function LibraryPage() {
             <FinishReadingDialog book={currentRead || null} open={showFinishCurrent} onOpenChange={setShowFinishCurrent} onFinish={updateBook} />
           </div>
 
-          {!loading && yearBooks.length > 0 && <div className="grid grid-cols-2 gap-3 border-t border-border/40 pt-5 sm:grid-cols-4">
-            <div><p className="font-display text-2xl font-semibold">{finishedYearBooks.length}</p><p className="text-xs text-muted-foreground">libros leídos</p></div>
+          {!loading && finishedReadingsCount > 0 && <div className="grid grid-cols-2 gap-3 border-t border-border/40 pt-5 sm:grid-cols-4">
+            <div><p className="font-display text-2xl font-semibold">{finishedReadingsCount}</p><p className="text-xs text-muted-foreground">libros leídos{yearRereads.length > 0 ? ` · ${yearRereads.length} relectura${yearRereads.length === 1 ? "" : "s"}` : ""}</p></div>
             <div><p className="font-display text-2xl font-semibold">{totalPages.toLocaleString()}</p><p className="text-xs text-muted-foreground">páginas vividas</p></div>
             <div><p className="font-display text-2xl font-semibold">{digitalCount} <span className="text-base text-primary">digitales</span> <span className="text-muted-foreground/50">·</span> {physicalCount} <span className="text-base text-primary">físicos</span></p><p className="text-xs text-muted-foreground">formatos de tus lecturas</p></div>
             <div><p className="font-display text-2xl font-semibold">{totalSpent > 0 ? `${totalSpent.toFixed(0)}€` : "—"}</p><p className="text-xs text-muted-foreground">invertidos en historias</p></div>
@@ -582,7 +595,7 @@ export default function LibraryPage() {
             <>
               <div className="flex items-end gap-8 mb-4">
                 <div>
-                  <p className="text-4xl font-light tracking-tighter font-display text-foreground">{finishedYearBooks.length}</p>
+                  <p className="text-4xl font-light tracking-tighter font-display text-foreground">{finishedReadingsCount}</p>
                   <p className="text-sm text-muted-foreground">Libros leídos</p>
                 </div>
                 <div>
@@ -678,7 +691,7 @@ export default function LibraryPage() {
               {viewMode === "covers" ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
                   {groupBooks.map((book) => (
-                    <CoverCard key={book.id} book={book} onUpdate={updateBook} onDelete={deleteBook} />
+                    <CoverCard key={book.id} book={book} onUpdate={updateBook} onDelete={deleteBook} onReread={setRereadBook} />
                   ))}
                 </div>
               ) : viewMode === "grid" ? (
@@ -713,6 +726,7 @@ export default function LibraryPage() {
           ))}
         </div>
       )}
+      <RereadBookDialog book={rereadBook} open={Boolean(rereadBook)} onOpenChange={(open) => { if (!open) setRereadBook(null); }} onSave={addReread} />
     </div>
   );
 }
