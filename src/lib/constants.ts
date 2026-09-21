@@ -29,8 +29,8 @@ export const GENRES = [
 "Thriller",
 ];
 
-export const FORMATS = ["Físico", "Digital"];
-export const SOURCES = ["Comprado", "Gratis"];
+export const FORMATS = ["Físico", "Digital", "Audiolibro"];
+export const SOURCES = ["Comprado", "Gratis", "Regalo", "Biblioteca", "Otro"];
 
 export const STATUSES: { value: ReadingStatus; label: string }[] = [
   { value: "want-to-read", label: "Quiero leer" },
