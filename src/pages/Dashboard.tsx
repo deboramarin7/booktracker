@@ -3,7 +3,8 @@ import { GENRE_COLORS } from "@/lib/constants";
 import { useBooksContext } from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, TrendingUp, TrendingDown, User, Library, ChartBar as BarChart3, CalendarRange, Star, Flame, BookMarked, Target, Pencil, Check, Trophy } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { BookOpen, TrendingUp, TrendingDown, User, Library, ChartBar as BarChart3, CalendarRange, Star, Flame, BookMarked, Target, Pencil, Check, Trophy, RotateCcw } from "lucide-react";
 import { BookCoverImage } from "@/components/BookCoverImage";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
@@ -300,6 +301,7 @@ export default function Dashboard() {
   }, [books, rereads]);
 
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
+  const [selectedHistoryMonth, setSelectedHistoryMonth] = useState<number | null>(null);
 
   const { goals, saveGoal } = useReadingGoals();
   const [editingGoal, setEditingGoal] = useState(false);
@@ -350,6 +352,13 @@ export default function Dashboard() {
     });
     return [...yearBooks, ...rereadEvents];
   }, [books, yearBooks, yearRereads]);
+
+  const selectedMonthEvents = useMemo(() => {
+    if (selectedHistoryMonth === null) return [];
+    return yearReadingEvents
+      .filter((book) => getBookMonth(book) === selectedHistoryMonth)
+      .sort((first, second) => (second.endDate || "").localeCompare(first.endDate || ""));
+  }, [selectedHistoryMonth, yearReadingEvents]);
 
   const totalPages = useMemo(() => yearReadingEvents.reduce((s, b) => s + b.totalPages, 0), [yearReadingEvents]);
 
@@ -619,9 +628,16 @@ export default function Dashboard() {
 
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
                   {MONTH_SHORT.map((month, monthIndex) => {
-                    const monthBooks = yearBooks.filter((book) => getBookMonth(book) === monthIndex);
+                    const monthBooks = yearReadingEvents.filter((book) => getBookMonth(book) === monthIndex);
                     return (
-                      <div key={month} className={`min-h-[132px] rounded-2xl border p-2 transition-transform duration-200 hover:-translate-y-1 ${monthBooks.length > 0 ? "border-primary/20 bg-primary/[0.07]" : "border-border/25 bg-muted/15"}`}>
+                      <button
+                        key={month}
+                        type="button"
+                        disabled={monthBooks.length === 0}
+                        onClick={() => setSelectedHistoryMonth(monthIndex)}
+                        aria-label={`Ver las ${monthBooks.length} lecturas de ${month}`}
+                        className={`min-h-[132px] rounded-2xl border p-2 text-left transition-transform duration-200 ${monthBooks.length > 0 ? "border-primary/20 bg-primary/[0.07] hover:-translate-y-1 hover:border-primary/55 focus:outline-none focus:ring-2 focus:ring-primary/40" : "cursor-default border-border/25 bg-muted/15"}`}
+                      >
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{month}</span>
                           <span className={`font-display text-lg font-semibold ${monthBooks.length > 0 ? "text-primary" : "text-muted-foreground/35"}`}>{monthBooks.length}</span>
@@ -633,7 +649,7 @@ export default function Dashboard() {
                           {monthBooks.length > 3 && <span className="self-end rounded-md bg-background/70 px-1.5 py-1 text-[10px] text-primary">+{monthBooks.length - 3}</span>}
                           {monthBooks.length === 0 && <span className="mb-1 text-[10px] text-muted-foreground/35">En pausa</span>}
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -694,6 +710,26 @@ export default function Dashboard() {
                 />
               )}
             </div>
+
+            {yearRereads.length > 0 && (
+              <Card className="border-primary/20 bg-primary/[0.035]">
+                <CardContent className="p-5 sm:p-6">
+                  <div className="mb-4 flex items-center gap-2">
+                    <div className="rounded-xl bg-primary/10 p-2"><RotateCcw className="h-4 w-4 text-primary" /></div>
+                    <div>
+                      <p className="font-display text-lg font-semibold">Releídos</p>
+                      <p className="text-xs text-muted-foreground">Historias a las que has vuelto este año.</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {yearRereads.map((reread) => {
+                      const book = books.find((item) => item.id === reread.bookId);
+                      return book ? <span key={reread.id} className="rounded-full border border-primary/20 bg-background/60 px-3 py-1.5 text-sm font-medium">{book.title}</span> : null;
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Authors & Sagas */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -788,6 +824,30 @@ export default function Dashboard() {
           </section>
         </>
       )}
+      <Dialog open={selectedHistoryMonth !== null} onOpenChange={(open) => { if (!open) setSelectedHistoryMonth(null); }}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary"><CalendarRange className="h-3.5 w-3.5" /> Tu historia lectora</p>
+            <DialogTitle className="font-display text-2xl">{selectedHistoryMonth === null ? "Lecturas" : `${MONTH_SHORT[selectedHistoryMonth]} ${selectedYear}`}</DialogTitle>
+            <DialogDescription>{selectedMonthEvents.length} {selectedMonthEvents.length === 1 ? "lectura terminada" : "lecturas terminadas"} este mes.</DialogDescription>
+          </DialogHeader>
+          <div className="mt-2 space-y-2">
+            {selectedMonthEvents.map((book) => {
+              const isReread = book.id.startsWith("reread-");
+              return (
+                <div key={book.id} className="flex items-center gap-3 rounded-2xl border border-border/40 bg-muted/[0.13] p-3">
+                  <BookCoverImage src={book.coverUrl} alt={book.title} title={book.title} className="h-16 w-11 shrink-0 rounded-lg object-cover shadow-sm" fallbackClassName="h-16 w-11 shrink-0 rounded-lg" />
+                  <div className="min-w-0">
+                    <p className="font-display font-semibold leading-tight">{book.title}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{book.author}</p>
+                    {isReread && <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-primary"><RotateCcw className="h-3 w-3" /> Relectura</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
