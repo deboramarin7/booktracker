@@ -85,5 +85,23 @@ export function useRereads() {
     return true;
   }, [user]);
 
-  return { rereads, loading, addReread, refetch: fetchRereads };
+  const deleteReread = useCallback(async (rereadId: string) => {
+    if (!user) return false;
+
+    const { error } = await db
+      .from("book_rereads")
+      .delete()
+      .eq("id", rereadId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Error deleting reread:", error);
+      return false;
+    }
+
+    setRereads((previous) => previous.filter((reread) => reread.id !== rereadId));
+    return true;
+  }, [user]);
+
+  return { rereads, loading, addReread, deleteReread, refetch: fetchRereads };
 }
