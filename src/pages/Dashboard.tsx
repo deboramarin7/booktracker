@@ -4,7 +4,7 @@ import { useBooksContext } from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { BookOpen, TrendingUp, TrendingDown, User, Library, ChartBar as BarChart3, CalendarRange, Star, Flame, BookMarked, Target, Pencil, Check, Trophy, RotateCcw } from "lucide-react";
+import { BookOpen, TrendingUp, TrendingDown, User, Library, ChartBar as BarChart3, CalendarRange, Star, Flame, BookMarked, Target, Pencil, Check, Trophy, RotateCcw, Trash2 } from "lucide-react";
 import { BookCoverImage } from "@/components/BookCoverImage";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
@@ -290,7 +290,7 @@ export default function Dashboard() {
   const { books } = useBooksContext();
   const { user } = useAuth();
   const { habits } = useReadingHabits();
-  const { rereads } = useRereads();
+  const { rereads, deleteReread } = useRereads();
 
   const years = useMemo(() => {
     const yearSet = new Set<number>();
@@ -724,7 +724,25 @@ export default function Dashboard() {
                   <div className="flex flex-wrap gap-2">
                     {yearRereads.map((reread) => {
                       const book = books.find((item) => item.id === reread.bookId);
-                      return book ? <span key={reread.id} className="rounded-full border border-primary/20 bg-background/60 px-3 py-1.5 text-sm font-medium">{book.title}</span> : null;
+                      if (!book) return null;
+                      return (
+                        <span key={reread.id} className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-background/60 py-1 pl-3 pr-1 text-sm font-medium">
+                          <span>{book.title}</span>
+                          <button
+                            type="button"
+                            aria-label={`Eliminar la relectura de ${book.title}`}
+                            title="Eliminar esta relectura"
+                            onClick={async () => {
+                              if (!window.confirm(`¿Quitar “${book.title}” de tus relecturas? El libro original no se borrará.`)) return;
+                              const removed = await deleteReread(reread.id);
+                              if (!removed) window.alert("No se pudo eliminar la relectura. Inténtalo de nuevo.");
+                            }}
+                            className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus:outline-none focus:ring-2 focus:ring-destructive/30"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </span>
+                      );
                     })}
                   </div>
                 </CardContent>
