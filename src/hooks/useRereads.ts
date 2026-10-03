@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 export interface Reread {
   id: string;
   bookId: string;
+  startedAt: string;
   finishedAt: string;
   pagesRead: number;
   rating: number;
@@ -29,7 +30,7 @@ export function useRereads() {
     setLoading(true);
     const { data, error } = await db
       .from("book_rereads")
-      .select("id, book_id, finished_at, pages_read, rating, notes")
+      .select("id, book_id, started_at, finished_at, pages_read, rating, notes")
       .eq("user_id", user.id)
       .order("finished_at", { ascending: false });
 
@@ -40,6 +41,7 @@ export function useRereads() {
       setRereads((data || []).map((item: any) => ({
         id: item.id,
         bookId: item.book_id,
+        startedAt: item.started_at || item.finished_at,
         finishedAt: item.finished_at,
         pagesRead: item.pages_read || 0,
         rating: item.rating || 0,
@@ -61,12 +63,13 @@ export function useRereads() {
       .insert({
         user_id: user.id,
         book_id: reread.bookId,
+        started_at: reread.startedAt || null,
         finished_at: reread.finishedAt,
         pages_read: reread.pagesRead,
         rating: reread.rating,
         notes: reread.notes || null,
       })
-      .select("id, book_id, finished_at, pages_read, rating, notes")
+      .select("id, book_id, started_at, finished_at, pages_read, rating, notes")
       .single();
 
     if (error) {
@@ -77,6 +80,7 @@ export function useRereads() {
     setRereads((previous) => [{
       id: data.id,
       bookId: data.book_id,
+      startedAt: data.started_at || data.finished_at,
       finishedAt: data.finished_at,
       pagesRead: data.pages_read || 0,
       rating: data.rating || 0,
