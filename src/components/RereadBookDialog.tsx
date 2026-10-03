@@ -3,15 +3,18 @@ import { Check, RotateCcw, Star } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BookCoverImage } from "@/components/BookCoverImage";
 import type { Book } from "@/hooks/useBooks";
+import { useToast } from "@/hooks/use-toast";
 
 interface RereadBookDialogProps {
   book: Book | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (data: { bookId: string; finishedAt: string; pagesRead: number; rating: number; notes: string }) => Promise<boolean>;
+  onSave: (data: { bookId: string; startedAt: string; finishedAt: string; pagesRead: number; rating: number; notes: string }) => Promise<boolean>;
 }
 
 export function RereadBookDialog({ book, open, onOpenChange, onSave }: RereadBookDialogProps) {
+  const { toast } = useToast();
+  const [startedAt, setStartedAt] = useState("");
   const [finishedAt, setFinishedAt] = useState("");
   const [rating, setRating] = useState(0);
   const [notes, setNotes] = useState("");
@@ -19,7 +22,9 @@ export function RereadBookDialog({ book, open, onOpenChange, onSave }: RereadBoo
 
   useEffect(() => {
     if (open && book) {
-      setFinishedAt(new Date().toISOString().slice(0, 10));
+      const today = new Date().toISOString().slice(0, 10);
+      setStartedAt(today);
+      setFinishedAt(today);
       setRating(book.rating || 0);
       setNotes("");
     }
@@ -31,13 +36,26 @@ export function RereadBookDialog({ book, open, onOpenChange, onSave }: RereadBoo
     setSaving(true);
     const saved = await onSave({
       bookId: book.id,
+      startedAt: startedAt || finishedAt || new Date().toISOString().slice(0, 10),
       finishedAt: finishedAt || new Date().toISOString().slice(0, 10),
       pagesRead: book.totalPages || book.pagesRead || 0,
       rating,
       notes: notes.trim(),
     });
     setSaving(false);
-    if (saved) onOpenChange(false);
+    if (saved) {
+      toast({
+        title: "Relectura guardada",
+        description: `“${book.title}” ya suma otra lectura y sus páginas a tu año.`,
+      });
+      onOpenChange(false);
+    } else {
+      toast({
+        title: "No se pudo guardar la relectura",
+        description: "Comprueba que has ejecutado el archivo CREAR-RELECTURAS.sql en Supabase y vuelve a intentarlo.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -54,9 +72,15 @@ export function RereadBookDialog({ book, open, onOpenChange, onSave }: RereadBoo
           <div className="min-w-0 self-center"><p className="font-display font-semibold leading-tight">{book.title}</p><p className="mt-1 text-sm text-muted-foreground">{book.author}</p><p className="mt-1 text-xs text-primary">{book.totalPages || book.pagesRead || 0} páginas volverán a contar</p></div>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium" htmlFor="reread-date">Fecha en la que la terminaste</label>
-          <input id="reread-date" type="date" value={finishedAt} onChange={(event) => setFinishedAt(event.target.value)} className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/40" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium" htmlFor="reread-start-date">Inicio de relectura</label>
+            <input id="reread-start-date" type="date" value={startedAt} max={finishedAt || undefined} onChange={(event) => setStartedAt(event.target.value)} className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/40" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium" htmlFor="reread-end-date">Fin de relectura</label>
+            <input id="reread-end-date" type="date" value={finishedAt} min={startedAt || undefined} onChange={(event) => setFinishedAt(event.target.value)} className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/40" />
+          </div>
         </div>
 
         <div>
