@@ -37,6 +37,35 @@ function rereadMonth(date: string) {
   return new Date(`${date}T12:00:00`).getMonth();
 }
 
+type ReadingEvent = Book & { rereadFinishedAt?: string };
+
+// Una relectura tiene su propia fecha de lectura. Nunca se deben reutilizar
+// startDate, addedAt ni otras fechas del libro original para colocarla en el año.
+function getReadingEventYear(event: ReadingEvent): number {
+  return event.rereadFinishedAt ? rereadYear(event.rereadFinishedAt) : getBookYear(event);
+}
+
+function getReadingEventMonth(event: ReadingEvent): number {
+  return event.rereadFinishedAt ? rereadMonth(event.rereadFinishedAt) : getBookMonth(event);
+}
+
+function makeRereadEvent(book: Book, reread: { id: string; finishedAt: string; pagesRead: number; rating: number; notes: string }): ReadingEvent {
+  return {
+    ...book,
+    id: `reread-${reread.id}`,
+    // Se dejan estas fechas coherentes también para los componentes que reciben
+    // un Book normal, pero los cálculos del Dashboard usan rereadFinishedAt.
+    startDate: reread.finishedAt,
+    endDate: reread.finishedAt,
+    addedAt: reread.finishedAt,
+    rereadFinishedAt: reread.finishedAt,
+    pagesRead: reread.pagesRead || book.totalPages,
+    totalPages: reread.pagesRead || book.totalPages,
+    rating: reread.rating || book.rating,
+    notes: reread.notes,
+  };
+}
+
 // --- Section header component ---
 function SectionHeader({ icon: Icon, title, subtitle }: { icon: React.ElementType; title: string; subtitle?: string }) {
   return (
@@ -340,23 +369,15 @@ export default function Dashboard() {
     const rereadEvents = yearRereads.flatMap((reread) => {
       const originalBook = books.find((book) => book.id === reread.bookId);
       if (!originalBook) return [];
-      return [{
-        ...originalBook,
-        id: `reread-${reread.id}`,
-        endDate: reread.finishedAt,
-        pagesRead: reread.pagesRead || originalBook.totalPages,
-        totalPages: reread.pagesRead || originalBook.totalPages,
-        rating: reread.rating || originalBook.rating,
-        notes: reread.notes,
-      }];
+      return [makeRereadEvent(originalBook, reread)];
     });
-    return [...yearBooks, ...rereadEvents];
+    return [...yearBooks, ...rereadEvents] as ReadingEvent[];
   }, [books, yearBooks, yearRereads]);
 
   const selectedMonthEvents = useMemo(() => {
     if (selectedHistoryMonth === null) return [];
     return yearReadingEvents
-      .filter((book) => getBookMonth(book) === selectedHistoryMonth)
+      .filter((book) => getReadingEventMonth(book) === selectedHistoryMonth)
       .sort((first, second) => (second.endDate || "").localeCompare(first.endDate || ""));
   }, [selectedHistoryMonth, yearReadingEvents]);
 
@@ -440,7 +461,7 @@ export default function Dashboard() {
   const monthlyBarData = useMemo(() => {
     return MONTH_SHORT.map((month, i) => ({
       month,
-      libros: yearReadingEvents.filter(b => getBookMonth(b) === i).length,
+      libros: yearReadingEvents.filter((book) => getReadingEventMonth(book) === i).length,
     }));
   }, [yearReadingEvents]);
 
@@ -449,11 +470,11 @@ export default function Dashboard() {
     const finishedBooks = books.filter(b => b.status === "finished");
     const rereadEvents = rereads.flatMap((reread) => {
       const originalBook = books.find((book) => book.id === reread.bookId);
-      return originalBook ? [{ ...originalBook, id: `reread-${reread.id}`, endDate: reread.finishedAt }] : [];
+      return originalBook ? [makeRereadEvent(originalBook, reread)] : [];
     });
     const allReadings = [...finishedBooks, ...rereadEvents];
     const yearsInData = new Set<number>();
-    allReadings.forEach(b => yearsInData.add(getBookYear(b)));
+    allReadings.forEach((book) => yearsInData.add(getReadingEventYear(book)));
     const sortedYears = Array.from(yearsInData).sort();
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -468,7 +489,7 @@ export default function Dashboard() {
         if (y === currentYear && i > currentMonth) {
           row[String(y)] = null;
         } else {
-          row[String(y)] = allReadings.filter(b => getBookYear(b) === y && getBookMonth(b) === i).length;
+          row[String(y)] = allReadings.filter((book) => getReadingEventYear(book) === y && getReadingEventMonth(book) === i).length;
         }
       });
       return row;
@@ -479,10 +500,10 @@ export default function Dashboard() {
     const finishedBooks = books.filter(b => b.status === "finished");
     const rereadEvents = rereads.flatMap((reread) => {
       const originalBook = books.find((book) => book.id === reread.bookId);
-      return originalBook ? [{ ...originalBook, id: `reread-${reread.id}`, endDate: reread.finishedAt }] : [];
+      return originalBook ? [makeRereadEvent(originalBook, reread)] : [];
     });
     const yearsInData = new Set<number>();
-    [...finishedBooks, ...rereadEvents].forEach(b => yearsInData.add(getBookYear(b)));
+    [...finishedBooks, ...rereadEvents].forEach((book) => yearsInData.add(getReadingEventYear(book)));
     return Array.from(yearsInData).sort();
   }, [books, rereads]);
 
@@ -628,7 +649,7 @@ export default function Dashboard() {
 
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
                   {MONTH_SHORT.map((month, monthIndex) => {
-                    const monthBooks = yearReadingEvents.filter((book) => getBookMonth(book) === monthIndex);
+                    const monthBooks = yearReadingEvents.filter((book) => getReadingEventMonth(book) === monthIndex);
                     return (
                       <button
                         key={month}
