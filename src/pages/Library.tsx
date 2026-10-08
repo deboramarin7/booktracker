@@ -554,6 +554,24 @@ export default function LibraryPage() {
               <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border/60 bg-background/30 px-4 py-3 text-sm text-muted-foreground"><BookOpen className="h-5 w-5 text-primary" /> Tu próxima lectura te está esperando.</div>
             )}
             <FinishReadingDialog book={currentRead || null} open={showFinishCurrent} onOpenChange={setShowFinishCurrent} onFinish={updateBook} />
+            {currentRead && (
+              <button
+                type="button"
+                onClick={() => {
+                   if (
+                     window.confirm(
+                         `¿Devolver “${currentRead.title}” a tu Wish List? Se conservarán todos sus datos y no contará como lectura terminada.`
+                        )
+                      ) {
+                        handleMoveToWishlist(currentRead);
+                      }
+                   }}
+                   className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border/50 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/45 hover:bg-primary/[0.06] hover:text-primary"
+                 >
+               <RotateCcw className="h-4 w-4" />
+             Volver a Wish List
+              </button>
+)}
           </div>
 
           {!loading && finishedReadingsCount > 0 && <div className="grid grid-cols-2 gap-3 border-t border-border/40 pt-5 sm:grid-cols-4">
