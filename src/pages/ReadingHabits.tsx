@@ -29,6 +29,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBooksContext } from "@/components/Layout";
 import { useAuth } from "@/hooks/useAuth";
+import { useRereads } from "@/hooks/useRereads";
 import { supabase } from "@/integrations/supabase/client";
 import { es } from "date-fns/locale";
 
@@ -51,8 +52,8 @@ function getFirstDayOfWeek(year: number, month: number) {
 
 interface DayBooks {
   reading: { title: string; coverUrl?: string }[];
-  started: { title: string }[];
-  finished: { title: string }[];
+  started: { id: string; title: string }[];
+  finished: { id: string; title: string }[];
 }
 
 function StreakBadge({
@@ -285,6 +286,7 @@ export default function ReadingHabits() {
   }, [totalDays, selectedYear]);
 
   const { books } = useBooksContext();
+  const { rereads } = useRereads();
   const today2 = new Date();
   const [calYear, setCalYear] = useState(today2.getFullYear());
   const [calMonth, setCalMonth] = useState(today2.getMonth());
@@ -299,16 +301,18 @@ export default function ReadingHabits() {
       map.set(d, { reading: [], started: [], finished: [] });
     }
 
-    books.forEach((book) => {
-      const start = book.startDate ? new Date(book.startDate) : null;
-      const end = book.endDate ? new Date(book.endDate) : null;
+    // Interpretar fechas como días locales evita desplazar portadas un día por zona horaria.
+    const parseDay = (value?: string | null) => value ? new Date(`${value.slice(0, 10)}T00:00:00`) : null;
+    const addReading = (id: string, book: { title: string; coverUrl?: string }, startDate?: string | null, endDate?: string | null) => {
+      const start = parseDay(startDate);
+      const end = parseDay(endDate);
 
       if (start && start.getFullYear() === calYear && start.getMonth() === calMonth) {
-        map.get(start.getDate())?.started.push({ title: book.title });
+        map.get(start.getDate())?.started.push({ id, title: book.title });
       }
 
       if (end && end.getFullYear() === calYear && end.getMonth() === calMonth) {
-        map.get(end.getDate())?.finished.push({ title: book.title });
+        map.get(end.getDate())?.finished.push({ id, title: book.title });
       }
 
       if (start) {
@@ -325,10 +329,16 @@ export default function ReadingHabits() {
           }
         }
       }
+    };
+
+    books.forEach((book) => addReading(`book-${book.id}`, book, book.startDate, book.endDate));
+    rereads.forEach((reread) => {
+      const book = books.find((item) => item.id === reread.bookId);
+      if (book) addReading(`reread-${reread.id}`, book, reread.startedAt || reread.finishedAt, reread.finishedAt);
     });
 
     return map;
-  }, [books, calYear, calMonth, daysInMonth]);
+  }, [books, rereads, calYear, calMonth, daysInMonth]);
 
   const prevMonth = () => {
     if (calMonth === 0) {
@@ -356,8 +366,8 @@ export default function ReadingHabits() {
   const daysReadingCount = new Set<number>();
 
   dayMap.forEach((val, day) => {
-    val.started.forEach((b) => booksStarted.add(b.title));
-    val.finished.forEach((b) => booksFinished.add(b.title));
+    val.started.forEach((b) => booksStarted.add(b.id));
+    val.finished.forEach((b) => booksFinished.add(b.id));
     if (val.reading.length > 0) daysReadingCount.add(day);
   });
 
