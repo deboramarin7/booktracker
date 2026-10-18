@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { cn } from "@/lib/utils";
 import { getBookYear, getBookMonth, getBookDate } from "@/lib/dateUtils";
 import { useReadingGoals } from "@/hooks/useReadingGoals";
-import { useRereads } from "@/hooks/useRereads";
+import { useRereads, type Reread } from "@/hooks/useRereads";
 import { useActiveReread } from "@/hooks/useActiveReread";
 import { FinishRereadDialog } from "@/components/FinishRereadDialog";
 
@@ -50,6 +50,40 @@ const STATUS_LABELS: Record<string, string> = {
   reading: "Leyendo",
   finished: "Terminado",
 };
+
+type LibraryEntry = Book & { reread?: Reread };
+
+function RereadCard({ book, mode }: { book: LibraryEntry; mode: "covers" | "grid" | "spine" }) {
+  const [open, setOpen] = useState(false);
+  const reread = book.reread;
+  if (!reread) return null;
+  const displayDate = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString("es-ES");
+  return (
+    <>
+      {mode === "spine" ? (
+        <button type="button" onClick={() => setOpen(true)} title={`${book.title} — Relectura`} aria-label={`Ver relectura de ${book.title}`} className="relative h-[205px] w-[48px] flex-shrink-0 overflow-hidden rounded-sm border border-primary/50 sm:h-[230px] sm:w-[56px]">
+          <BookCoverImage src={book.coverUrl} alt={book.title} title={book.title} className="h-full w-full object-cover" />
+          <span className="absolute bottom-1 left-1 rounded bg-black/80 p-1 text-primary"><RotateCcw className="h-3 w-3" /></span>
+        </button>
+      ) : (
+        <button type="button" onClick={() => setOpen(true)} className={cn("group min-w-0 text-left", mode === "grid" && "flex gap-4 rounded-xl border border-border/50 bg-card p-3")}>
+          <div className={cn("relative overflow-hidden rounded-[var(--radius)] bg-muted", mode === "covers" ? "aspect-[2/3] mb-2" : "h-28 w-20 shrink-0")}>
+            <BookCoverImage src={book.coverUrl} alt={book.title} title={book.title} className="h-full w-full object-cover" iconClassName="h-10 w-10" />
+            <span className="absolute left-2 top-2 rounded-full bg-primary/90 px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">Relectura</span>
+          </div>
+          <div className="min-w-0"><h3 className="truncate text-sm font-semibold">{book.title}</h3><p className="truncate text-xs text-muted-foreground">{book.author}</p><p className="mt-1 text-xs text-primary">Terminada el {displayDate(reread.finishedAt)}</p></div>
+        </button>
+      )}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Relectura de {book.title}</DialogTitle><DialogDescription>Esta lectura no duplica el libro en tu estantería.</DialogDescription></DialogHeader>
+          <div className="flex items-center gap-4"><BookCoverImage src={book.coverUrl} alt={book.title} title={book.title} className="h-28 w-20 rounded-lg object-cover" /><div><p className="font-medium">{book.author}</p><p className="mt-2 text-sm text-muted-foreground">Inicio: {displayDate(reread.startedAt)}</p><p className="text-sm text-muted-foreground">Fin: {displayDate(reread.finishedAt)}</p>{reread.rating > 0 && <p className="mt-1 text-sm text-primary">Valoración: {reread.rating}/5</p>}</div></div>
+          {reread.notes && <p className="whitespace-pre-wrap text-sm">{reread.notes}</p>}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 function FinishReadingDialog({ book, open, onOpenChange, onFinish }: {
   book: Book | null;
@@ -464,7 +498,13 @@ export default function LibraryPage() {
   const digitalCount = useMemo(() => finishedYearBooks.filter((b) => b.format === "Digital").length, [finishedYearBooks]);
 
   const filtered = useMemo(() => {
-    let result = [...yearBooks];
+    // Eventos de relectura solo para esta vista: nunca se crean libros duplicados.
+    const rereadEntries: LibraryEntry[] = yearRereads.flatMap((reread) => {
+      const original = books.find((book) => book.id === reread.bookId);
+      if (!original) return [];
+      return [{ ...original, id: `reread-${reread.id}`, status: "finished" as const, startDate: reread.startedAt, endDate: reread.finishedAt, addedAt: reread.finishedAt, rating: reread.rating, notes: reread.notes, reread }];
+    });
+    let result: LibraryEntry[] = [...yearBooks, ...rereadEntries];
     const normalizedSearch = search.trim().toLocaleLowerCase();
     if (normalizedSearch) {
       result = result.filter((b) =>
@@ -490,7 +530,7 @@ export default function LibraryPage() {
       }
     });
     return result;
-  }, [yearBooks, search, statusFilter, genreFilter, formatFilter, sort]);
+  }, [yearBooks, yearRereads, books, search, statusFilter, genreFilter, formatFilter, sort]);
 
   const currentReads = [
     ...books.filter((book) => book.status === "reading").map((book) => ({ book, reread: null })),
@@ -504,7 +544,7 @@ export default function LibraryPage() {
   const finishingRereadBook = books.find((book) => book.id === finishingReread?.bookId);
 
   const groupedByStatus = useMemo(() => {
-    const groups: { status: ReadingStatus; label: string; books: Book[] }[] = [];
+    const groups: { status: ReadingStatus; label: string; books: LibraryEntry[] }[] = [];
     const statuses: ReadingStatus[] = ["reading", "finished"];
     for (const s of statuses) {
       const booksInGroup = filtered.filter((b) => b.status === s && b.status !== "reading");
@@ -739,20 +779,20 @@ export default function LibraryPage() {
               {viewMode === "covers" ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
                   {groupBooks.map((book) => (
-                    <CoverCard key={book.id} book={book} onUpdate={updateBook} onDelete={deleteBook} onReread={handleStartReread} />
+                    book.reread ? <RereadCard key={book.id} book={book} mode="covers" /> : <CoverCard key={book.id} book={book} onUpdate={updateBook} onDelete={deleteBook} onReread={handleStartReread} />
                   ))}
                 </div>
               ) : viewMode === "grid" ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {groupBooks.map((book, index) => (
-                    <BookCard key={book.id} book={book} index={index} onUpdate={updateBook} onDelete={deleteBook} onMoveToWishlist={handleMoveToWishlist} />
+                    book.reread ? <RereadCard key={book.id} book={book} mode="grid" /> : <BookCard key={book.id} book={book} index={index} onUpdate={updateBook} onDelete={deleteBook} onMoveToWishlist={handleMoveToWishlist} />
                   ))}
                 </div>
               ) : (
                 <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-b from-muted/40 via-card to-background px-4 pb-7 pt-5 shadow-inner sm:px-6">
                   <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-primary/[0.06] to-transparent" aria-hidden="true" />
                   <div className="relative flex gap-1.5 overflow-x-auto px-1 pb-2 pt-1 sm:gap-2">
-                    {groupBooks.map((book, index) => (
+                    {groupBooks.map((book, index) => book.reread ? <RereadCard key={book.id} book={book} mode="spine" /> : (
                       <div key={book.id}
                         className="group relative h-[205px] w-[48px] flex-shrink-0 cursor-pointer overflow-hidden rounded-sm border border-white/10 shadow-[3px_4px_8px_rgba(0,0,0,0.4)] transition-all duration-200 hover:-translate-y-2 hover:shadow-[5px_12px_18px_rgba(0,0,0,0.45)] sm:h-[230px] sm:w-[56px]"
                         title={`${book.title} — ${book.author}`}
