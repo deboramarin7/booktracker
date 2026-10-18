@@ -440,15 +440,19 @@ export default function LibraryPage() {
   }, [books, selectedYear, monthFilter]);
 
   const finishedYearBooks = useMemo(() => yearBooks.filter((b) => b.status === "finished"), [yearBooks]);
-  // Las relecturas se muestran aparte y respetan también el filtro de mes.
-  // Así "libros leídos" cuenta títulos de la biblioteca, sin inflarlo.
-  const yearRereads = useMemo(() => selectedYear ? rereads.filter((reread) => {
+  // Cada relectura terminada cuenta en el año y el mes en que se terminó.
+  const yearRereads = useMemo(() => rereads.filter((reread) => {
     const finishedDate = new Date(`${reread.finishedAt}T12:00:00`);
-    const matchesYear = finishedDate.getFullYear() === selectedYear;
+    const matchesYear = selectedYear === null || finishedDate.getFullYear() === selectedYear;
     const matchesMonth = monthFilter === "all" || finishedDate.getMonth() === Number(monthFilter);
     return matchesYear && matchesMonth;
-  }) : [], [rereads, selectedYear, monthFilter]);
-  const finishedReadingsCount = finishedYearBooks.length;
+  }), [rereads, selectedYear, monthFilter]);
+  const finishedReadingsCount = finishedYearBooks.length + yearRereads.length;
+  // El objetivo anual no debe cambiar al filtrar la biblioteca por mes.
+  const annualReadingsCount = useMemo(() => selectedYear === null ? 0 :
+    books.filter((book) => book.status === "finished" && getBookYear(book) === selectedYear).length +
+    rereads.filter((reread) => new Date(`${reread.finishedAt}T12:00:00`).getFullYear() === selectedYear).length,
+  [books, rereads, selectedYear]);
   const totalPages = useMemo(() => finishedYearBooks.reduce((s, b) => s + b.totalPages, 0) + yearRereads.reduce((s, reread) => s + reread.pagesRead, 0), [finishedYearBooks, yearRereads]);
   const totalSpent = useMemo(() => {
     return finishedYearBooks.reduce((s, b) => {
@@ -511,8 +515,8 @@ export default function LibraryPage() {
     return groups;
   }, [filtered]);
 
-  const goalPercent = currentGoal > 0 ? Math.min(100, Math.round((finishedReadingsCount / currentGoal) * 100)) : 0;
-  const booksRemaining = Math.max(0, currentGoal - finishedReadingsCount);
+  const goalPercent = currentGoal > 0 ? Math.min(100, Math.round((annualReadingsCount / currentGoal) * 100)) : 0;
+  const booksRemaining = Math.max(0, currentGoal - annualReadingsCount);
   const handleStartReread = async (book: Book) => {
     if (activeRereads.some((item) => item.bookId === book.id)) {
       window.alert("Ya estás releyendo este libro.");
@@ -601,7 +605,7 @@ export default function LibraryPage() {
           </div>
 
           {!loading && (finishedReadingsCount > 0 || yearRereads.length > 0) && <div className="grid grid-cols-2 gap-3 border-t border-border/40 pt-5 sm:grid-cols-4">
-            <div><p className="font-display text-2xl font-semibold">{finishedReadingsCount}</p><p className="text-xs text-muted-foreground">libros leídos{yearRereads.length > 0 ? ` · ${yearRereads.length} relectura${yearRereads.length === 1 ? "" : "s"}` : ""}</p></div>
+            <div><p className="font-display text-2xl font-semibold">{finishedReadingsCount}</p><p className="text-xs text-muted-foreground">lecturas terminadas{yearRereads.length > 0 ? ` · incluye ${yearRereads.length} relectura${yearRereads.length === 1 ? "" : "s"}` : ""}</p></div>
             <div><p className="font-display text-2xl font-semibold">{totalPages.toLocaleString()}</p><p className="text-xs text-muted-foreground">páginas vividas</p></div>
             <div><p className="font-display text-2xl font-semibold">{digitalCount} <span className="text-base text-primary">digitales</span> <span className="text-muted-foreground/50">·</span> {physicalCount} <span className="text-base text-primary">físicos</span></p><p className="text-xs text-muted-foreground">formatos de tus lecturas</p></div>
             <div><p className="font-display text-2xl font-semibold">{totalSpent > 0 ? `${totalSpent.toFixed(0)}€` : "—"}</p><p className="text-xs text-muted-foreground">invertidos en historias</p></div>
@@ -639,7 +643,7 @@ export default function LibraryPage() {
             <>
               <div className="flex items-end gap-8 mb-4">
                 <div>
-                  <p className="text-4xl font-light tracking-tighter font-display text-foreground">{finishedReadingsCount}</p>
+                  <p className="text-4xl font-light tracking-tighter font-display text-foreground">{annualReadingsCount}</p>
                   <p className="text-sm text-muted-foreground">Libros leídos</p>
                 </div>
                 <div>
