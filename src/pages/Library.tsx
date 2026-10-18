@@ -367,7 +367,7 @@ export default function LibraryPage() {
   const { books, loading, addBook, addBooksInBatch, updateBook, deleteBook } = useBooks();
   const { addItem } = useWishlist();
   const { rereads, addReread } = useRereads();
-  const { activeReread, startReread, updatePages: updateActiveRereadPages, clearActiveReread } = useActiveReread();
+  const { activeRereads, startReread, updatePages: updateActiveRereadPages, clearActiveReread } = useActiveReread();
 
   const currentYear = new Date().getFullYear();
   const [yearFilter, setYearFilter] = useState<string>(String(currentYear));
@@ -379,8 +379,8 @@ export default function LibraryPage() {
   const [sort, setSort] = useState<SortOption>("read-desc");
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [showFinishCurrent, setShowFinishCurrent] = useState(false);
-  const [showFinishActiveReread, setShowFinishActiveReread] = useState(false);
+  const [finishBookId, setFinishBookId] = useState<string | null>(null);
+  const [finishRereadId, setFinishRereadId] = useState<string | null>(null);
 
   const { goals, saveGoal } = useReadingGoals();
   const [editingGoal, setEditingGoal] = useState(false);
@@ -488,49 +488,51 @@ export default function LibraryPage() {
     return result;
   }, [yearBooks, search, statusFilter, genreFilter, formatFilter, sort]);
 
-  const normalCurrentRead = books.find((book) => book.status === "reading");
-  const activeRereadBook = activeReread ? books.find((book) => book.id === activeReread.bookId) : undefined;
-  const currentRead = normalCurrentRead || activeRereadBook;
-  const isRereadingNow = Boolean(!normalCurrentRead && activeReread && activeRereadBook);
-  const currentReadPages = isRereadingNow ? (activeReread?.pagesRead || 0) : (currentRead?.pagesRead || 0);
+  const currentReads = [
+    ...books.filter((book) => book.status === "reading").map((book) => ({ book, reread: null })),
+    ...activeRereads.flatMap((reread) => {
+      const book = books.find((item) => item.id === reread.bookId);
+      return book ? [{ book, reread }] : [];
+    }),
+  ];
+  const finishingBook = books.find((book) => book.id === finishBookId);
+  const finishingReread = activeRereads.find((item) => item.id === finishRereadId);
+  const finishingRereadBook = books.find((book) => book.id === finishingReread?.bookId);
 
   const groupedByStatus = useMemo(() => {
     const groups: { status: ReadingStatus; label: string; books: Book[] }[] = [];
     const statuses: ReadingStatus[] = ["reading", "finished"];
     for (const s of statuses) {
-      const booksInGroup = filtered.filter((b) => b.status === s && b.id !== normalCurrentRead?.id);
+      const booksInGroup = filtered.filter((b) => b.status === s && b.status !== "reading");
       if (booksInGroup.length > 0) {
         groups.push({ status: s, label: STATUS_LABELS[s] ?? s, books: booksInGroup });
       }
     }
     return groups;
-  }, [filtered, normalCurrentRead?.id]);
+  }, [filtered]);
 
   const goalPercent = currentGoal > 0 ? Math.min(100, Math.round((finishedReadingsCount / currentGoal) * 100)) : 0;
   const booksRemaining = Math.max(0, currentGoal - finishedReadingsCount);
-  const currentReadProgress = currentRead && currentRead.totalPages > 0
-    ? Math.min(100, Math.round((currentReadPages / currentRead.totalPages) * 100))
-    : 0;
   const handleStartReread = async (book: Book) => {
-    if (currentRead) {
-      window.alert("Solo puedes tener una lectura activa a la vez. Termina o devuelve primero la lectura que tienes en curso.");
+    if (activeRereads.some((item) => item.bookId === book.id)) {
+      window.alert("Ya estás releyendo este libro.");
       return;
     }
     const started = await startReread(book.id);
     if (!started) window.alert("No se pudo iniciar la relectura. Comprueba que has ejecutado el script de relecturas activas en Supabase.");
   };
   const handleFinishActiveReread = async ({ startedAt, finishedAt, rating, notes }: { startedAt: string; finishedAt: string; rating: number; notes: string }) => {
-    if (!activeReread || !activeRereadBook) return false;
+    if (!finishingReread || !finishingRereadBook) return false;
     const saved = await addReread({
-      bookId: activeReread.bookId,
+      bookId: finishingReread.bookId,
       startedAt,
       finishedAt,
-      pagesRead: activeReread.pagesRead || activeRereadBook.totalPages || 0,
+      pagesRead: finishingReread.pagesRead || finishingRereadBook.totalPages || 0,
       rating,
       notes,
     });
     if (!saved) return false;
-    return clearActiveReread();
+    return clearActiveReread(finishingReread.id);
   };
   const activeFilterCount = [statusFilter !== "all", genreFilter !== "all", formatFilter !== "all"].filter(Boolean).length;
 
@@ -566,8 +568,13 @@ export default function LibraryPage() {
               <input value={search} onChange={(event) => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground" placeholder="Busca por título, autora, saga, género o etiqueta" aria-label="Buscar en mi biblioteca" />
               {search && <button type="button" onClick={() => setSearch("")} className="text-xs font-medium text-primary hover:underline">Limpiar</button>}
             </label>
-            {currentRead ? (
-              <div className="relative overflow-hidden rounded-2xl border border-primary/25 bg-primary/10 p-4">
+            <div className="space-y-3">
+            {currentReads.length ? currentReads.map(({ book: currentRead, reread }) => {
+              const isRereadingNow = Boolean(reread);
+              const currentReadPages = reread ? reread.pagesRead : currentRead.pagesRead || 0;
+              const currentReadProgress = currentRead.totalPages > 0 ? Math.min(100, Math.round((currentReadPages / currentRead.totalPages) * 100)) : 0;
+              return (
+              <div key={reread ? `reread-${reread.id}` : `book-${currentRead.id}`} className="relative overflow-hidden rounded-2xl border border-primary/25 bg-primary/10 p-4">
                 <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-primary/20 blur-2xl" aria-hidden="true" />
                 <div className="relative flex gap-4">
                   <BookCoverImage src={currentRead.coverUrl} alt={currentRead.title} title={currentRead.title} className="h-28 w-[76px] rounded-lg object-cover shadow-xl" iconClassName="h-5 w-5" />
@@ -578,22 +585,19 @@ export default function LibraryPage() {
                     {currentRead.totalPages > 0 ? <>
                       <div className="mt-4 flex items-end justify-between gap-3"><p className="text-xs text-muted-foreground">{currentReadPages} de {currentRead.totalPages} páginas</p><p className="text-sm font-semibold text-primary">{currentReadProgress}%</p></div>
                       <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-background/60"><div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${currentReadProgress}%` }} /></div>
-                      <label className="mt-3 grid grid-cols-[minmax(0,1fr)_76px] items-center gap-2 text-xs text-muted-foreground"><span className="min-w-0">Actualizar página</span><input type="number" min={0} max={currentRead.totalPages} defaultValue={currentReadPages} onBlur={(event) => { const pagesRead = Math.max(0, Math.min(currentRead.totalPages, Number(event.target.value) || 0)); if (pagesRead !== currentReadPages) { if (isRereadingNow) updateActiveRereadPages(pagesRead); else updateBook(currentRead.id, { pagesRead }); } }} onKeyDown={(event) => { if (event.key === "Enter") (event.target as HTMLInputElement).blur(); }} aria-label={`Página actual de ${currentRead.title}`} className="h-9 w-full rounded-lg border border-white/80 bg-white px-2 text-sm font-semibold text-black outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" /></label>
-                      <button type="button" onClick={() => isRereadingNow ? setShowFinishActiveReread(true) : setShowFinishCurrent(true)} className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-primary/35 bg-primary/10 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"><Check className="h-3.5 w-3.5" /> {isRereadingNow ? "He terminado esta relectura" : "He terminado este libro"}</button>
+                      <label className="mt-3 grid grid-cols-[minmax(0,1fr)_76px] items-center gap-2 text-xs text-muted-foreground"><span className="min-w-0">Actualizar página</span><input type="number" min={0} max={currentRead.totalPages} defaultValue={currentReadPages} onBlur={(event) => { const pagesRead = Math.max(0, Math.min(currentRead.totalPages, Number(event.target.value) || 0)); event.target.value = String(pagesRead); if (pagesRead !== currentReadPages) { if (reread) updateActiveRereadPages(reread.id, pagesRead); else updateBook(currentRead.id, { pagesRead }); } }} onKeyDown={(event) => { if (event.key === "Enter") (event.target as HTMLInputElement).blur(); }} aria-label={`Página actual de ${currentRead.title}`} className="h-9 w-full rounded-lg border border-white/80 bg-white px-2 text-sm font-semibold text-black outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" /></label>
                     </> : <p className="mt-4 text-xs text-muted-foreground">Añade el total de páginas para seguir tu progreso.</p>}
+                    <button type="button" onClick={() => reread ? setFinishRereadId(reread.id) : setFinishBookId(currentRead.id)} className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-primary/35 bg-primary/10 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"><Check className="h-3.5 w-3.5" /> {isRereadingNow ? "He terminado esta relectura" : "He terminado este libro"}</button>
+                    {!reread && <button type="button" onClick={() => { if (window.confirm(`¿Devolver “${currentRead.title}” a tu Wish List? Se conservarán todos sus datos y no contará como lectura terminada.`)) handleMoveToWishlist(currentRead); }} className="mt-2 flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-border/50 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/45 hover:bg-primary/[0.06] hover:text-primary"><RotateCcw className="h-3.5 w-3.5" /> Volver a Wish List</button>}
                   </div>
                 </div>
               </div>
-            ) : (
+            ); }) : (
               <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border/60 bg-background/30 px-4 py-3 text-sm text-muted-foreground"><BookOpen className="h-5 w-5 text-primary" /> Tu próxima lectura te está esperando.</div>
             )}
-            <FinishReadingDialog book={normalCurrentRead || null} open={showFinishCurrent} onOpenChange={setShowFinishCurrent} onFinish={updateBook} />
-            <FinishRereadDialog book={activeRereadBook || null} startedAt={activeReread?.startedAt || ""} pagesRead={activeReread?.pagesRead || 0} open={showFinishActiveReread} onOpenChange={setShowFinishActiveReread} onFinish={handleFinishActiveReread} />
-            {normalCurrentRead && (
-              <button type="button" onClick={() => { if (window.confirm(`¿Devolver “${normalCurrentRead.title}” a tu Wish List? Se conservarán todos sus datos y no contará como lectura terminada.`)) handleMoveToWishlist(normalCurrentRead); }} className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-border/50 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/45 hover:bg-primary/[0.06] hover:text-primary">
-                <RotateCcw className="h-4 w-4" /> Volver a Wish List
-              </button>
-            )}
+            </div>
+            <FinishReadingDialog book={finishingBook || null} open={Boolean(finishBookId)} onOpenChange={(open) => { if (!open) setFinishBookId(null); }} onFinish={updateBook} />
+            <FinishRereadDialog book={finishingRereadBook || null} startedAt={finishingReread?.startedAt || ""} pagesRead={finishingReread?.pagesRead || 0} open={Boolean(finishRereadId)} onOpenChange={(open) => { if (!open) setFinishRereadId(null); }} onFinish={handleFinishActiveReread} />
           </div>
 
           {!loading && (finishedReadingsCount > 0 || yearRereads.length > 0) && <div className="grid grid-cols-2 gap-3 border-t border-border/40 pt-5 sm:grid-cols-4">
