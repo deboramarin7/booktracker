@@ -13,12 +13,12 @@ const db = supabase as any;
 
 export function useActiveReread() {
   const { user } = useAuth();
-  const [activeReread, setActiveReread] = useState<ActiveReread | null>(null);
+  const [activeRereads, setActiveRereads] = useState<ActiveReread[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchActiveReread = useCallback(async () => {
     if (!user) {
-      setActiveReread(null);
+      setActiveRereads([]);
       setLoading(false);
       return;
     }
@@ -28,15 +28,13 @@ export function useActiveReread() {
       .from("active_rereads")
       .select("id, book_id, started_at, pages_read")
       .eq("user_id", user.id)
-      .maybeSingle();
+      .order("started_at", { ascending: false });
 
     if (error) {
       console.error("Error loading active reread:", error);
-      setActiveReread(null);
-    } else if (data) {
-      setActiveReread({ id: data.id, bookId: data.book_id, startedAt: data.started_at, pagesRead: data.pages_read || 0 });
+      setActiveRereads([]);
     } else {
-      setActiveReread(null);
+      setActiveRereads((data || []).map((item: any) => ({ id: item.id, bookId: item.book_id, startedAt: item.started_at, pagesRead: item.pages_read || 0 })));
     }
     setLoading(false);
   }, [user?.id]);
@@ -44,8 +42,8 @@ export function useActiveReread() {
   useEffect(() => { fetchActiveReread(); }, [fetchActiveReread]);
 
   const startReread = useCallback(async (bookId: string) => {
-    if (!user || activeReread) return false;
-    const startedAt = new Date().toISOString().slice(0, 10);
+    if (!user || activeRereads.some((item) => item.bookId === bookId)) return false;
+    const startedAt = new Date().toLocaleDateString("en-CA");
     const { data, error } = await db
       .from("active_rereads")
       .insert({ user_id: user.id, book_id: bookId, started_at: startedAt, pages_read: 0 })
@@ -56,30 +54,30 @@ export function useActiveReread() {
       console.error("Error starting reread:", error);
       return false;
     }
-    setActiveReread({ id: data.id, bookId: data.book_id, startedAt: data.started_at, pagesRead: data.pages_read || 0 });
+    setActiveRereads((current) => [{ id: data.id, bookId: data.book_id, startedAt: data.started_at, pagesRead: data.pages_read || 0 }, ...current]);
     return true;
-  }, [activeReread, user]);
+  }, [activeRereads, user]);
 
-  const updatePages = useCallback(async (pagesRead: number) => {
-    if (!user || !activeReread) return false;
+  const updatePages = useCallback(async (id: string, pagesRead: number) => {
+    if (!user) return false;
     const safePages = Math.max(0, pagesRead || 0);
     const { error } = await db
       .from("active_rereads")
       .update({ pages_read: safePages })
-      .eq("id", activeReread.id)
+      .eq("id", id)
       .eq("user_id", user.id);
     if (error) return false;
-    setActiveReread((current) => current ? { ...current, pagesRead: safePages } : null);
+    setActiveRereads((current) => current.map((item) => item.id === id ? { ...item, pagesRead: safePages } : item));
     return true;
-  }, [activeReread, user]);
+  }, [user]);
 
-  const clearActiveReread = useCallback(async () => {
-    if (!user || !activeReread) return false;
-    const { error } = await db.from("active_rereads").delete().eq("id", activeReread.id).eq("user_id", user.id);
+  const clearActiveReread = useCallback(async (id: string) => {
+    if (!user) return false;
+    const { error } = await db.from("active_rereads").delete().eq("id", id).eq("user_id", user.id);
     if (error) return false;
-    setActiveReread(null);
+    setActiveRereads((current) => current.filter((item) => item.id !== id));
     return true;
-  }, [activeReread, user]);
+  }, [user]);
 
-  return { activeReread, loading, startReread, updatePages, clearActiveReread, refetch: fetchActiveReread };
+  return { activeRereads, loading, startReread, updatePages, clearActiveReread, refetch: fetchActiveReread };
 }
