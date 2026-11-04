@@ -578,6 +578,12 @@ export default function LibraryPage() {
     if (!saved) return false;
     return clearActiveReread(finishingReread.id);
   };
+  const handleAbandonActiveReread = async (id: string, title: string) => {
+    const confirmed = window.confirm(`¿Abandonar la relectura de “${title}”?\n\nNo contará como lectura terminada ni sumará páginas. El libro original seguirá guardado en tu biblioteca.`);
+    if (!confirmed) return;
+    const removed = await clearActiveReread(id);
+    if (!removed) window.alert("No se pudo abandonar la relectura. Inténtalo de nuevo.");
+  };
   const activeFilterCount = [statusFilter !== "all", genreFilter !== "all", formatFilter !== "all"].filter(Boolean).length;
 
   return (
@@ -632,6 +638,7 @@ export default function LibraryPage() {
                       <label className="mt-3 grid grid-cols-[minmax(0,1fr)_76px] items-center gap-2 text-xs text-muted-foreground"><span className="min-w-0">Actualizar página</span><input type="number" min={0} max={currentRead.totalPages} defaultValue={currentReadPages} onBlur={(event) => { const pagesRead = Math.max(0, Math.min(currentRead.totalPages, Number(event.target.value) || 0)); event.target.value = String(pagesRead); if (pagesRead !== currentReadPages) { if (reread) updateActiveRereadPages(reread.id, pagesRead); else updateBook(currentRead.id, { pagesRead }); } }} onKeyDown={(event) => { if (event.key === "Enter") (event.target as HTMLInputElement).blur(); }} aria-label={`Página actual de ${currentRead.title}`} className="h-9 w-full rounded-lg border border-white/80 bg-white px-2 text-sm font-semibold text-black outline-none focus:border-primary focus:ring-2 focus:ring-primary/30" /></label>
                     </> : <p className="mt-4 text-xs text-muted-foreground">Añade el total de páginas para seguir tu progreso.</p>}
                     <button type="button" onClick={() => reread ? setFinishRereadId(reread.id) : setFinishBookId(currentRead.id)} className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-primary/35 bg-primary/10 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"><Check className="h-3.5 w-3.5" /> {isRereadingNow ? "He terminado esta relectura" : "He terminado este libro"}</button>
+                    {reread && <button type="button" onClick={() => handleAbandonActiveReread(reread.id, currentRead.title)} className="mt-2 flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-destructive/25 text-xs font-medium text-muted-foreground transition-colors hover:border-destructive/60 hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /> Abandonar relectura</button>}
                     {!reread && <button type="button" onClick={() => { if (window.confirm(`¿Devolver “${currentRead.title}” a tu Wish List? Se conservarán todos sus datos y no contará como lectura terminada.`)) handleMoveToWishlist(currentRead); }} className="mt-2 flex h-9 w-full items-center justify-center gap-2 rounded-xl border border-border/50 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/45 hover:bg-primary/[0.06] hover:text-primary"><RotateCcw className="h-3.5 w-3.5" /> Volver a Wish List</button>}
                   </div>
                 </div>
